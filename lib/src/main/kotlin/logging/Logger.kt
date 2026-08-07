@@ -10,6 +10,10 @@ object Log {
         consumers.add(consumer)
     }
 
+    fun revokeConsumer(consumer: LogConsumer) {
+        consumers.remove(consumer)
+    }
+
     fun log(logLevel: LogLevel, message: String) {
         consumers
             .filter { it.maxLogLevel >= logLevel }
