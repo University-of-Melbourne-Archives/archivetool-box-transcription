@@ -3,6 +3,15 @@ package au.edu.unimelb.archivetool.logging
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Clock
 
+object AnsiColors {
+    const val red = "\u001b[31m"
+    const val yellow = "\u001b[0;33m"
+    const val green = "\u001b[0;32m"
+    const val cyan = "\u001b[0;36m"
+    const val purple = "\u001b[0;35m"
+    const val reset = "\u001b[0m"
+}
+
 object Log {
     private val consumers = mutableSetOf<LogConsumer>()
 
@@ -25,9 +34,9 @@ object Log {
 
         val caller = StackWalker.getInstance().walk { it.skip(1).filter { it.className != this.javaClass.name }.findFirst().getOrNull() }
 
-        // TODO: Conditionally add ANSI color codes.
+        val color = if (settings.enableAnsiColor) {level.msgColor()} else {""}
 
-        return "${if (settings.showTime){"[$time]"} else {""}} $caller $level - $message\n"
+        return "${if (settings.showTime){"[$time]"} else {""}}$caller $color$level${AnsiColors.reset} - $message\n"
     }
 
     fun trace(message: String) = log(LogLevel.Trace, message)
