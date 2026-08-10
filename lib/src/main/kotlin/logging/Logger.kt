@@ -32,7 +32,7 @@ object Log {
     private fun formatLog(settings: ConsumerSettings, level: LogLevel, message: String): String {
         val time = Clock.System.now();
 
-        val caller = StackWalker.getInstance().walk { it.skip(1).filter { it.className != this.javaClass.name }.findFirst().getOrNull() }
+        val caller = if (settings.showClass) {" " + StackWalker.getInstance().walk { it.skip(1).filter { it.className != this.javaClass.name }.findFirst().getOrNull() }} else {""}
 
         val color = if (settings.enableAnsiColor) {level.msgColor()} else {""}
 
@@ -62,6 +62,16 @@ enum class LogLevel {
             Trace -> "TRACE"
         }
     }
+
+    fun msgColor(): String {
+        return when(this) {
+            Error -> AnsiColors.red
+            Warn -> AnsiColors.yellow
+            Info -> AnsiColors.green
+            Debug -> AnsiColors.purple
+            Trace -> AnsiColors.cyan
+        }
+    }
 }
 
 interface LogConsumer {
@@ -71,4 +81,4 @@ interface LogConsumer {
     fun recordLogEntry(logEntry: String)
 }
 
-data class ConsumerSettings (val enableAnsiColor: Boolean = false, val showTime: Boolean = true)
+data class ConsumerSettings (val enableAnsiColor: Boolean = false, val showClass: Boolean = true, val showTime: Boolean = true)
