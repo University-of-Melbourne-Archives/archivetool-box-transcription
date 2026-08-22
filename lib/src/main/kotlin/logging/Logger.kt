@@ -29,14 +29,18 @@ object Log {
             .forEach { it.recordLogEntry(formatLog(it.settings, logLevel, message)) }
     }
 
-    private fun formatLog(settings: ConsumerSettings, level: LogLevel, message: String): String {
+    private fun formatLog(
+        settings: ConsumerSettings,
+        level: LogLevel,
+        message: String
+    ): String {
         val time = Clock.System.now();
 
         val caller = if (settings.showClass) {" " + StackWalker.getInstance().walk { it.skip(1).filter { it.className != this.javaClass.name }.findFirst().getOrNull() }} else {""}
 
         val color = if (settings.enableAnsiColor) {level.msgColor()} else {""}
 
-        return "${if (settings.showTime){"[$time]"} else {""}}$caller $color$level${AnsiColors.reset} - $message\n"
+        return "${if (settings.showTime){"[$time]"} else {""}}$caller $color$level${if(settings.enableAnsiColor){AnsiColors.reset}else{""}} - $message\n"
     }
 
     fun trace(message: String) = log(LogLevel.Trace, message)
