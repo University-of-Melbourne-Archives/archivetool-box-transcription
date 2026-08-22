@@ -1,0 +1,25 @@
+package au.edu.unimelb.archivetool.pythoninterop
+
+import au.edu.unimelb.archivetool.logging.Log
+import org.graalvm.polyglot.Context
+import org.graalvm.python.embedding.GraalPyResources
+import org.graalvm.python.embedding.VirtualFileSystem
+import kotlin.getValue
+
+sealed class PythonContext(inject: Set<Injectable> = setOf()) {
+    val vfs by lazy {
+        VirtualFileSystem.newBuilder().allowHostIO(VirtualFileSystem.HostIO.READ).build()
+    }
+
+    val context: Context by lazy {
+        GraalPyResources.contextBuilder(vfs)
+            .allowAllAccess(true)
+            .build()
+            .apply {
+                inject.forEach {
+                    Log.debug("Injecting injectable: $inject")
+                    it.inject(this)
+                }
+            }
+    }
+}
