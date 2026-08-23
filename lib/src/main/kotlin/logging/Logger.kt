@@ -29,24 +29,40 @@ object Log {
             .forEach { it.recordLogEntry(formatLog(it.settings, logLevel, message)) }
     }
 
-    private fun formatLog(
-        settings: ConsumerSettings,
-        level: LogLevel,
-        message: String
-    ): String {
-        val time = Clock.System.now();
+    private fun formatLog(settings: ConsumerSettings, level: LogLevel, message: String): String {
+        val time = Clock.System.now()
 
-        val caller = if (settings.showClass) {" " + StackWalker.getInstance().walk { it.skip(1).filter { it.className != this.javaClass.name }.findFirst().getOrNull() }} else {""}
+        val caller =
+            if (settings.showClass) {
+                " " +
+                    StackWalker.getInstance().walk {
+                        it.skip(1)
+                            .filter { it.className != this.javaClass.name }
+                            .findFirst()
+                            .getOrNull()
+                    }
+            } else {
+                ""
+            }
 
-        val color = if (settings.enableAnsiColor) {level.msgColor()} else {""}
+        val color =
+            if (settings.enableAnsiColor) {
+                level.msgColor()
+            } else {
+                ""
+            }
 
         return "${if (settings.showTime){"[$time]"} else {""}}$caller $color$level${if(settings.enableAnsiColor){AnsiColors.reset}else{""}} - $message\n"
     }
 
     fun trace(message: String) = log(LogLevel.Trace, message)
+
     fun debug(message: String) = log(LogLevel.Debug, message)
+
     fun info(message: String) = log(LogLevel.Info, message)
+
     fun warn(message: String) = log(LogLevel.Warn, message)
+
     fun error(message: String) = log(LogLevel.Error, message)
 }
 
@@ -58,7 +74,7 @@ enum class LogLevel {
     Trace;
 
     override fun toString(): String {
-        return when(this) {
+        return when (this) {
             Error -> "ERROR"
             Warn -> "WARN"
             Info -> "INFO"
@@ -68,7 +84,7 @@ enum class LogLevel {
     }
 
     fun msgColor(): String {
-        return when(this) {
+        return when (this) {
             Error -> AnsiColors.red
             Warn -> AnsiColors.yellow
             Info -> AnsiColors.green
@@ -85,4 +101,8 @@ interface LogConsumer {
     fun recordLogEntry(logEntry: String)
 }
 
-data class ConsumerSettings (val enableAnsiColor: Boolean = false, val showClass: Boolean = true, val showTime: Boolean = true)
+data class ConsumerSettings(
+    val enableAnsiColor: Boolean = false,
+    val showClass: Boolean = true,
+    val showTime: Boolean = true,
+)
