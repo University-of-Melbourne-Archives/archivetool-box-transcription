@@ -5,10 +5,10 @@ import au.edu.unimelb.archivetool.logging.LogLevel
 import org.graalvm.polyglot.Context
 import java.util.function.Consumer
 
-sealed class Injectable {
+sealed interface Injectable {
     abstract fun inject(ctx: Context)
 
-    class Logger : Injectable () {
+    class Logger : Injectable {
         override fun inject(ctx: Context) {
             ctx.getBindings("python").putMember("Log", this)
         }

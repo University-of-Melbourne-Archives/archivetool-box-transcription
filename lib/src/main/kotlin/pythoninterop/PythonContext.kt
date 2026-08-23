@@ -7,7 +7,7 @@ import org.graalvm.python.embedding.VirtualFileSystem
 import kotlin.getValue
 
 sealed class PythonContext(inject: Set<Injectable> = setOf()) {
-    val vfs by lazy {
+    private val vfs by lazy {
         VirtualFileSystem.newBuilder().allowHostIO(VirtualFileSystem.HostIO.READ).build()
     }
 
