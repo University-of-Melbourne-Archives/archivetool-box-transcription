@@ -62,3 +62,10 @@ sourceSets {
         }
     }
 }
+
+// Enable bytecode -> machinecode JIT for faster python execution.
+// It is stuck as 'experimental' due to the associated flag `-XX:+UseJVMCICompiler` in the same JEP,
+// but should be stable in practice.
+tasks.named<Test>("test") {
+    jvmArgs("-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI")
+}
