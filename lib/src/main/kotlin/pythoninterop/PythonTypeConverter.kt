@@ -9,5 +9,6 @@ import org.graalvm.polyglot.Value
 // - An object in the `converters` package if it's likely to get reused
 interface PythonTypeConverter<T> {
     fun toJvmValue(polyglotValue: Value): T
+
     fun toPolyglotValue(context: Context, jvmValue: T): Value
 }

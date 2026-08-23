@@ -2,13 +2,13 @@ import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.logging.consumers.StringConsumer
+import au.edu.unimelb.archivetool.pythoninterop.Injectable
 import au.edu.unimelb.archivetool.pythoninterop.PythonModule
 import au.edu.unimelb.archivetool.pythoninterop.PythonScript
-import au.edu.unimelb.archivetool.pythoninterop.Injectable
 import au.edu.unimelb.archivetool.pythoninterop.types.PythonBoolean
-import org.junit.jupiter.api.Test
 import java.lang.ref.WeakReference
 import kotlin.test.BeforeTest
+import org.junit.jupiter.api.Test
 
 class PythonInteropTest {
     @BeforeTest
@@ -17,7 +17,7 @@ class PythonInteropTest {
     }
 
     @Test
-    fun `load a python script`(){
+    fun `load a python script`() {
         PythonScript("test.py").eval()
     }
 
@@ -32,7 +32,9 @@ class PythonInteropTest {
 
     @Test
     fun `load python module from fileset`() {
-        PythonModule(setOf("test-module/module-1.py", "test-module/module-consumer.py")).methods["test_consumer"]!!.execute()
+        PythonModule(setOf("test-module/module-1.py", "test-module/module-consumer.py"))
+            .methods["test_consumer"]!!
+            .execute()
     }
 
     @Test

@@ -1,10 +1,10 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
 import au.edu.unimelb.archivetool.logging.Log
+import kotlin.getValue
 import org.graalvm.polyglot.Context
 import org.graalvm.python.embedding.GraalPyResources
 import org.graalvm.python.embedding.VirtualFileSystem
-import kotlin.getValue
 
 sealed class PythonContext(inject: Set<Injectable> = setOf()) {
     private val vfs by lazy {
@@ -12,14 +12,11 @@ sealed class PythonContext(inject: Set<Injectable> = setOf()) {
     }
 
     val context: Context by lazy {
-        GraalPyResources.contextBuilder(vfs)
-            .allowAllAccess(true)
-            .build()
-            .apply {
-                inject.forEach {
-                    Log.debug("Injecting injectable: $inject")
-                    it.inject(this)
-                }
+        GraalPyResources.contextBuilder(vfs).allowAllAccess(true).build().apply {
+            inject.forEach {
+                Log.debug("Injecting injectable: $inject")
+                it.inject(this)
             }
+        }
     }
 }
