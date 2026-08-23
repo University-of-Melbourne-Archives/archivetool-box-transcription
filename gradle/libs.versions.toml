@@ -24,4 +24,5 @@ polyglot = ["polyglot", "polyglot-python"]
 
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ktfmtGradlePlugin = { id = "com.ncorti.ktfmt.gradle",  version = "0.26.0" }
 graalpy = { id = "org.graalvm.python", version = "25.0.3"}
