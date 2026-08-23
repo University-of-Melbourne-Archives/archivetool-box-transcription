@@ -15,6 +15,7 @@ plugins {
 
 
 fun SourceSet.setupPythonTask(inputDir: String) = tasks.register("python-$name") {
+    description = "Move Python files to the right directory. Any other steps should also go here."
     group = "build"
 
     // Register the project version as a task input, so Gradle can cache the task
