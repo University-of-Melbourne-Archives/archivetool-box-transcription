@@ -1,12 +1,14 @@
 name: Run Tests and Autoformat Compliance Check
 
 on:
-  pull-request:
+  pull_request:
     types:
       - opened
       - synchronize
       - reopened
-  workflow-dispatch:
+    branches:
+      - main
+  workflow_dispatch:
 
 
 jobs:
