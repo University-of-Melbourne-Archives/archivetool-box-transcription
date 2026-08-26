@@ -10,12 +10,12 @@ import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.extension
 import kotlin.io.path.isRegularFile
-import kotlin.io.path.readText
 import kotlin.io.path.relativeTo
 import kotlin.io.path.toPath
 import kotlin.io.path.walk
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
+import kotlin.reflect.KProperty
 
 // A Python context where the code is treated as a "module".
 // The code is evaluated at load-time, and should ideally have minimal side-effects
@@ -90,14 +90,14 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
     }
 
     private val allMembers: MutableMap<String, Value> by lazy { mutableMapOf() }
-    val members by lazy { MemberSet(WeakReference(allMembers), context) }
+    val members by lazy { MemberSet(WeakReference(allMembers), _context) }
     val methods by lazy { members.withFilter({ it.canExecute() }) }
 }
 
 data class MemberSet(
-    val members: WeakReference<MutableMap<String, Value>>,
+    private val members: WeakReference<MutableMap<String, Value>>,
     private val ctx: Context,
-    val filters: MutableSet<(Value) -> Boolean> = mutableSetOf(),
+    private val filters: MutableSet<(Value) -> Boolean> = mutableSetOf(),
 ) {
     private constructor(orig: MemberSet) : this(orig.members, orig.ctx, orig.filters.toMutableSet())
 
@@ -117,6 +117,10 @@ data class MemberSet(
 
             out.validate { v -> filters.all { it(v) } }
         }
+    }
+
+    operator fun <OwnerT> getValue(thisRef: OwnerT, property: KProperty<*>): Value {
+        return get(property.name)!!
     }
 
     fun withFilter(vararg filt: (Value) -> Boolean): MemberSet =
