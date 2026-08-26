@@ -75,6 +75,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
     init {
         Log.debug("Initialising Python Module")
 
+        _context.enter()
         filePaths
             .map {
                 Log.debug("\tLoading Module File $it")
@@ -83,8 +84,9 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
             }
             .forEach {
                 Log.trace("\tRunning Python Module Code:\n\"\"\"\n$it\n\"\"\"")
-                context.eval("python", it)
+                _context.eval("python", it)
             }
+        _context.leave()
     }
 
     private val allMembers: MutableMap<String, Value> by lazy { mutableMapOf() }

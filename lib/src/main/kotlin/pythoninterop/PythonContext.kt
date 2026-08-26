@@ -5,13 +5,14 @@ import kotlin.getValue
 import org.graalvm.polyglot.Context
 import org.graalvm.python.embedding.GraalPyResources
 import org.graalvm.python.embedding.VirtualFileSystem
+import java.lang.ref.WeakReference
 
 sealed class PythonContext(inject: Set<Injectable> = setOf()) {
     private val vfs by lazy {
         VirtualFileSystem.newBuilder().allowHostIO(VirtualFileSystem.HostIO.READ).build()
     }
 
-    val context: Context by lazy {
+    protected val _context: Context by lazy {
         GraalPyResources.contextBuilder(vfs).allowAllAccess(true).build().apply {
             inject.forEach {
                 Log.debug("Injecting injectable: $inject")
@@ -19,4 +20,7 @@ sealed class PythonContext(inject: Set<Injectable> = setOf()) {
             }
         }
     }
+
+    val context
+        get() = WeakReference(_context)
 }
