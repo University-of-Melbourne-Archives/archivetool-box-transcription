@@ -25,12 +25,12 @@ abstract class PythonType<T> protected constructor(private val context: WeakRefe
     protected abstract val converter: PythonTypeConverter<T>
 
     // The most recently set value of either type.
-    private var actualValue: OneOfValue<T>? = null
+    private lateinit var actualValue: OneOfValue<T>
 
     // Adapters to retrieve the members as either type of value.
     var polyglotValue: Value
         get() {
-            return when (actualValue!!) {
+            return when (actualValue) {
                 is OneOfValue.JvmValue<*> ->
                     converter.toPolyglotValue(
                         context.get()!!,
@@ -45,7 +45,7 @@ abstract class PythonType<T> protected constructor(private val context: WeakRefe
 
     var jvmValue: T
         get() {
-            return when (actualValue!!) {
+            return when (actualValue) {
                 is OneOfValue.JvmValue<*> -> (actualValue as? OneOfValue.JvmValue)!!.inner
                 is OneOfValue.PolyglotValue<*> ->
                     converter.toJvmValue((actualValue as? OneOfValue.PolyglotValue)!!.inner)
