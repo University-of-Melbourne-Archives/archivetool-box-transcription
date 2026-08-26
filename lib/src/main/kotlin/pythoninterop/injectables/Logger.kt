@@ -6,6 +6,28 @@ import au.edu.unimelb.archivetool.pythoninterop.Injectable
 import org.graalvm.polyglot.Context
 import java.util.function.Consumer
 
+/*
+The following is a stub for using this in Python Code:
+
+```py
+try:
+    Log
+except NameError:
+    class Logger:
+      def trace(self, msg):
+        print("trace:", msg)
+      def debug(self, msg):
+        print("debug:", msg)
+      def info(self, msg):
+        print("info:", msg)
+      def warn(self, msg):
+        print("warn:", msg)
+      def error(self, msg):
+        print("error:", msg)
+    Log = Logger()
+```
+*/
+
 class Logger : Injectable {
     override fun inject(ctx: Context) {
         ctx.getBindings("python").putMember("Log", this)
