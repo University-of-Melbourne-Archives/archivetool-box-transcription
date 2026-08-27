@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard
 
+import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.StatusInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
@@ -7,6 +8,9 @@ import au.edu.unimelb.archivetool.switchboard.interactions.ReviewPreviewInteract
 import au.edu.unimelb.archivetool.switchboard.interactions.CropInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ExportInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
+import au.edu.unimelb.archivetool.switchboard.interactions.LogInitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonCreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonOCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonReviewGUIInteraction
@@ -14,9 +18,12 @@ import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedCropInte
 import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedStatusInteraction
 
 // Implements a switchboard with default options.
-// Allows for easy swapping or modification.
+// You should never use this in its global scope,
+// rather assigning it to a `AbstractSwitchboard` val.
+// You can swap out a given interaction using `.with` or create an AbstractSwitchboard yourself.
 // You can also make additional switchboard types, like a `MockSwitchboard` or something.
 object Switchboard: AbstractSwitchboard(
+    LogInitInteraction(),
     UnimplementedStatusInteraction(),
     PythonCreatePreviewInteraction(),
     PythonReviewGUIInteraction(),
@@ -28,14 +35,57 @@ object Switchboard: AbstractSwitchboard(
 // Acts as a dependency-injected base. Allows for 'hot-swappable' behaviors.
 // Currently just takes one interaction per command,
 // but will later also take stuff for things like Job data format parsing, or initial setup things.
-sealed class AbstractSwitchboard(
-    val status: StatusInteraction,
-    val createPreview: CreatePreviewInteraction,
-    val reviewPreview: ReviewPreviewInteraction,
-    val crop: CropInteraction,
-    val ocr: OCRInteraction,
-    val export: ExportInteraction
+open class AbstractSwitchboard(
+    _init: InitInteraction,
+    _status: StatusInteraction,
+    _createPreview: CreatePreviewInteraction,
+    _reviewPreview: ReviewPreviewInteraction,
+    _crop: CropInteraction,
+    _ocr: OCRInteraction,
+    _export: ExportInteraction
 ) {
+    var init: InitInteraction
+        private set
+    var status: StatusInteraction
+        private set
+    var createPreview: CreatePreviewInteraction
+        private set
+    var reviewPreview: ReviewPreviewInteraction
+        private set
+    var crop: CropInteraction
+        private set
+    var ocr: OCRInteraction
+        private set
+    var export: ExportInteraction
+        private set
+
+    init {
+        init = _init
+        status = _status
+        createPreview = _createPreview
+        reviewPreview = _reviewPreview
+        crop = _crop
+        ocr = _ocr
+        export = _export
+    }
+
+    // Allows for on-the-fly swapping of interactions.
+    fun with(swapFor: Interaction) {
+        when (swapFor) {
+            is CreatePreviewInteraction -> createPreview = swapFor
+            is CropInteraction -> crop = swapFor
+            is ExportInteraction -> export = swapFor
+            is InitInteraction -> init = swapFor
+            is OCRInteraction -> ocr = swapFor
+            is ReviewPreviewInteraction -> reviewPreview = swapFor
+            is StatusInteraction -> status = swapFor
+        }
+    }
+
+    fun init(logConsumers: Set<LogConsumer>) {
+        init.init(logConsumers)
+    }
+
     fun getStatus() {
         status.getStatus()
     }
