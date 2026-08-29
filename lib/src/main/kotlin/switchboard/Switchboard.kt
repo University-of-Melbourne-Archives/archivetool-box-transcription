@@ -10,6 +10,8 @@ import au.edu.unimelb.archivetool.switchboard.interactions.OCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
+import au.edu.unimelb.archivetool.switchboard.interactions.JSONJobStateInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.LogInitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonCreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonOCRInteraction
@@ -24,6 +26,7 @@ import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedStatusIn
 // You can also make additional switchboard types, like a `MockSwitchboard` or something.
 object Switchboard: AbstractSwitchboard(
     LogInitInteraction(),
+    JSONJobStateInteraction(),
     UnimplementedStatusInteraction(),
     PythonCreatePreviewInteraction(),
     PythonReviewGUIInteraction(),
@@ -37,6 +40,7 @@ object Switchboard: AbstractSwitchboard(
 // but will later also take stuff for things like Job data format parsing, or initial setup things.
 open class AbstractSwitchboard(
     _init: InitInteraction,
+    _job: JobStateInteraction,
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
     _reviewPreview: ReviewPreviewInteraction,
@@ -45,6 +49,8 @@ open class AbstractSwitchboard(
     _export: ExportInteraction
 ) {
     var init: InitInteraction
+        private set
+    var job: JobStateInteraction
         private set
     var status: StatusInteraction
         private set
@@ -61,6 +67,7 @@ open class AbstractSwitchboard(
 
     init {
         init = _init
+        job = _job
         status = _status
         createPreview = _createPreview
         reviewPreview = _reviewPreview
@@ -76,6 +83,7 @@ open class AbstractSwitchboard(
             is CropInteraction -> crop = swapFor
             is ExportInteraction -> export = swapFor
             is InitInteraction -> init = swapFor
+            is JobStateInteraction -> job = swapFor
             is OCRInteraction -> ocr = swapFor
             is ReviewPreviewInteraction -> reviewPreview = swapFor
             is StatusInteraction -> status = swapFor
