@@ -18,6 +18,7 @@ sealed class PythonContext(inject: Set<Injectable> = setOf()) {
                 Log.debug("Injecting injectable: $inject")
                 it.inject(this)
             }
+            getBindings("python").putMember("KOTLIN", true)
         }
     }
 
