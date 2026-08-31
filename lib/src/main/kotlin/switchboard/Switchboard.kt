@@ -5,7 +5,7 @@ import au.edu.unimelb.archivetool.switchboard.interactions.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.StatusInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ReviewPreviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.CropInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
@@ -16,7 +16,8 @@ import au.edu.unimelb.archivetool.switchboard.interactions.LogInitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonCreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonOCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonReviewGUIInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedCropInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.CropInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedStatusInteraction
 
 // Implements a switchboard with default options.
@@ -30,7 +31,7 @@ object Switchboard: AbstractSwitchboard(
     UnimplementedStatusInteraction(),
     PythonCreatePreviewInteraction(),
     PythonReviewGUIInteraction(),
-    UnimplementedCropInteraction(),
+    ImageManipulationInteraction.compose(CropInteraction(), FlattenInteraction()),
     PythonOCRInteraction(),
     CSVExportInteraction()
 )
@@ -44,7 +45,7 @@ open class AbstractSwitchboard(
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
     _reviewPreview: ReviewPreviewInteraction,
-    _crop: CropInteraction,
+    _crop: ImageManipulationInteraction,
     _ocr: OCRInteraction,
     _export: ExportInteraction
 ) {
@@ -58,7 +59,7 @@ open class AbstractSwitchboard(
         private set
     var reviewPreview: ReviewPreviewInteraction
         private set
-    var crop: CropInteraction
+    var crop: ImageManipulationInteraction
         private set
     var ocr: OCRInteraction
         private set
@@ -80,7 +81,7 @@ open class AbstractSwitchboard(
     fun with(swapFor: Interaction) {
         when (swapFor) {
             is CreatePreviewInteraction -> createPreview = swapFor
-            is CropInteraction -> crop = swapFor
+            is ImageManipulationInteraction -> crop = swapFor
             is ExportInteraction -> export = swapFor
             is InitInteraction -> init = swapFor
             is JobStateInteraction -> job = swapFor
@@ -104,7 +105,7 @@ open class AbstractSwitchboard(
         reviewPreview.review()
     }
     fun applyCrops() {
-        crop.applyCrops()
+        crop.apply()
     }
     fun createOCR() {
         ocr.generateOCR()
