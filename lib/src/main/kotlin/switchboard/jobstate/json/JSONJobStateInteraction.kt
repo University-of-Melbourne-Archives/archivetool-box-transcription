@@ -29,6 +29,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         return getCache<JSONJobState>().put(folder, JSONJobState(folder))
     }
 
+    // TODO: Some sort of check for a file hash or something to detect user file changes that miss cache.
     override fun read(folder: Path): JobState? =
         getCache<JSONJobState>().getOrTry(folder) {
             try {
