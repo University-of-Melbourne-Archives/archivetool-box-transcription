@@ -77,8 +77,31 @@ open class AbstractSwitchboard(
         export = _export
     }
 
+    // Copy Constructor
+    constructor(sw: AbstractSwitchboard): this(
+        sw.init,
+        sw.job,
+        sw.status,
+        sw.createPreview,
+        sw.reviewPreview,
+        sw.crop,
+        sw.ocr,
+        sw.export
+    )
+
+    // Creates a new Switchboard with the swapped interaction.
+    fun with(swapFor: Interaction): AbstractSwitchboard =
+        AbstractSwitchboard(this).apply {
+            swap(swapFor)
+        }
+
+    fun with(vararg swapFor: Interaction): AbstractSwitchboard =
+        AbstractSwitchboard(this).apply {
+            swap(*swapFor)
+        }
+
     // Allows for on-the-fly swapping of interactions.
-    fun with(swapFor: Interaction) {
+    fun swap(swapFor: Interaction) {
         when (swapFor) {
             is CreatePreviewInteraction -> createPreview = swapFor
             is ImageManipulationInteraction -> crop = swapFor
@@ -90,6 +113,10 @@ open class AbstractSwitchboard(
             is StatusInteraction -> status = swapFor
         }
     }
+    fun swap(vararg swapFor: Interaction) =
+        swapFor.forEach {
+            swap(it)
+        }
 
     fun init(logConsumers: Set<LogConsumer>) {
         init.init(logConsumers)
