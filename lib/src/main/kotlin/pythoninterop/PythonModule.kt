@@ -1,7 +1,7 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
 import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.util.unwrap
+import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.util.validate
 import java.io.BufferedReader
 import java.lang.ref.WeakReference
@@ -31,10 +31,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
         {}.javaClass
             .getResource("/python/$folder")
             ?.toURI()
-            .unwrap {
-                Log.error("Python ModuleFolder $folder not found")
-                throw RuntimeException()
-            }
+            .expect("Python ModuleFolder $folder not found")
             .let { it.toPath() to it }
             .let {
                 val path = it.first
