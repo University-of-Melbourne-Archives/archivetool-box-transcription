@@ -13,9 +13,9 @@ import kotlin.io.path.isRegularFile
 import kotlin.io.path.relativeTo
 import kotlin.io.path.toPath
 import kotlin.io.path.walk
+import kotlin.reflect.KProperty
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
-import kotlin.reflect.KProperty
 
 // A Python context where the code is treated as a "module".
 // The code is evaluated at load-time, and should ideally have minimal side-effects

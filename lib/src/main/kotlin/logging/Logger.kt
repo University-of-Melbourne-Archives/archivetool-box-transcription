@@ -66,10 +66,11 @@ object Log {
 
     fun error(message: String) = log(LogLevel.Error, message)
 
-    fun <T> T?.expect(message: String): T = this.unwrap {
-        Log.error(message)
-        throw RuntimeException(message)
-    }
+    fun <T> T?.expect(message: String): T =
+        this.unwrap {
+            Log.error(message)
+            throw RuntimeException(message)
+        }
 }
 
 enum class LogLevel {

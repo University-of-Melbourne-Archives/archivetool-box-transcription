@@ -6,7 +6,6 @@ import au.edu.unimelb.archivetool.pythoninterop.PythonModule
 import au.edu.unimelb.archivetool.pythoninterop.PythonScript
 import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger
 import au.edu.unimelb.archivetool.pythoninterop.types.PythonBoolean
-import java.lang.ref.WeakReference
 import kotlin.test.BeforeTest
 import org.junit.jupiter.api.Test
 

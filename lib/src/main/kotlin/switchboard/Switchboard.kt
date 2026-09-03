@@ -25,16 +25,17 @@ import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedStatusIn
 // rather assigning it to a `AbstractSwitchboard` val.
 // You can swap out a given interaction using `.with` or create an AbstractSwitchboard yourself.
 // You can also make additional switchboard types, like a `MockSwitchboard` or something.
-object Switchboard: AbstractSwitchboard(
-    LogInitInteraction(),
-    JSONJobStateInteraction(),
-    UnimplementedStatusInteraction(),
-    PythonCreatePreviewInteraction(),
-    PythonReviewGUIInteraction(),
-    ImageManipulationInteraction.compose(CropInteraction(), FlattenInteraction()),
-    PythonOCRInteraction(),
-    CSVExportInteraction()
-)
+object Switchboard :
+    AbstractSwitchboard(
+        LogInitInteraction(),
+        JSONJobStateInteraction(),
+        UnimplementedStatusInteraction(),
+        PythonCreatePreviewInteraction(),
+        PythonReviewGUIInteraction(),
+        ImageManipulationInteraction.compose(CropInteraction(), FlattenInteraction()),
+        PythonOCRInteraction(),
+        CSVExportInteraction(),
+    )
 
 // Acts as a dependency-injected base. Allows for 'hot-swappable' behaviors.
 // Currently just takes one interaction per command,
@@ -47,22 +48,29 @@ open class AbstractSwitchboard(
     _reviewPreview: ReviewPreviewInteraction,
     _crop: ImageManipulationInteraction,
     _ocr: OCRInteraction,
-    _export: ExportInteraction
+    _export: ExportInteraction,
 ) {
     var init: InitInteraction
         private set
+
     var job: JobStateInteraction
         private set
+
     var status: StatusInteraction
         private set
+
     var createPreview: CreatePreviewInteraction
         private set
+
     var reviewPreview: ReviewPreviewInteraction
         private set
+
     var crop: ImageManipulationInteraction
         private set
+
     var ocr: OCRInteraction
         private set
+
     var export: ExportInteraction
         private set
 
@@ -78,7 +86,9 @@ open class AbstractSwitchboard(
     }
 
     // Copy Constructor
-    constructor(sw: AbstractSwitchboard): this(
+    constructor(
+        sw: AbstractSwitchboard
+    ) : this(
         sw.init,
         sw.job,
         sw.status,
@@ -86,19 +96,15 @@ open class AbstractSwitchboard(
         sw.reviewPreview,
         sw.crop,
         sw.ocr,
-        sw.export
+        sw.export,
     )
 
     // Creates a new Switchboard with the swapped interaction.
     fun with(swapFor: Interaction): AbstractSwitchboard =
-        AbstractSwitchboard(this).apply {
-            swap(swapFor)
-        }
+        AbstractSwitchboard(this).apply { swap(swapFor) }
 
     fun with(vararg swapFor: Interaction): AbstractSwitchboard =
-        AbstractSwitchboard(this).apply {
-            swap(*swapFor)
-        }
+        AbstractSwitchboard(this).apply { swap(*swapFor) }
 
     // Allows for on-the-fly swapping of interactions.
     fun swap(swapFor: Interaction) {
@@ -113,10 +119,8 @@ open class AbstractSwitchboard(
             is StatusInteraction -> status = swapFor
         }
     }
-    fun swap(vararg swapFor: Interaction) =
-        swapFor.forEach {
-            swap(it)
-        }
+
+    fun swap(vararg swapFor: Interaction) = swapFor.forEach { swap(it) }
 
     fun init(logConsumers: Set<LogConsumer>) {
         init.init(logConsumers)
@@ -125,18 +129,23 @@ open class AbstractSwitchboard(
     fun getStatus() {
         status.getStatus()
     }
+
     fun createPreview() {
         createPreview.createPreview()
     }
+
     fun reviewPreview() {
         reviewPreview.review()
     }
+
     fun applyCrops() {
         crop.apply()
     }
+
     fun createOCR() {
         ocr.generateOCR()
     }
+
     fun generateExport() {
         export.export()
     }

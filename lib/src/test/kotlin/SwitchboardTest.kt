@@ -1,2 +1,1 @@
-class SwitchboardTest {
-}
+class SwitchboardTest {}
