@@ -7,9 +7,13 @@ import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteractionCo
 import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
+import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
 import au.edu.unimelb.archivetool.util.validate
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
+import java.nio.file.attribute.PosixFilePermissions.fromString
+import kotlin.io.path.createFile
 import kotlin.io.path.exists
 import kotlin.io.path.isReadable
 import kotlin.io.path.isWritable
@@ -25,11 +29,13 @@ class JSONJobStateInteraction : JobStateInteraction {
             .resolve("job.json")
             .validate { it.notExists() && it.parent.isWritable() }
             .expect("Could not create new Job State.")
+            .createFile(asFileAttribute(fromString("rw-rw-r--")))
 
         return getCache<JSONJobState>().put(folder, JSONJobState(folder))
     }
 
-    // TODO: Some sort of check for a file hash or something to detect user file changes that miss cache.
+    // TODO: Some sort of check for a file hash or something to detect user file changes that miss
+    // cache.
     override fun read(folder: Path): JobState? =
         getCache<JSONJobState>().getOrTry(folder) {
             try {
@@ -50,7 +56,7 @@ class JSONJobStateInteraction : JobStateInteraction {
                 .get(folder)
                 .expect("Tried to write non-existent JSON State.")
                 .toJsonElement()
-                .toString()
+                .toStrictString()
         folder
             .resolve(GENERATED_PATH)
             .resolve("job.json")
