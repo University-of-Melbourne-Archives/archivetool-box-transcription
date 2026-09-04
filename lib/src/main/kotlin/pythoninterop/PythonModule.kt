@@ -2,7 +2,6 @@ package au.edu.unimelb.archivetool.pythoninterop
 
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.util.validate
 import java.io.BufferedReader
 import java.lang.ref.WeakReference
 import java.nio.file.FileSystems
@@ -43,7 +42,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
                             dirPath
                                 .walk()
                                 .map {
-                                    it.validate { it.exists() && it.isRegularFile() }
+                                    it.takeUnless { it.exists() && it.isRegularFile() }
                                         ?.relativeTo(jarFs.getPath("/python"))
                                 }
                                 .filter { it?.extension == "py" }
@@ -55,7 +54,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
                         path
                             .walk()
                             .map {
-                                it.validate { it.exists() && it.isRegularFile() }
+                                it.takeUnless { it.exists() && it.isRegularFile() }
                                     ?.relativeTo(
                                         {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
                                     )
@@ -112,7 +111,7 @@ data class MemberSet(
 
             members[index] = out
 
-            out.validate { v -> filters.all { it(v) } }
+            out.takeUnless { v -> filters.all { it(v) } }
         }
     }
 

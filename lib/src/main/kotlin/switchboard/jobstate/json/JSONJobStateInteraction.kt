@@ -8,7 +8,6 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
-import au.edu.unimelb.archivetool.util.validate
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
@@ -40,7 +39,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         getCache<JSONJobState>().getOrTry(folder) {
             try {
                 val path =
-                    folder.resolve(GENERATED_PATH).resolve("job.json").validate {
+                    folder.resolve(GENERATED_PATH).resolve("job.json").takeUnless {
                         it.exists() && it.isReadable() && it.isWritable()
                     }
                 JSONJobState(folder, Json.parseToJsonElement(path!!.readText()))
@@ -60,7 +59,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         folder
             .resolve(GENERATED_PATH)
             .resolve("job.json")
-            .validate { it.isWritable() }
+            .takeUnless { it.isWritable() }
             .expect("Could not write state to file: $this")
             .writeText(
                 s,
