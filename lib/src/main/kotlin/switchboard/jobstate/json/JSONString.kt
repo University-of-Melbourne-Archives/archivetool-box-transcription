@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate.json
 
 import com.sun.jdi.InvalidTypeException
+import java.util.Optional
+import kotlin.jvm.optionals.getOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
@@ -8,9 +10,10 @@ import kotlinx.serialization.json.JsonElement
 // More of an experiment on this type of light wrapper than something unbelievably practical.
 @JvmInline
 value class JSONString private constructor(val inner: String) : CharSequence {
-    // Call inner with an intentionally invalid JSON string.
+    // Call inner with an intentionally invalid JSON string if empty.
     // We can only exist in a bad state until the constructor terminates.
-    constructor(json: String?) : this(json ?: "}") {
+    // This also has optional so the function signiatures don't clash.
+    constructor(json: Optional<String>) : this(json.getOrNull() ?: "}") {
         if (!verify()) throw InvalidTypeException()
     }
 

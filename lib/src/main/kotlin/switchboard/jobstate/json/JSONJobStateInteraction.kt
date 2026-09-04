@@ -26,7 +26,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         folder
             .resolve(GENERATED_PATH)
             .resolve("job.json")
-            .validate { it.notExists() && it.parent.isWritable() }
+            .takeUnless { it.notExists() && it.parent.isWritable() }
             .expect("Could not create new Job State.")
             .createFile(asFileAttribute(fromString("rw-rw-r--")))
 
@@ -69,9 +69,12 @@ class JSONJobStateInteraction : JobStateInteraction {
             )
     }
 
+    override val companion: JobStateInteractionCompanion
+        get() = Companion
+
     companion object : JobStateInteractionCompanion {
         override fun present(folder: Path): Boolean =
-            folder.resolve(GENERATED_PATH).resolve("job.json").first().validate {
+            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeUnless {
                 it.exists() && it.isReadable() && it.isWritable()
             } == null
     }
