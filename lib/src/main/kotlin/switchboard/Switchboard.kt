@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard
 
+import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
@@ -11,14 +12,22 @@ import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.LogInitInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.MockCreatePreviewInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.MockImageManipulationInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.MockOCRInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.MockReviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonCreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonOCRInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.PythonReviewGUIInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.ReviewGUIInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ReviewPreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.StatusInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.StdOutExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedStatusInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
+import java.nio.file.Path
 
 // Implements a switchboard with default options.
 // You should never use this in its global scope,
@@ -31,10 +40,22 @@ object Switchboard :
         JSONJobStateInteraction(),
         UnimplementedStatusInteraction(),
         PythonCreatePreviewInteraction(),
-        PythonReviewGUIInteraction(),
+        ReviewGUIInteraction(),
         ImageManipulationInteraction.compose(CropInteraction(), FlattenInteraction()),
         PythonOCRInteraction(),
         CSVExportInteraction(),
+    )
+
+object MockSwitchboard :
+    AbstractSwitchboard(
+        LogInitInteraction(),
+        MemoryJobStateInteraction(),
+        UnimplementedStatusInteraction(),
+        MockCreatePreviewInteraction(),
+        MockReviewInteraction(),
+        MockImageManipulationInteraction(),
+        MockOCRInteraction(),
+        StdOutExportInteraction(),
     )
 
 // Acts as a dependency-injected base. Allows for 'hot-swappable' behaviors.
@@ -148,8 +169,26 @@ open class AbstractSwitchboard(
                 it.takeIf { it.isEmpty() }.expect("No valid files for this step.")
             }
 
-    fun reviewPreview() {
-        reviewPreview.review()
+        val toUpdate =
+            createPreview.createPreview(
+                inFiles?.keys.expect("Could not load list of valid files."),
+                weights,
+                rejectThreshold,
+            )
+
+        state?.update(toUpdate)
+    }
+
+    fun reviewPreview(directory: Path) {
+        val state: JobState? = job.read(directory)
+        val toUpdate =
+            reviewPreview.review(
+                state
+                    ?.validFiles(reviewPreview)
+                    ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                    .expect("Could not load list of valid files.")
+            )
+        state?.update(toUpdate)
     }
 
     fun manipulateImages() {
