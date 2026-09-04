@@ -9,6 +9,12 @@ class CSVExportInteraction : ExportInteraction {
     }
 }
 
+class StdOutExportInteraction : ExportInteraction {
+    override fun export() {
+        TODO()
+    }
+}
+
 interface ExportInteraction : Interaction {
     fun export()
 
