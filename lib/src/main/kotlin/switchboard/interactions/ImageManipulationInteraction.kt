@@ -15,6 +15,13 @@ class FlattenInteraction : ImageManipulationInteraction {
 interface ImageManipulationInteraction : Interaction {
     fun apply()
 
+    override fun isEligible(file: Pair<Path, JobFile>): Boolean =
+        file.second.let {
+            it.crops.isNotEmpty() &&
+                it.approved &&
+                true /*TODO: Add a check for if the generated crop etc exists.*/
+        }
+
     companion object : ComposableInteraction<ImageManipulationInteraction> {
         override fun compose(
             vararg children: ImageManipulationInteraction
@@ -22,6 +29,10 @@ interface ImageManipulationInteraction : Interaction {
             return object : ImageManipulationInteraction {
                 override fun apply() {
                     children.forEach { it.apply() }
+                }
+
+                override fun isEligible(file: Pair<Path, JobFile>): Boolean = children.all {
+                    it.isEligible(file)
                 }
             }
         }

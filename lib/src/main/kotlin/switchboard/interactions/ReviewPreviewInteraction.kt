@@ -7,5 +7,8 @@ class PythonReviewGUIInteraction : ReviewPreviewInteraction {
 }
 
 interface ReviewPreviewInteraction : Interaction {
-    fun review()
+    fun review(files: Map<Path, JobFile?>, autoApproveThreshold: Double = 1.0): Map<Path, JobFile>
+
+    override fun isEligible(file: Pair<Path, JobFile>): Boolean =
+        file.second.let { it.crops.isNotEmpty() && !it.approved }
 }

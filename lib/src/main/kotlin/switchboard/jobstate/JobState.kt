@@ -1,7 +1,9 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
 import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.util.validate
+import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
+import au.edu.unimelb.archivetool.util.map
+import au.edu.unimelb.archivetool.util.noop
 import java.nio.file.Path
 import kotlin.io.path.extension
 import kotlin.io.path.isReadable
@@ -14,6 +16,27 @@ val GENERATED_PATH_REL_PAT: Regex = "^${Regex.escape(GENERATED_PATH)}".toRegex()
 
 // Expects File Names relative to root dir.
 abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutableMapOf()) {
+    fun validFiles(type: Interaction): Map<Path, JobFile?> = files.filter { p ->
+        p.toPair().takeUnless { it.second != null && type.isEligible(it.map(::noop, { it!! })) } ==
+            null
+    }
+
+    // TODO maybe check if state transitions are valid?
+    fun update(partial: Map<Path, JobFile>) {
+        val toUpdate =
+            partial
+                .filterKeys { files.keys.contains(it) }
+                .mapValues {
+                    if (files[it.key] == null) {
+                        Log.warn("Tried to update invalid file")
+                        null
+                    } else {
+                        it.value
+                    }
+                }
+        toUpdate.forEach { path, body -> files[path] = body }
+    }
+
     fun scan(directory: Path, initial: Boolean = false) {
         val currentFiles = directory.walk().map { it.relativeTo(directory) }.filter { ignore(it) }
 
@@ -42,7 +65,7 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
     private fun index(file: Path) {
         files[file] =
             file
-                .validate {
+                .takeUnless {
                     // Don't bother indexing non-images or files we can't read.
                     // Though we still need to store them as
                     it.isReadable() && it.isImage()
