@@ -1,5 +1,14 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import java.nio.file.Path
+
+class MockImageManipulationInteraction : ImageManipulationInteraction {
+    override fun apply() {
+        TODO("Not yet implemented")
+    }
+}
+
 class CropInteraction : ImageManipulationInteraction {
     override fun apply() {
         TODO("Not yet implemented")
@@ -9,6 +18,10 @@ class CropInteraction : ImageManipulationInteraction {
 class FlattenInteraction : ImageManipulationInteraction {
     override fun apply() {
         TODO("Not yet implemented")
+    }
+
+    override fun isEligible(file: Pair<Path, JobFile>): Boolean {
+        return super.isEligible(file) // TODO: Also check that the image has already been cropped.
     }
 }
 

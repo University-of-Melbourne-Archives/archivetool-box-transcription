@@ -46,7 +46,7 @@ open class AbstractSwitchboard(
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
     _reviewPreview: ReviewPreviewInteraction,
-    _crop: ImageManipulationInteraction,
+    _manip: ImageManipulationInteraction,
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
@@ -65,7 +65,7 @@ open class AbstractSwitchboard(
     var reviewPreview: ReviewPreviewInteraction
         private set
 
-    var crop: ImageManipulationInteraction
+    var manip: ImageManipulationInteraction
         private set
 
     var ocr: OCRInteraction
@@ -80,7 +80,7 @@ open class AbstractSwitchboard(
         status = _status
         createPreview = _createPreview
         reviewPreview = _reviewPreview
-        crop = _crop
+        manip = _manip
         ocr = _ocr
         export = _export
     }
@@ -94,7 +94,7 @@ open class AbstractSwitchboard(
         sw.status,
         sw.createPreview,
         sw.reviewPreview,
-        sw.crop,
+        sw.manip,
         sw.ocr,
         sw.export,
     )
@@ -110,7 +110,7 @@ open class AbstractSwitchboard(
     fun swap(swapFor: Interaction) {
         when (swapFor) {
             is CreatePreviewInteraction -> createPreview = swapFor
-            is ImageManipulationInteraction -> crop = swapFor
+            is ImageManipulationInteraction -> manip = swapFor
             is ExportInteraction -> export = swapFor
             is InitInteraction -> init = swapFor
             is JobStateInteraction -> job = swapFor
@@ -152,8 +152,8 @@ open class AbstractSwitchboard(
         reviewPreview.review()
     }
 
-    fun applyCrops() {
-        crop.apply()
+    fun manipulateImages() {
+        manip.apply()
     }
 
     fun createOCR() {
