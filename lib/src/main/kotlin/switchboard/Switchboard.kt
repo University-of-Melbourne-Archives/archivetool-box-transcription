@@ -130,9 +130,23 @@ open class AbstractSwitchboard(
         status.getStatus()
     }
 
-    fun createPreview() {
-        createPreview.createPreview()
-    }
+    fun createPreview(
+        directory: Path,
+        permitExisting: Boolean = false,
+        weights: Path = TODO("Put a default Weight Path here."),
+        rejectThreshold: Double = 0.05,
+    ) {
+        val state: JobState? =
+            if (permitExisting && job.companion.present(directory)) {
+                job.read(directory) ?: job.create(directory)
+            } else {
+                job.create(directory)
+            }
+
+        val inFiles =
+            state?.validFiles(createPreview)?.also {
+                it.takeIf { it.isEmpty() }.expect("No valid files for this step.")
+            }
 
     fun reviewPreview() {
         reviewPreview.review()
