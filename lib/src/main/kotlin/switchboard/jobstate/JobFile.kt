@@ -11,6 +11,7 @@ class JobFile {
     @Serializable
     sealed class Crop {
         abstract val points: Array<Point>
+        abstract val confidence: Double
         abstract val transcription: String?
 
         init {
@@ -26,11 +27,17 @@ class JobFile {
 
     @Serializable
     @SerialName("box")
-    class BoxCrop(override val points: Array<Point>, override val transcription: String? = null) :
-        Crop()
+    class BoxCrop(
+        override val points: Array<Point>,
+        override val transcription: String? = null,
+        override val confidence: Double,
+    ) : Crop()
 
     @Serializable
     @SerialName("label")
-    class LabelCrop(override val points: Array<Point>, override val transcription: String? = null) :
-        Crop()
+    class LabelCrop(
+        override val points: Array<Point>,
+        override val transcription: String? = null,
+        override val confidence: Double,
+    ) : Crop()
 }
