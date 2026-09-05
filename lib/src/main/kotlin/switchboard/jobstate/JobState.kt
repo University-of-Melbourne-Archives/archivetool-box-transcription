@@ -16,10 +16,14 @@ val GENERATED_PATH_REL_PAT: Regex = "^${Regex.escape(GENERATED_PATH)}".toRegex()
 
 // Expects File Names relative to root dir.
 abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutableMapOf()) {
-    fun validFiles(type: Interaction): Map<Path, JobFile> = files.filter { p ->
-        p.toPair().takeUnless { it.second != null && type.isEligible(it.map(::noop, { it!! })) } ==
-            null
-    }.mapValues { it.value!! }
+    fun validFiles(type: Interaction): Map<Path, JobFile> =
+        files
+            .filter { p ->
+                p.toPair().takeUnless {
+                    it.second != null && type.isEligible(it.map(::noop, { it!! }))
+                } == null
+            }
+            .mapValues { it.value!! }
 
     // TODO maybe check if state transitions are valid?
     fun update(partial: Map<Path, JobFile>) {

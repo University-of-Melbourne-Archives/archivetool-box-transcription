@@ -13,9 +13,9 @@ class PythonOCRInteraction : OCRInteraction {
 class MockOCRInteraction : OCRInteraction {
     override fun generateOCR(files: Map<Path, JobFile>): Map<Path, JobFile> {
         Log.error("Running Mock OCR, nothing will be done.")
-        files.forEach { (path, file) -> file.crops.forEach {
-            Log.debug("Transcribing $path:${it.key}")
-        } }
+        files.forEach { (path, file) ->
+            file.crops.forEach { Log.debug("Transcribing $path:${it.key}") }
+        }
         return mapOf()
     }
 }

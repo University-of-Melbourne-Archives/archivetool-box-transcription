@@ -50,7 +50,7 @@ interface ImageManipulationInteraction : Interaction {
             require(
                 // If we have a Flatten, we already crop so we cant have both.
                 !(children.any { it is FlattenInteraction }) ||
-                    !(children.any { it is CropInteraction }),
+                    !(children.any { it is CropInteraction })
             ) {
                 "FlattenInteraction already depends on CropInteraction and cannot compose with it."
             }

@@ -210,9 +210,11 @@ open class AbstractSwitchboard(
 
     fun generateExport(directory: Path) {
         val state: JobState? = job.read(directory)
-        export.export(state
-            ?.validFiles(export)
-            ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
-            .expect("Could not load list of valid files."))
+        export.export(
+            state
+                ?.validFiles(export)
+                ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                .expect("Could not load list of valid files.")
+        )
     }
 }
