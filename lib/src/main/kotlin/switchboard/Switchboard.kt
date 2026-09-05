@@ -24,7 +24,7 @@ import au.edu.unimelb.archivetool.switchboard.interactions.ReviewGUIInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ReviewPreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.StatusInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.StdOutExportInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.UnimplementedStatusInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.StdoutStatusInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
@@ -39,7 +39,7 @@ object Switchboard :
     AbstractSwitchboard(
         LogInitInteraction(),
         JSONJobStateInteraction(),
-        UnimplementedStatusInteraction(),
+        StdoutStatusInteraction(),
         PythonCreatePreviewInteraction(),
         ReviewGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), MonochromifyInteraction()),
@@ -51,7 +51,7 @@ object MockSwitchboard :
     AbstractSwitchboard(
         MockInitInteraction(),
         MemoryJobStateInteraction(),
-        UnimplementedStatusInteraction(),
+        StdoutStatusInteraction(),
         MockCreatePreviewInteraction(),
         MockReviewInteraction(),
         MockImageManipulationInteraction(),
@@ -204,8 +204,15 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun createOCR() {
-        ocr.generateOCR()
+    fun createOCR(directory: Path) {
+        val state: JobState? = job.read(directory)
+        val toUpdate =
+            ocr.generateOCR(
+                state
+                    ?.validFiles(ocr)
+                    ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                    .expect("Could not load list of valid files.")
+            )
     }
 
     fun generateExport(directory: Path) {
