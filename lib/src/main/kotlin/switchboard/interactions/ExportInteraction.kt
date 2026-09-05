@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
+import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import java.nio.file.Path
 
@@ -37,4 +38,18 @@ interface ExportInteraction : Interaction {
 
     override fun isEligible(file: Pair<Path, JobFile>): Boolean =
         file.second.crops.all { it.value.transcription != null }
+
+    companion object : ComposableInteraction<ExportInteraction> {
+        override fun compose(vararg children: ExportInteraction): ExportInteraction {
+            return object : ExportInteraction {
+                override fun export(files: Map<Path, JobFile>) {
+                    children.forEach { it.export(files) }
+                }
+
+                override fun isEligible(file: Pair<Path, JobFile>): Boolean = children.all {
+                    it.isEligible(file)
+                }
+            }
+        }
+    }
 }
