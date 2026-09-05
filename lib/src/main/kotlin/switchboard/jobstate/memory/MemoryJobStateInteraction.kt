@@ -30,7 +30,7 @@ class MemoryJobStateInteraction : JobStateInteraction {
 
     companion object : JobStateInteractionCompanion {
         override fun present(folder: Path): Boolean =
-            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeUnless {
+            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeIf {
                 it.exists() && it.isReadable() && it.isWritable()
             } == null
     }

@@ -19,7 +19,7 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
     fun validFiles(type: Interaction): Map<Path, JobFile> =
         files
             .filter { p ->
-                p.toPair().takeUnless {
+                p.toPair().takeIf {
                     it.second != null && type.isEligible(it.map(::noop, { it!! }))
                 } == null
             }
@@ -69,7 +69,7 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
     private fun index(file: Path) {
         files[file] =
             file
-                .takeUnless {
+                .takeIf {
                     // Don't bother indexing non-images or files we can't read.
                     // Though we still need to store them as
                     it.isReadable() && it.isImage()

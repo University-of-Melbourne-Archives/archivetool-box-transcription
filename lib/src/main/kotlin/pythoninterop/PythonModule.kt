@@ -42,7 +42,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
                             dirPath
                                 .walk()
                                 .map {
-                                    it.takeUnless { it.exists() && it.isRegularFile() }
+                                    it.takeIf { it.exists() && it.isRegularFile() }
                                         ?.relativeTo(jarFs.getPath("/python"))
                                 }
                                 .filter { it?.extension == "py" }
@@ -54,7 +54,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
                         path
                             .walk()
                             .map {
-                                it.takeUnless { it.exists() && it.isRegularFile() }
+                                it.takeIf { it.exists() && it.isRegularFile() }
                                     ?.relativeTo(
                                         {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
                                     )
@@ -111,7 +111,7 @@ data class MemberSet(
 
             members[index] = out
 
-            out.takeUnless { v -> filters.all { it(v) } }
+            out.takeIf { v -> filters.all { it(v) } }
         }
     }
 

@@ -26,7 +26,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         folder
             .resolve(GENERATED_PATH)
             .resolve("job.json")
-            .takeUnless { it.notExists() && it.parent.isWritable() }
+            .takeIf { it.notExists() && it.parent.isWritable() }
             .expect("Could not create new Job State.")
             .createFile(asFileAttribute(fromString("rw-rw-r--")))
 
@@ -39,7 +39,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         getCache<JSONJobState>().getOrTry(folder) {
             try {
                 val path =
-                    folder.resolve(GENERATED_PATH).resolve("job.json").takeUnless {
+                    folder.resolve(GENERATED_PATH).resolve("job.json").takeIf {
                         it.exists() && it.isReadable() && it.isWritable()
                     }
                 JSONJobState(folder, Json.parseToJsonElement(path!!.readText()))
@@ -59,7 +59,7 @@ class JSONJobStateInteraction : JobStateInteraction {
         folder
             .resolve(GENERATED_PATH)
             .resolve("job.json")
-            .takeUnless { it.isWritable() }
+            .takeIf { it.isWritable() }
             .expect("Could not write state to file: $this")
             .writeText(
                 s,
@@ -74,7 +74,7 @@ class JSONJobStateInteraction : JobStateInteraction {
 
     companion object : JobStateInteractionCompanion {
         override fun present(folder: Path): Boolean =
-            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeUnless {
+            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeIf {
                 it.exists() && it.isReadable() && it.isWritable()
             } == null
     }
