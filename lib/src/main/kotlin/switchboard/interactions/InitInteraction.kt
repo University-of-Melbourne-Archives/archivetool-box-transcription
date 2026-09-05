@@ -14,6 +14,15 @@ class LogInitInteraction : InitInteraction {
     override fun isEligible(file: Pair<Path, JobFile>): Boolean = false
 }
 
+class MockInitInteraction : InitInteraction {
+    override fun init(logConsumers: Set<LogConsumer>) {
+        Log.warn("Running Mock Init Interaction")
+    }
+
+    // This is an interaction that doesn't need files.
+    override fun isEligible(file: Pair<Path, JobFile>): Boolean = false
+}
+
 interface InitInteraction : Interaction {
     // this defines a bunch of params, you don't have to use them all lol
     fun init(logConsumers: Set<LogConsumer>)
