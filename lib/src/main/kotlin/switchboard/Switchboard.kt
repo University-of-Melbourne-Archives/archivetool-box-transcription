@@ -4,7 +4,6 @@ import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.CropInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
@@ -41,7 +40,7 @@ object Switchboard :
         UnimplementedStatusInteraction(),
         PythonCreatePreviewInteraction(),
         ReviewGUIInteraction(),
-        ImageManipulationInteraction.compose(CropInteraction(), FlattenInteraction()),
+        FlattenInteraction(),
         PythonOCRInteraction(),
         CSVExportInteraction(),
     )
