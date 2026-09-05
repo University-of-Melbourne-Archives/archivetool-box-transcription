@@ -13,8 +13,10 @@ import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.LogInitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.MockCreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.MockImageManipulationInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.MockInitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.MockOCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.MockReviewInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.MonochromifyInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonCreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.PythonOCRInteraction
@@ -40,14 +42,14 @@ object Switchboard :
         UnimplementedStatusInteraction(),
         PythonCreatePreviewInteraction(),
         ReviewGUIInteraction(),
-        FlattenInteraction(),
+        ImageManipulationInteraction.compose(FlattenInteraction(), MonochromifyInteraction()),
         PythonOCRInteraction(),
         CSVExportInteraction(),
     )
 
 object MockSwitchboard :
     AbstractSwitchboard(
-        LogInitInteraction(),
+        MockInitInteraction(),
         MemoryJobStateInteraction(),
         UnimplementedStatusInteraction(),
         MockCreatePreviewInteraction(),
@@ -190,15 +192,27 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun manipulateImages() {
-        manip.apply()
+    fun manipulateImages(directory: Path) {
+        val state: JobState? = job.read(directory)
+        val toUpdate =
+            manip.manipulate(
+                state
+                    ?.validFiles(manip)
+                    ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                    .expect("Could not load list of valid files.")
+            )
+        state?.update(toUpdate)
     }
 
     fun createOCR() {
         ocr.generateOCR()
     }
 
-    fun generateExport() {
-        export.export()
+    fun generateExport(directory: Path) {
+        val state: JobState? = job.read(directory)
+        export.export(state
+            ?.validFiles(export)
+            ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+            .expect("Could not load list of valid files."))
     }
 }
