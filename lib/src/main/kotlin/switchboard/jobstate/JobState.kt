@@ -2,6 +2,8 @@ package au.edu.unimelb.archivetool.switchboard.jobstate
 
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
+import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobState
+import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
 import au.edu.unimelb.archivetool.util.map
 import au.edu.unimelb.archivetool.util.noop
 import java.nio.file.Path
@@ -16,14 +18,22 @@ val GENERATED_PATH_REL_PAT: Regex = "^${Regex.escape(GENERATED_PATH)}".toRegex()
 
 // Expects File Names relative to root dir.
 abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutableMapOf()) {
-    fun validFiles(type: Interaction): Map<Path, JobFile> =
-        files
-            .filter { p ->
-                p.toPair().takeIf {
-                    it.second != null && type.isEligible(it.map(::noop, { it!! }))
-                } == null
-            }
-            .mapValues { it.value!! }
+    abstract val variant: JobStateVariant<*>
+
+    fun validFiles(type: Interaction, allowNulls: Boolean = false): Map<Path, JobFile> {
+        Log.trace("Complete file list: ${files.keys}")
+        val valid =
+            files
+                .filter { p ->
+                    p.toPair().takeIf {
+                        (allowNulls || it.second != null) &&
+                            (it.second == null || type.isEligible(it.map(::noop, { it!! })))
+                    } != null
+                }
+                .mapValues { it.value ?: JobFile() }
+        Log.trace("Valid files: ${valid.keys}")
+        return valid
+    }
 
     // TODO maybe check if state transitions are valid?
     fun update(partial: Map<Path, JobFile>) {
@@ -49,7 +59,9 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
             val deletedFiles = files.keys.filter { !currentFiles.contains(it) }
 
             // TODO Allow ignoring missing, removing deleted or suppressing warning or something.
-            Log.warn("Folder has ${missingFiles.count()} files yet to be indexed. Indexing...")
+            Log.warn(
+                "Folder $directory has ${missingFiles.count()} files yet to be indexed. Indexing..."
+            )
             missingFiles.forEach {
                 Log.info("\t$it")
                 index(it)
@@ -57,7 +69,9 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
             Log.info("Done Indexing.")
             Log.warn("${deletedFiles.count()} files have been deleted since indexing.")
         } else {
-            Log.info("Folder has ${missingFiles.count()} files to be indexed. Indexing...")
+            Log.info(
+                "Folder $directory has ${missingFiles.count()} files to be indexed. Indexing..."
+            )
             missingFiles.forEach {
                 Log.debug("\t$it")
                 index(it)
@@ -88,4 +102,9 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
     }
 
     internal open fun ignore(file: Path): Boolean = defaultIgnore(file)
+}
+
+sealed interface JobStateVariant <T: JobState> {
+    object JSON : JobStateVariant<JSONJobState>
+    object Memory : JobStateVariant<ConcreteJobState>
 }

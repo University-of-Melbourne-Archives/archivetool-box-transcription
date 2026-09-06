@@ -2,29 +2,7 @@ package au.edu.unimelb.archivetool.switchboard
 
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogConsumer
-import au.edu.unimelb.archivetool.switchboard.interactions.CSVExportInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.ExportInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.FlattenInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
-import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.LogInitInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.MockCreatePreviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.MockImageManipulationInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.MockInitInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.MockOCRInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.MockReviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.MonochromifyInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.OCRInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.PythonCreatePreviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.PythonOCRInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.ReviewGUIInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.ReviewPreviewInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.StatusInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.StdOutExportInteraction
-import au.edu.unimelb.archivetool.switchboard.interactions.StdoutStatusInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.*
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
@@ -166,8 +144,8 @@ open class AbstractSwitchboard(
             }
 
         val inFiles =
-            state?.validFiles(createPreview)?.also {
-                it.takeIf { it.isEmpty() }.expect("No valid files for this step.")
+            state?.validFiles(createPreview, allowNulls = true)?.also {
+                it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
             }
 
         val toUpdate =
@@ -186,7 +164,9 @@ open class AbstractSwitchboard(
             reviewPreview.review(
                 state
                     ?.validFiles(reviewPreview)
-                    ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                    ?.also {
+                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+                    }
                     .expect("Could not load list of valid files.")
             )
         state?.update(toUpdate)
@@ -198,7 +178,7 @@ open class AbstractSwitchboard(
             manip.manipulate(
                 state
                     ?.validFiles(manip)
-                    ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                    ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
                     .expect("Could not load list of valid files.")
             )
         state?.update(toUpdate)
@@ -210,7 +190,7 @@ open class AbstractSwitchboard(
             ocr.generateOCR(
                 state
                     ?.validFiles(ocr)
-                    ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                    ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
                     .expect("Could not load list of valid files.")
             )
     }
@@ -220,7 +200,7 @@ open class AbstractSwitchboard(
         export.export(
             state
                 ?.validFiles(export)
-                ?.also { it.takeIf { it.isEmpty() }.expect("No valid files for this step.") }
+                ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
                 .expect("Could not load list of valid files.")
         )
     }
