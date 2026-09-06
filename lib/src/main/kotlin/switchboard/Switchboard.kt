@@ -34,7 +34,7 @@ object MockSwitchboard :
         MockReviewInteraction(),
         MockImageManipulationInteraction(),
         MockOCRInteraction(),
-        StdOutExportInteraction(),
+        LogExportInteraction(),
     )
 
 // Acts as a dependency-injected base. Allows for 'hot-swappable' behaviors.

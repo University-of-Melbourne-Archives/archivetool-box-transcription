@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
+import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import java.nio.file.Path
 
@@ -12,6 +13,17 @@ class CSVExportInteraction : ExportInteraction {
 class StdOutExportInteraction : ExportInteraction {
     override fun export(files: Map<Path, JobFile>) {
         println(
+            StringExportInteraction().run {
+                export(files)
+                get()
+            }
+        )
+    }
+}
+
+class LogExportInteraction : ExportInteraction {
+    override fun export(files: Map<Path, JobFile>) {
+        Log.trace(
             StringExportInteraction().run {
                 export(files)
                 get()
