@@ -37,7 +37,9 @@ class StringExportInteraction : ExportInteraction {
 
     override fun export(files: Map<Path, JobFile>) {
         files.forEach { file ->
-            file.value.crops.forEach { (id, crop) -> builder.append("$id: ${crop.transcription}") }
+            file.value.crops.forEach { (id, crop) ->
+                builder.append("${file.key}::$id: ${crop.transcription};;")
+            }
         }
     }
 
