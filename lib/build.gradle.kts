@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.bundles.kotlinxEcosystem)
     implementation(libs.bundles.polyglot)
     testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinxCoroutinesTest)
 }
 
 sourceSets {
