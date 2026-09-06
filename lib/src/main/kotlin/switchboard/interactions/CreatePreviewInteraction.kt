@@ -24,7 +24,7 @@ class MockCreatePreviewInteraction : CreatePreviewInteraction {
         val fileCountLimit = 15
         val fileList =
             files.joinToString(
-                prefix = "[\n",
+                prefix = "[\n\t",
                 postfix = "]",
                 separator = ",\n\t",
                 limit = fileCountLimit,
