@@ -7,6 +7,7 @@ import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteractionCo
 import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -22,6 +23,8 @@ import kotlin.io.path.writeText
 import kotlinx.serialization.json.Json
 
 class JSONJobStateInteraction : JobStateInteraction {
+    val variant = JobStateVariant.JSON
+
     override fun create(folder: Path): JobState {
         folder
             .resolve(GENERATED_PATH)
@@ -30,13 +33,14 @@ class JSONJobStateInteraction : JobStateInteraction {
             .expect("Could not create new Job State.")
             .createFile(asFileAttribute(fromString("rw-rw-r--")))
 
-        return getCache<JSONJobState>().put(folder, JSONJobState(folder))
+        return getCache<JobStateVariant.JSON, JSONJobState>(variant)
+            .put(folder, JSONJobState(folder))
     }
 
     // TODO: Some sort of check for a file hash or something to detect user file changes that miss
     // cache.
     override fun read(folder: Path): JobState? =
-        getCache<JSONJobState>().getOrTry(folder) {
+        getCache<JobStateVariant.JSON, JSONJobState>(variant).getOrTry(folder) {
             try {
                 val path =
                     folder.resolve(GENERATED_PATH).resolve("job.json").takeIf {
@@ -51,7 +55,7 @@ class JSONJobStateInteraction : JobStateInteraction {
 
     override fun write(folder: Path) {
         val s =
-            getCache<JSONJobState>()
+            getCache<JobStateVariant.JSON, JSONJobState>(variant)
                 .get(folder)
                 .expect("Tried to write non-existent JSON State.")
                 .toJsonElement()

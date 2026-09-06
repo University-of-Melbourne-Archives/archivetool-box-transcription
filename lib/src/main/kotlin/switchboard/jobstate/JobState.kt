@@ -104,7 +104,8 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
     internal open fun ignore(file: Path): Boolean = defaultIgnore(file)
 }
 
-sealed interface JobStateVariant <T: JobState> {
+sealed interface JobStateVariant<T : JobState> {
     object JSON : JobStateVariant<JSONJobState>
+
     object Memory : JobStateVariant<ConcreteJobState>
 }

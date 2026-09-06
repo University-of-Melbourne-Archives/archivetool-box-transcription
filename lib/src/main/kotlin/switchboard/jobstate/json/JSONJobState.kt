@@ -3,6 +3,7 @@ package au.edu.unimelb.archivetool.switchboard.jobstate.json
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.util.map
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -51,6 +52,8 @@ class JSONJobState private constructor(val directory: Path, fmap: MutableMap<Pat
     constructor(dir: Path) : this(dir, mutableMapOf()) {
         scan(dir, initial = true)
     }
+
+    override val variant = JobStateVariant.JSON
 
     fun toJsonElement(): JsonElement {
         return JsonObject(
