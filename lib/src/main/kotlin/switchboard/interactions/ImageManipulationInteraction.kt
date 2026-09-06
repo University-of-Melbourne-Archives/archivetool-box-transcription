@@ -7,7 +7,7 @@ import java.nio.file.Path
 class MockImageManipulationInteraction : ImageManipulationInteraction {
     override fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile> {
         Log.error("Using mock image manipulation tool, nothing will happen.")
-        files.keys.forEach { Log.info("Manipulating Image $it") }
+        files.keys.forEach { Log.debug("Manipulating Image $it") }
         return mapOf()
     }
 }
