@@ -178,7 +178,9 @@ open class AbstractSwitchboard(
             manip.manipulate(
                 state
                     ?.validFiles(manip)
-                    ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
+                    ?.also {
+                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+                    }
                     .expect("Could not load list of valid files.")
             )
         state?.update(toUpdate)
@@ -190,7 +192,9 @@ open class AbstractSwitchboard(
             ocr.generateOCR(
                 state
                     ?.validFiles(ocr)
-                    ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
+                    ?.also {
+                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+                    }
                     .expect("Could not load list of valid files.")
             )
     }

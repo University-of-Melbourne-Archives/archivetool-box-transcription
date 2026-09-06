@@ -5,10 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-class JobFile {
-    val crops: MutableMap<String, Crop> = mutableMapOf()
-    val approved: Boolean = false
-
+class JobFile(val crops: MutableMap<String, Crop> = mutableMapOf(), val approved: Boolean = false) {
     @Serializable
     sealed class Crop {
         abstract val points: Rectangle
