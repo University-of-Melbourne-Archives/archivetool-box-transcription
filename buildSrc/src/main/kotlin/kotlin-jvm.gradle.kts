@@ -24,6 +24,13 @@ kotlin {
 ktfmt {
     kotlinLangStyle()
 }
+// Ignore generated files
+tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask> {
+    exclude("*.generated.kt")
+}
+tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask> {
+    exclude("*.generated.kt")
+}
 
 tasks.withType<Test>().configureEach {
     // Configure all test Gradle tasks to use JUnitPlatform.
