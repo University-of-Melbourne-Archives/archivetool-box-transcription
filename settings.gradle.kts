@@ -4,10 +4,11 @@
 // https://docs.gradle.org/current/userguide/settings_file_basics.html
 
 dependencyResolutionManagement {
-    // Use Maven Central as the default repository (where Gradle will download dependencies) in all subprojects.
+    // Use Maven Central and the Gradle Plugin Portal as the default repository (where Gradle will download dependencies) in all subprojects.
     @Suppress("UnstableApiUsage")
     repositories {
         mavenCentral()
+        gradlePluginPortal()
     }
 }
 
