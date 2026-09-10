@@ -16,54 +16,43 @@ import kotlin.io.path.listDirectoryEntries
 // Handles: archivetool run
 class RunCommand : Command(name = "run") {
 
-    override fun help(context: Context): String = """
+    override fun help(context: Context): String =
+        """
         Run the complete archive processing workflow.
 
         Start a new job with input and job directories, or resume an existing job.
-    """.trimIndent()
+        """
+            .trimIndent()
 
     // Directory containing the original archive images for a new job.
-    val inputDirectory by option(
-        "-i",
-        "--input-directory",
-        help = "A directory containing photos of archive boxes."
-    ).path(
-        mustExist = true,
-        canBeFile = false,
-        mustBeReadable = true
-    )
+    val inputDirectory by
+        option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
+            .path(mustExist = true, canBeFile = false, mustBeReadable = true)
 
     // Directory used to store a new job.
-    val jobDirectory by option(
-        "-o",
-        "--job-directory",
-        help = "A new directory, or an existing empty directory."
-    ).path(
-        mustExist = false,
-        canBeFile = false
-    ).check("must be new or an empty, readable and writable directory") {
-        !it.exists() ||
-            (it.isReadable() && it.isWritable() && it.listDirectoryEntries().isEmpty())
-    }
+    val jobDirectory by
+        option("-o", "--job-directory", help = "A new directory, or an existing empty directory.")
+            .path(mustExist = false, canBeFile = false)
+            .check("must be new or an empty, readable and writable directory") {
+                !it.exists() ||
+                    (it.isReadable() && it.isWritable() && it.listDirectoryEntries().isEmpty())
+            }
 
     // Existing job directory to resume from its saved state.
-    val resumeDirectory by option(
-        "--resume",
-        metavar = "job-directory",
-        help = "Resume an existing archive job."
-    ).path(
-        mustExist = true,
-        canBeFile = false,
-        mustBeReadable = true
-    )
+    val resumeDirectory by
+        option("--resume", metavar = "job-directory", help = "Resume an existing archive job.")
+            .path(mustExist = true, canBeFile = false, mustBeReadable = true)
 
     // Optional threshold for automatically approving detected previews.
-    val autoApproveThreshold by option(
-        "-A",
-        "--auto-approve-threshold",
-        metavar = "threshold",
-        help = "Automatically approve previews with confidence at or above <threshold>%."
-    ).int().restrictTo(0, 100)
+    val autoApproveThreshold by
+        option(
+                "-A",
+                "--auto-approve-threshold",
+                metavar = "threshold",
+                help = "Automatically approve previews with confidence at or above <threshold>%.",
+            )
+            .int()
+            .restrictTo(0, 100)
 
     override fun run() {
         if (resumeDirectory != null && (inputDirectory != null || jobDirectory != null)) {

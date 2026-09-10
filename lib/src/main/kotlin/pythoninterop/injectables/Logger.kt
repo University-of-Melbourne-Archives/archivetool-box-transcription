@@ -3,8 +3,8 @@ package au.edu.unimelb.archivetool.pythoninterop.injectables
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.pythoninterop.Injectable
-import org.graalvm.polyglot.Context
 import java.util.function.Consumer
+import org.graalvm.polyglot.Context
 
 /*
 The following is a stub for using this in Python Code:

@@ -7,8 +7,7 @@ import com.github.ajalt.clikt.core.Context
 // Handles: archivetool preview review
 class PreviewReviewCommand : Command(name = "review") {
 
-    override fun help(context: Context): String =
-        "Open pending previews for review."
+    override fun help(context: Context): String = "Open pending previews for review."
 
     // Existing job directory containing the previews.
     val jobDir by jobDirectory()

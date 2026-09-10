@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.app.cli.helpers
 
-import au.edu.unimelb.archivetool.logging.LogLevel
 import com.github.ajalt.clikt.parameters.options.OptionWithValues
 import com.github.ajalt.clikt.parameters.options.RawOption
 import com.github.ajalt.clikt.parameters.options.transformAll
@@ -18,16 +17,13 @@ fun <T> RawOption.countedTransform(
     clamp: Boolean = true,
 
     // Converts the final count into the required result.
-    mapper: (Int) -> T
-
+    mapper: (Int) -> T,
 ): OptionWithValues<T, Int, Int> {
 
     return int()
 
         // Treat each option occurrence as a count of one.
-        .transformValues(0..0) {
-            it.lastOrNull() ?: 1
-        }
+        .transformValues(0..0) { it.lastOrNull() ?: 1 }
 
         // Add all occurrences together.
         .transformAll {
@@ -35,10 +31,7 @@ fun <T> RawOption.countedTransform(
 
             // Reject excessive repetitions when clamping is disabled.
             if (!clamp && n > limit) {
-                fail(
-                    context.localization
-                        .countedOptionExceededLimit(n, limit)
-                )
+                fail(context.localization.countedOptionExceededLimit(n, limit))
             }
 
             // Limit the count and convert it into the final value.

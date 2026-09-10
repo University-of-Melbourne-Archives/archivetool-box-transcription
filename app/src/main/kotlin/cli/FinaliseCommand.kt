@@ -7,11 +7,13 @@ import com.github.ajalt.clikt.core.Context
 // Handles: archivetool finalise [job-directory]
 class FinaliseCommand : Command(name = "finalise") {
 
-    override fun help(context: Context): String = """
+    override fun help(context: Context): String =
+        """
         Finalise an approved job and generate its CSV output.
 
         Runs image processing, OCR and CSV export through the Switchboard.
-    """.trimIndent()
+        """
+            .trimIndent()
 
     // Directory containing an existing archive job.
     val jobDir by jobDirectory()

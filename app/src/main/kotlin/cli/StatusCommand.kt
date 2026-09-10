@@ -7,11 +7,13 @@ import com.github.ajalt.clikt.core.Context
 // Handles: archivetool status [job-directory]
 class StatusCommand : Command(name = "status") {
 
-    override fun help(context: Context): String = """
+    override fun help(context: Context): String =
+        """
         Show the current status of an archive job.
 
         Reports the current stage and the number of approved and pending previews.
-    """.trimIndent()
+        """
+            .trimIndent()
 
     // Directory containing an existing archive job.
     val jobDir by jobDirectory()

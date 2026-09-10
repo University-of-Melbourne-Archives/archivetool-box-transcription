@@ -6,21 +6,20 @@ import com.github.ajalt.clikt.output.MordantHelpFormatter
 import com.github.ajalt.mordant.rendering.Widget
 
 // Customises the layout produced by --help.
-class CustomHelpFormatter(
-    context: Context,
-) : MordantHelpFormatter(
-    context,
+class CustomHelpFormatter(context: Context) :
+    MordantHelpFormatter(
+        context,
 
-    // Show option default values in the help output.
-    showDefaultValues = true,
+        // Show option default values in the help output.
+        showDefaultValues = true,
 
-    // Mark required arguments and options.
-    showRequiredTag = true
-) {
+        // Mark required arguments and options.
+        showRequiredTag = true,
+    ) {
     // Define the order of help sections:
     // Arguments → Options → Commands
     override fun collectParameterSections(
-        parameters: List<ParameterHelp>,
+        parameters: List<ParameterHelp>
     ): List<RenderedSection<Widget>> = buildList {
         addAll(renderArguments(parameters))
         addAll(renderOptions(parameters))
@@ -28,15 +27,11 @@ class CustomHelpFormatter(
     }
 
     // Organise options into named groups.
-    override fun renderOptions(
-        parameters: List<ParameterHelp>
-    ): List<RenderedSection<Widget>> {
+    override fun renderOptions(parameters: List<ParameterHelp>): List<RenderedSection<Widget>> {
 
         // Find the available option-group descriptions.
         val groupsByName =
-            parameters
-                .filterIsInstance<ParameterHelp.Group>()
-                .associateBy { it.name }
+            parameters.filterIsInstance<ParameterHelp.Group>().associateBy { it.name }
 
         return parameters
 
@@ -55,21 +50,11 @@ class CustomHelpFormatter(
 
             // Render each option group as a help section.
             .map { (title, params) ->
-                val renderedTitle =
-                    renderSectionTitle(
-                        title ?: localization.optionsTitle()
-                    )
+                val renderedTitle = renderSectionTitle(title ?: localization.optionsTitle())
 
-                val content =
-                    renderOptionGroup(
-                        groupsByName[title]?.help,
-                        params
-                    )
+                val content = renderOptionGroup(groupsByName[title]?.help, params)
 
-                RenderedSection(
-                    styleSectionTitle(renderedTitle),
-                    content
-                )
+                RenderedSection(styleSectionTitle(renderedTitle), content)
             }
             .toList()
     }
