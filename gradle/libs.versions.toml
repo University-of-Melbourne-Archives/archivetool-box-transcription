@@ -7,6 +7,7 @@ kotlin = "2.4.0"
 kotlinxDatetime = "0.8.0"
 kotlinxSerializationJSON = "1.11.0"
 kotlinxCoroutines = "1.10.2"
+javacv = "1.5.14"
 polyglot = "25.0.3"
 
 [libraries]
@@ -20,7 +21,8 @@ kotlinxCoroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-tes
 polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" }
 polyglot-python = { module = "org.graalvm.polyglot:python", version.ref = "polyglot" }
 
-opencv = { module = "org.openpnp:opencv", version = "4.9.0-0" }
+javacv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv" }
+javacv-opencv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv" }
 
 # Libraries can be bundled together for easier import
 [bundles]

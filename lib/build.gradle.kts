@@ -39,7 +39,7 @@ dependencies {
     // (`gradle/libs.versions.toml`).
     implementation(libs.bundles.kotlinEcosystem)
     implementation(libs.bundles.polyglot)
-    implementation(libs.opencv)
+    implementation(libs.javacv)
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
 }
