@@ -108,6 +108,18 @@ abstract class JobState(
     }
 
     internal open fun ignore(file: Path): Boolean = defaultIgnore(file)
+
+    companion object {
+        fun generatedCropPaths(file: JobRelativePath, data: JobFile): Set<JobRelativePath> {
+            if (data.crops.isEmpty()) return setOf()
+            return data.crops.keys
+                // TODO: Remove extension from the middle resolution here.
+                .map {
+                    JobRelativePath(file.rootDirectory, Path(GENERATED_PATH).resolve(file.relative.pathString).resolve(it + file.relative.extension).relativeTo(file.rootDirectory))
+                }
+                .toSet()
+        }
+    }
 }
 
 sealed interface JobStateVariant<T : JobState> {
