@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":lib"))
 
     implementation(libs.bundles.clikt)
+    testImplementation(kotlin("test"))
 }
 
 application {

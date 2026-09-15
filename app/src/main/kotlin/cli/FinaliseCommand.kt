@@ -1,22 +1,25 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
-import au.edu.unimelb.archivetool.app.cli.helpers.jobDirectory
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.types.path
 
-// Handles: archivetool finalise [job-directory]
 class FinaliseCommand : Command(name = "finalise") {
 
     override fun help(context: Context): String =
         """
         Finalise an approved job and generate its CSV output.
 
-        Runs image processing, OCR and CSV export through the Switchboard.
+        The Switchboard loads the current job state and writes the export to the requested path.
         """
             .trimIndent()
 
-    // Directory containing an existing archive job.
-    val jobDir by jobDirectory()
+    val outputPath by
+    option("-o", "--output", help = "Path for the generated CSV file.")
+        .path(mustExist = false, canBeDir = false)
+        .required()
 
     override fun run() {
         TODO("Connect this command to the Switchboard")
