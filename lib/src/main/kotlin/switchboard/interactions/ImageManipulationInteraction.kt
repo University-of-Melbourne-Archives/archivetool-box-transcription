@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CropInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 
@@ -9,20 +11,6 @@ class MockImageManipulationInteraction : ImageManipulationInteraction {
         Log.error("Using mock image manipulation tool, nothing will happen.")
         files.keys.forEach { Log.debug("Manipulating Image ${it.relative}") }
         return mapOf()
-    }
-}
-
-class CropInteraction : ImageManipulationInteraction {
-    override fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
-        TODO("Not yet implemented")
-    }
-}
-
-class FlattenInteraction : ImageManipulationInteraction {
-    override fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
-        // These are technically composable, but flatten depends on crop.
-        CropInteraction().manipulate(files)
-        TODO("Not yet implemented")
     }
 }
 

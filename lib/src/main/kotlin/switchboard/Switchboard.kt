@@ -4,6 +4,7 @@ import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction

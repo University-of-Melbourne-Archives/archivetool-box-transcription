@@ -115,9 +115,23 @@ abstract class JobState(
             return data.crops.keys
                 // TODO: Remove extension from the middle resolution here.
                 .map {
-                    JobRelativePath(file.rootDirectory, Path(GENERATED_PATH).resolve(file.relative.pathString).resolve(it + file.relative.extension).relativeTo(file.rootDirectory))
+                    JobRelativePath(
+                        file.rootDirectory,
+                        Path(GENERATED_PATH)
+                            .resolve(file.relative.pathString)
+                            .resolve("$it.${file.relative.extension}"),
+                    )
                 }
                 .toSet()
+        }
+
+        fun cropPath(file: JobRelativePath, crop: String): JobRelativePath {
+            return JobRelativePath(
+                file.rootDirectory,
+                Path(GENERATED_PATH)
+                    .resolve(file.relative.pathString)
+                    .resolve("$crop.${file.relative.extension}"),
+            )
         }
     }
 }
