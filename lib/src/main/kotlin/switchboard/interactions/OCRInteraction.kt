@@ -2,28 +2,28 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
-import java.nio.file.Path
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 
 class PythonOCRInteraction : OCRInteraction {
-    override fun generateOCR(files: Map<Path, JobFile>): Map<Path, JobFile> {
+    override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         TODO("Concrete Implementation Incomplete.")
     }
 }
 
 class MockOCRInteraction : OCRInteraction {
-    override fun generateOCR(files: Map<Path, JobFile>): Map<Path, JobFile> {
+    override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         Log.error("Running Mock OCR, nothing will be done.")
         files.forEach { (path, file) ->
-            file.crops.forEach { Log.debug("Transcribing $path::${it.key}") }
+            file.crops.forEach { Log.debug("Transcribing ${path.relative}::${it.key}") }
         }
         return mapOf()
     }
 }
 
 interface OCRInteraction : Interaction {
-    fun generateOCR(files: Map<Path, JobFile>): Map<Path, JobFile>
+    fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile>
 
-    override fun isEligible(file: Pair<Path, JobFile>): Boolean {
+    override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean {
         return file.second.let { jobFile ->
             jobFile.crops.run { isNotEmpty() && values.any { it.transcription == null } }
         }

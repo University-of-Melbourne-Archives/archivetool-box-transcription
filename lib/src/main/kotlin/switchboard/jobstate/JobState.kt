@@ -7,6 +7,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
 import au.edu.unimelb.archivetool.util.map
 import au.edu.unimelb.archivetool.util.noop
 import java.nio.file.Path
+import kotlin.io.path.Path
 import kotlin.io.path.extension
 import kotlin.io.path.isReadable
 import kotlin.io.path.pathString
@@ -17,13 +18,17 @@ const val GENERATED_PATH = ".archivetool_generated/"
 val GENERATED_PATH_REL_PAT: Regex = "^${Regex.escape(GENERATED_PATH)}".toRegex()
 
 // Expects File Names relative to root dir.
-abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutableMapOf()) {
+abstract class JobState(
+    val rootDir: Path,
+    protected var files: MutableMap<Path, JobFile?> = mutableMapOf(),
+) {
     abstract val variant: JobStateVariant<*>
 
-    fun validFiles(type: Interaction, allowNulls: Boolean = false): Map<Path, JobFile> {
+    fun validFiles(type: Interaction, allowNulls: Boolean = false): Map<JobRelativePath, JobFile> {
         Log.trace("Complete file list: ${files.keys}")
         val valid =
             files
+                .mapKeys { JobRelativePath(rootDir, it.key) }
                 .filter { p ->
                     p.toPair().takeIf {
                         (allowNulls || it.second != null) &&
@@ -36,9 +41,10 @@ abstract class JobState(protected var files: MutableMap<Path, JobFile?> = mutabl
     }
 
     // TODO maybe check if state transitions are valid?
-    fun update(partial: Map<Path, JobFile>) {
+    fun update(partial: Map<JobRelativePath, JobFile>) {
         val toUpdate =
             partial
+                .mapKeys { it.key.relative }
                 .filterKeys { files.keys.contains(it) }
                 .mapValues {
                     if (files[it.key] == null) {

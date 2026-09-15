@@ -3,7 +3,7 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
-import java.nio.file.Path
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 
 class LogInitInteraction : InitInteraction {
     override fun init(logConsumers: Set<LogConsumer>) {
@@ -11,7 +11,7 @@ class LogInitInteraction : InitInteraction {
     }
 
     // This is an interaction that doesn't need files.
-    override fun isEligible(file: Pair<Path, JobFile>): Boolean = false
+    override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean = false
 }
 
 class MockInitInteraction : InitInteraction {
@@ -20,7 +20,7 @@ class MockInitInteraction : InitInteraction {
     }
 
     // This is an interaction that doesn't need files.
-    override fun isEligible(file: Pair<Path, JobFile>): Boolean = false
+    override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean = false
 }
 
 interface InitInteraction : Interaction {
@@ -34,9 +34,10 @@ interface InitInteraction : Interaction {
                     children.forEach { it.init(logConsumers) }
                 }
 
-                override fun isEligible(file: Pair<Path, JobFile>): Boolean = children.all {
-                    it.isEligible(file)
-                }
+                override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
+                    children.all {
+                        it.isEligible(file)
+                    }
             }
         }
     }

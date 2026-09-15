@@ -3,10 +3,13 @@ package au.edu.unimelb.archivetool.switchboard
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
+import au.edu.unimelb.archivetool.util.nullify
 import java.nio.file.Path
+import kotlin.io.path.Path
 
 // Implements a switchboard with default options.
 // You should never use this in its global scope,
@@ -20,9 +23,9 @@ object Switchboard :
         StdoutStatusInteraction(),
         PythonCreatePreviewInteraction(),
         ReviewGUIInteraction(),
-        ImageManipulationInteraction.compose(FlattenInteraction(), MonochromifyInteraction()),
+        ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
-        CSVExportInteraction(),
+        CSVExportInteraction(Path("/dev/null")),
     )
 
 object MockSwitchboard :
@@ -126,8 +129,14 @@ open class AbstractSwitchboard(
         init.init(logConsumers)
     }
 
-    fun getStatus() {
-        status.getStatus()
+    fun getStatus(directory: Path) {
+        val state: JobState? =
+            job.companion.present(directory).nullify()?.let { job.read(directory) }
+
+        val inFiles =
+            state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }
+
+        status.getStatus(inFiles)
     }
 
     fun createPreview(

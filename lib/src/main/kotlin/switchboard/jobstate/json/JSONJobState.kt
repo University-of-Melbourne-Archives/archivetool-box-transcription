@@ -16,7 +16,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
 class JSONJobState private constructor(val directory: Path, fmap: MutableMap<Path, JobFile?>) :
-    JobState(fmap) {
+    JobState(directory, fmap) {
     constructor(dir: Path, el: JsonElement) : this(dir, mutableMapOf()) {
         val obj: JsonElement
         when (el) {

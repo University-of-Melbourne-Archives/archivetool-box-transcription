@@ -2,22 +2,22 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
-import java.nio.file.Path
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 
 class ReviewGUIInteraction : ReviewPreviewInteraction {
     override fun review(
-        files: Map<Path, JobFile?>,
+        files: Map<JobRelativePath, JobFile?>,
         autoApproveThreshold: Double,
-    ): Map<Path, JobFile> {
+    ): Map<JobRelativePath, JobFile> {
         TODO("Concrete Implementation Incomplete.")
     }
 }
 
 class MockReviewInteraction : ReviewPreviewInteraction {
     override fun review(
-        files: Map<Path, JobFile?>,
+        files: Map<JobRelativePath, JobFile?>,
         autoApproveThreshold: Double,
-    ): Map<Path, JobFile> {
+    ): Map<JobRelativePath, JobFile> {
         Log.error("Using Mock Implementation of Review Preview. Nothing will be done.")
 
         Log.debug(
@@ -29,8 +29,11 @@ class MockReviewInteraction : ReviewPreviewInteraction {
 }
 
 interface ReviewPreviewInteraction : Interaction {
-    fun review(files: Map<Path, JobFile?>, autoApproveThreshold: Double = 1.0): Map<Path, JobFile>
+    fun review(
+        files: Map<JobRelativePath, JobFile?>,
+        autoApproveThreshold: Double = 1.0,
+    ): Map<JobRelativePath, JobFile>
 
-    override fun isEligible(file: Pair<Path, JobFile>): Boolean =
+    override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
         file.second.let { it.crops.isNotEmpty() && !it.approved }
 }
