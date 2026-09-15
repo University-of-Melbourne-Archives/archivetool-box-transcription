@@ -11,6 +11,7 @@ polyglot = "25.0.3"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin"}
 kotlinxDatetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
 kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
@@ -19,9 +20,11 @@ kotlinxCoroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-tes
 polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" }
 polyglot-python = { module = "org.graalvm.polyglot:python", version.ref = "polyglot" }
 
+opencv = { module = "org.openpnp:opencv", version = "4.9.0-0" }
+
 # Libraries can be bundled together for easier import
 [bundles]
-kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
+kotlinEcosystem = ["kotlinReflect", "kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
 polyglot = ["polyglot", "polyglot-python"]
 
 [plugins]

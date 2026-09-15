@@ -37,8 +37,9 @@ graalPy {
 dependencies {
     // Apply the kotlinx bundle of dependencies from the version catalog
     // (`gradle/libs.versions.toml`).
-    implementation(libs.bundles.kotlinxEcosystem)
+    implementation(libs.bundles.kotlinEcosystem)
     implementation(libs.bundles.polyglot)
+    implementation(libs.opencv)
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
 }

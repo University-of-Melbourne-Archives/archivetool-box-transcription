@@ -8,7 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
-import au.edu.unimelb.archivetool.util.geometry.Rectangle
+import au.edu.unimelb.archivetool.util.geometry.Quad
 import kotlin.collections.mutableMapOf
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
@@ -102,12 +102,12 @@ class SwitchboardTest {
                             it.value.apply {
                                 crops["crop-1"] =
                                     JobFile.BoxCrop(
-                                        Rectangle.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                         confidence = 1.0,
                                     )
                                 crops["crop-2"] =
                                     JobFile.LabelCrop(
-                                        Rectangle.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                         confidence = 0.5,
                                     )
                             }
@@ -150,22 +150,12 @@ class SwitchboardTest {
                                         mutableMapOf(
                                             "crop-1" to
                                                 JobFile.BoxCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 1.0,
                                                 ),
                                             "crop-2" to
                                                 JobFile.LabelCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 0.5,
                                                 ),
                                         ),
@@ -206,22 +196,12 @@ class SwitchboardTest {
                                         mutableMapOf(
                                             "crop-1" to
                                                 JobFile.BoxCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 1.0,
                                                 ),
                                             "crop-2" to
                                                 JobFile.LabelCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 0.5,
                                                 ),
                                         ),
@@ -267,23 +247,13 @@ class SwitchboardTest {
                                         mutableMapOf(
                                             "crop-1" to
                                                 JobFile.BoxCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 1.0,
                                                     transcription = "test1",
                                                 ),
                                             "crop-2" to
                                                 JobFile.LabelCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 0.5,
                                                     transcription = "test2",
                                                 ),
