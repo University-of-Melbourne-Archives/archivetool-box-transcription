@@ -16,6 +16,12 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
     val y
         get() = inner.second
 
+    operator fun plus(other: Point): Point = create(this.x + other.x, this.y + other.y)
+
+    operator fun unaryMinus(): Point = create(-x, -y)
+
+    operator fun minus(other: Point): Point = this + -other
+
     companion object {
         fun create(x: Int, y: Int): Point = Point(Pair(x, y))
 

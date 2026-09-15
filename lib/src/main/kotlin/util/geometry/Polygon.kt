@@ -1,5 +1,7 @@
 package au.edu.unimelb.archivetool.util.geometry
 
+import au.edu.unimelb.archivetool.util.map
+import kotlin.getValue
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -9,14 +11,22 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable
-open class Polygon protected constructor(open val inner: Array<out Point>) {
-    fun bestBoundingBox(): Rectangle {
-        val xMin = inner.minOf { it.x }
-        val yMin = inner.minOf { it.y }
-        val xMax = inner.maxOf { it.x }
-        val yMax = inner.maxOf { it.y }
+open class Polygon protected constructor(val vertices: Array<out Point>) {
+    val xMin by lazy { vertices.minOf { it.x } }
+    val yMin by lazy { vertices.minOf { it.y } }
+    val xMax by lazy { vertices.maxOf { it.x } }
+    val yMax by lazy { vertices.maxOf { it.y } }
 
-        return Rectangle.create(
+    val floatArray: FloatArray by lazy {
+        vertices
+            .map { it.inner }
+            .map { it.map(Int::toFloat) }
+            .flatMap { it.toList() }
+            .toFloatArray()
+    }
+
+    fun bestBoundingBox(): Rectangle =
+        Rectangle.create(
             listOf(
                 Point.create(xMin, yMin),
                 Point.create(xMax, yMin),
@@ -24,17 +34,19 @@ open class Polygon protected constructor(open val inner: Array<out Point>) {
                 Point.create(xMax, yMax),
             )
         )
-    }
 
     companion object {
         fun create(points: Array<out Point>): Polygon = Polygon(points)
+
+        fun create(points: List<Point>): Polygon = Polygon(points.toTypedArray())
+
+        fun create(vararg points: Pair<Int, Int>): Polygon =
+            create(points.map { Point.fromPair(it) })
     }
 }
 
-abstract class PolySerializer<T : Polygon>(
-    val className: String,
-    val constructor: (List<Point>) -> T,
-) : KSerializer<T> {
+abstract class PolySerializer<T : Polygon>(className: String, val constructor: (List<Point>) -> T) :
+    KSerializer<T> {
     @OptIn(ExperimentalSerializationApi::class)
     private val delegateSerializer = ListSerializer(PointSerializer)
 
@@ -45,7 +57,7 @@ abstract class PolySerializer<T : Polygon>(
         )
 
     override fun serialize(encoder: Encoder, value: T) =
-        encoder.encodeSerializableValue(delegateSerializer, value.inner.map { it })
+        encoder.encodeSerializableValue(delegateSerializer, value.vertices.map { it })
 
     override fun deserialize(decoder: Decoder): T =
         constructor(decoder.decodeSerializableValue(delegateSerializer))
