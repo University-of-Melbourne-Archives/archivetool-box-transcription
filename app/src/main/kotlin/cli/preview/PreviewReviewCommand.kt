@@ -11,14 +11,14 @@ class PreviewReviewCommand : Command(name = "review") {
     override fun help(context: Context): String = "Open pending previews for review."
 
     val autoApproveThreshold by
-    option(
-        "-A",
-        "--auto-approve-threshold",
-        metavar = "threshold",
-        help = "Skip review for images whose boxes all meet <threshold>% confidence.",
-    )
-        .int()
-        .restrictTo(0, 100)
+        option(
+                "-A",
+                "--auto-approve-threshold",
+                metavar = "threshold",
+                help = "Skip review for images whose boxes all meet <threshold>% confidence.",
+            )
+            .int()
+            .restrictTo(0, 100)
 
     override fun run() {
         TODO("Connect this command to the Switchboard")

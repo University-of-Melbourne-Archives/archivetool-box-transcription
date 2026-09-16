@@ -17,9 +17,9 @@ class FinaliseCommand : Command(name = "finalise") {
             .trimIndent()
 
     val outputPath by
-    option("-o", "--output", help = "Path for the generated CSV file.")
-        .path(mustExist = false, canBeDir = false)
-        .required()
+        option("-o", "--output", help = "Path for the generated CSV file.")
+            .path(mustExist = false, canBeDir = false)
+            .required()
 
     override fun run() {
         TODO("Connect this command to the Switchboard")

@@ -23,31 +23,28 @@ class RunCommand : Command(name = "run") {
             .trimIndent()
 
     val inputDirectory by
-    option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
-        .path(mustExist = true, canBeFile = false, mustBeReadable = true)
-        .default(Path("."), defaultForHelp = "current working directory")
+        option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
+            .path(mustExist = true, canBeFile = false, mustBeReadable = true)
+            .default(Path("."), defaultForHelp = "current working directory")
 
     val outputPath by
-    option("-o", "--output", help = "Path for the generated CSV file.")
-        .path(mustExist = false, canBeDir = false)
-        .required()
+        option("-o", "--output", help = "Path for the generated CSV file.")
+            .path(mustExist = false, canBeDir = false)
+            .required()
 
     val resume by
-    option(
-        "--resume",
-        help = "Permit and reuse an existing job state in the input directory.",
-    )
-        .flag(default = false)
+        option("--resume", help = "Permit and reuse an existing job state in the input directory.")
+            .flag(default = false)
 
     val autoApproveThreshold by
-    option(
-        "-A",
-        "--auto-approve-threshold",
-        metavar = "threshold",
-        help = "Skip review for images whose boxes all meet <threshold>% confidence.",
-    )
-        .int()
-        .restrictTo(0, 100)
+        option(
+                "-A",
+                "--auto-approve-threshold",
+                metavar = "threshold",
+                help = "Skip review for images whose boxes all meet <threshold>% confidence.",
+            )
+            .int()
+            .restrictTo(0, 100)
 
     override fun run() {
         TODO("Connect this command to the Switchboard")

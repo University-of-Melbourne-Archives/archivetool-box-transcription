@@ -17,9 +17,9 @@ class PreviewCreateCommand : Command(name = "create") {
             .trimIndent()
 
     val inputDirectory by
-    option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
-        .path(mustExist = true, canBeFile = false, mustBeReadable = true)
-        .required()
+        option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
+            .path(mustExist = true, canBeFile = false, mustBeReadable = true)
+            .required()
 
     override fun run() {
         TODO("Connect this command to the Switchboard")
