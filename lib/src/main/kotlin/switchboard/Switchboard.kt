@@ -3,6 +3,7 @@ package au.edu.unimelb.archivetool.switchboard
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
@@ -26,7 +27,7 @@ object Switchboard :
         ReviewGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
-        CSVExportInteraction(Path("/dev/null")),
+        CSVExportInteraction(Path("/")), // TODO: Flag if the export destination is not set. We should set this to a default in the CLI before getting here.
     )
 
 object MockSwitchboard :

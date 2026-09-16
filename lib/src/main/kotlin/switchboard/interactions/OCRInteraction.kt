@@ -1,10 +1,15 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.pythoninterop.PythonModule
+import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 
 class PythonOCRInteraction : OCRInteraction {
+    val module by lazy {
+        PythonModule(folder = TODO("Put Module Path Here"), setOf(LoggerInjectable()))
+    }
     override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         TODO("Concrete Implementation Incomplete.")
     }

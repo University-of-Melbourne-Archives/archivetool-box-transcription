@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.bundles.kotlinEcosystem)
     implementation(libs.bundles.polyglot)
     implementation(libs.javacv)
+    implementation(libs.csv)
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
 }

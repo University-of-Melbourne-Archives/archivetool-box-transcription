@@ -15,6 +15,7 @@ class MockImageManipulationInteraction : ImageManipulationInteraction {
 }
 
 // TODO add a helper function that loads an existing manipulated version of a file if it exists.
+// TODO add an interaction that blanks out labels from box images
 interface ImageManipulationInteraction : Interaction {
     fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile>
 

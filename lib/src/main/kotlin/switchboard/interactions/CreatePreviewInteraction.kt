@@ -1,11 +1,16 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.pythoninterop.PythonModule
+import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import java.nio.file.Path
 
 class PythonCreatePreviewInteraction : CreatePreviewInteraction {
+    val module by lazy {
+        PythonModule(folder = TODO("Put Module Path Here"), setOf(LoggerInjectable()))
+    }
     override fun createPreview(
         files: Set<JobRelativePath>,
         weights: Path,

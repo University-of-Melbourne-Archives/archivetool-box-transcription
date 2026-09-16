@@ -22,7 +22,8 @@ polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" 
 polyglot-python = { module = "org.graalvm.polyglot:python", version.ref = "polyglot" }
 
 javacv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv" }
-javacv-opencv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv" }
+
+csv = { module = "com.jsoizo:kotlin-csv", version = "2.0.0" }
 
 # Libraries can be bundled together for easier import
 [bundles]

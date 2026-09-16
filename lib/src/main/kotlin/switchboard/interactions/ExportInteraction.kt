@@ -5,11 +5,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import java.nio.file.Path
 
-class CSVExportInteraction(destination: Path) : ExportInteraction {
-    override fun export(files: Map<JobRelativePath, JobFile>) {
-        TODO("Concrete Implementation Incomplete.")
-    }
-}
+
 
 class StdOutExportInteraction : ExportInteraction {
     override fun export(files: Map<JobRelativePath, JobFile>) {
