@@ -18,18 +18,12 @@ class FlattenInteraction : ImageManipulationInteraction {
             val _in = CV.readImage(jpath.absolute)
             info.vertexes.forEach { (id, box) ->
                 box.keyedBoundaries.forEach { cropId, boundary ->
-
                     val srcQuad = boundary.points
 
                     val destQuad = srcQuad.bestBoundingBox()
                     // The size we are projecting to.
                     val outRect: Rectangle =
-                        Rect(
-                            0,
-                            0,
-                            destQuad.width,
-                            destQuad.height,
-                        ).toRectangle()
+                        Rect(0, 0, destQuad.width, destQuad.height).toRectangle()
 
                     val cropped = CV.perspectiveWarp(_in, srcQuad, outRect)
 

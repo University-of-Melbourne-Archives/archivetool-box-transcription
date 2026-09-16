@@ -50,22 +50,22 @@ class CropInteractionTest {
                             vertexes =
                                 mutableMapOf(
                                     "crop-1" to
-                                            ArchiveBox(
-                                                /*
-                                                Rectangle.fromCVRect(
-                                                    selectROI("test", CV.readImage(it.key.absolute))
+                                        ArchiveBox(
+                                            /*
+                                            Rectangle.fromCVRect(
+                                                selectROI("test", CV.readImage(it.key.absolute))
+                                            ),
+                                             */
+                                            Boundary(
+                                                Rectangle.create(
+                                                    695 to 1276,
+                                                    1340 to 1276,
+                                                    695 to 2396,
+                                                    1340 to 2396,
                                                 ),
-                                                 */
-                                                Boundary(
-                                                    Rectangle.create(
-                                                        695 to 1276,
-                                                        1340 to 1276,
-                                                        695 to 2396,
-                                                        1340 to 2396,
-                                                    ),
-                                                    confidence = 1.0,
-                                                )
+                                                confidence = 1.0,
                                             )
+                                        )
                                 ),
                         )
                     }

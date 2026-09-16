@@ -102,18 +102,19 @@ class SwitchboardTest {
                     baseFiles
                         .mapValues {
                             it.value.apply {
-                                vertexes["box-1"] = ArchiveBox(
-                                    Boundary(
-                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                        confidence = 1.0,
-                                    ),
-                                    listOf(
+                                vertexes["box-1"] =
+                                    ArchiveBox(
                                         Boundary(
                                             Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                            confidence = 0.5,
-                                        )
+                                            confidence = 1.0,
+                                        ),
+                                        listOf(
+                                            Boundary(
+                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                confidence = 0.5,
+                                            )
+                                        ),
                                     )
-                                )
                             }
                         }
                         .toMutableMap(),
@@ -150,20 +151,27 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    vertexes = mutableMapOf(
-                                        "box-1" to ArchiveBox(
-                                            Boundary(
-                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                confidence = 1.0,
-                                            ),
-                                            listOf(
-                                                Boundary(
-                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                    confidence = 0.5,
+                                    vertexes =
+                                        mutableMapOf(
+                                            "box-1" to
+                                                ArchiveBox(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 1.0,
+                                                    ),
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                        )
+                                                    ),
                                                 )
-                                            )
-                                        )
-                                    )
+                                        ),
                                 )
                             }
                         }
@@ -197,20 +205,27 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    vertexes = mutableMapOf(
-                                        "box-1" to ArchiveBox(
-                                            Boundary(
-                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                confidence = 1.0,
-                                            ),
-                                            listOf(
-                                                Boundary(
-                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                    confidence = 0.5,
+                                    vertexes =
+                                        mutableMapOf(
+                                            "box-1" to
+                                                ArchiveBox(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 1.0,
+                                                    ),
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                        )
+                                                    ),
                                                 )
-                                            )
-                                        )
-                                    )
+                                        ),
                                 )
                             }
                         }
@@ -251,20 +266,26 @@ class SwitchboardTest {
                                     approved = true,
                                     vertexes =
                                         mutableMapOf(
-                                            "box-1" to ArchiveBox(
-                                                Boundary(
-                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                    confidence = 1.0,
-                                                    transcription = "test1"
-                                                ),
-                                                listOf(
+                                            "box-1" to
+                                                ArchiveBox(
                                                     Boundary(
                                                         Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                        confidence = 0.5,
-                                                        transcription = "test2"
-                                                    )
+                                                        confidence = 1.0,
+                                                        transcription = "test1",
+                                                    ),
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                            transcription = "test2",
+                                                        )
+                                                    ),
                                                 )
-                                            )
                                         ),
                                 )
                             }

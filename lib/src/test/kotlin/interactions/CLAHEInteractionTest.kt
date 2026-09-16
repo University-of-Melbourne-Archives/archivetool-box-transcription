@@ -10,7 +10,6 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.geometry.Quad
 import au.edu.unimelb.archivetool.util.geometry.Rectangle
 import baseFiles
 import kotlin.io.path.Path
@@ -42,8 +41,8 @@ class CLAHEInteractionTest {
 
     @Test
     fun `try clahe interaction with no crop`() {
-        //@OptIn(ExperimentalPathApi::class)
-        //directory.resolve(GENERATED_PATH).deleteRecursively()
+        // @OptIn(ExperimentalPathApi::class)
+        // directory.resolve(GENERATED_PATH).deleteRecursively()
 
         val files =
             baseFiles
@@ -55,17 +54,12 @@ class CLAHEInteractionTest {
                             vertexes =
                                 mutableMapOf(
                                     "crop-1" to
-                                            ArchiveBox(
-                                                Boundary(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
-                                                    ),
-                                                    confidence = 1.0,
-                                                )
+                                        ArchiveBox(
+                                            Boundary(
+                                                Rectangle.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                confidence = 1.0,
                                             )
+                                        )
                                 ),
                         )
                     }
@@ -88,8 +82,9 @@ class CLAHEInteractionTest {
                             vertexes =
                                 mutableMapOf(
                                     "crop-1" to
-                                            ArchiveBox(
-                                                boxBoundary = Boundary(
+                                        ArchiveBox(
+                                            boxBoundary =
+                                                Boundary(
                                                     Rectangle.create(
                                                         0 to 0,
                                                         1200 to 0,
@@ -98,8 +93,8 @@ class CLAHEInteractionTest {
                                                     ),
                                                     confidence = 1.0,
                                                 ),
-                                                labelBoundaries = listOf()
-                                            )
+                                            labelBoundaries = listOf(),
+                                        )
                                 ),
                         )
                     }

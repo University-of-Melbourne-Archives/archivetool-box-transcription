@@ -30,11 +30,8 @@ interface OCRInteraction : Interaction {
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean {
         return file.second.let { jobFile ->
             jobFile.vertexes.values.run {
-                isNotEmpty() && this.any { box ->
-                    box.keyedBoundaries.values.any {
-                        it.transcription == null
-                    }
-                }
+                isNotEmpty() &&
+                    this.any { box -> box.keyedBoundaries.values.any { it.transcription == null } }
             }
         }
         /*TODO: Add a check for if the generated crop etc exists.*/
