@@ -100,7 +100,6 @@ data class MemberSet(
     internal val filteredMembers
         get() = members.get()!!.toMap().filter { member -> filters.all { it(member.value) } }
 
-    @OptIn(ExperimentalStdlibApi::class)
     operator fun get(index: String): Value? {
         if (filteredMembers.containsKey(index)) return filteredMembers[index]
 
