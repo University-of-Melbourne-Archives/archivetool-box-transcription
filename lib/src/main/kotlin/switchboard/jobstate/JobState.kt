@@ -111,26 +111,29 @@ abstract class JobState(
 
     companion object {
         fun generatedCropPaths(file: JobRelativePath, data: JobFile): Set<JobRelativePath> {
-            if (data.crops.isEmpty()) return setOf()
-            return data.crops.keys
+            if (data.vertexes.isEmpty()) return setOf()
+            return data.vertexes.keys
                 // TODO: Remove extension from the middle resolution here.
-                .map {
-                    JobRelativePath(
-                        file.rootDirectory,
-                        Path(GENERATED_PATH)
-                            .resolve(file.relative.pathString)
-                            .resolve("$it.${file.relative.extension}"),
-                    )
+                .flatMap<String, JobRelativePath?> { boxName ->
+                    data.vertexes[boxName]?.keyedBoundaries?.keys?.map { cropId ->
+                        JobRelativePath(
+                            file.rootDirectory,
+                            Path(GENERATED_PATH)
+                                .resolve(file.relative.pathString)
+                                .resolve("$boxName-$cropId.${file.relative.extension}"),
+                        )
+                    } ?: setOf()
                 }
+                .filterNotNull()
                 .toSet()
         }
 
-        fun cropPath(file: JobRelativePath, crop: String): JobRelativePath {
+        fun cropPath(file: JobRelativePath, boxId: String, cropId: String): JobRelativePath {
             return JobRelativePath(
                 file.rootDirectory,
                 Path(GENERATED_PATH)
                     .resolve(file.relative.pathString)
-                    .resolve("$crop.${file.relative.extension}"),
+                    .resolve("${boxId}-${cropId}$.${file.relative.extension}"),
             )
         }
     }

@@ -4,6 +4,8 @@ import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.logging.consumers.StringConsumer
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
+import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
+import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
@@ -46,7 +48,7 @@ class SwitchboardTest {
         )
     }
 
-    val fileNameRegex = "PXL_\\d{8}_\\d{9}\\.jpg"
+    val fileNameRegex = "PXL_\\d{8}_\\d{9}(\\.clahe)?\\.jpg"
 
     @Test
     fun `call init interaction`() {
@@ -100,16 +102,18 @@ class SwitchboardTest {
                     baseFiles
                         .mapValues {
                             it.value.apply {
-                                crops["crop-1"] =
-                                    JobFile.BoxCrop(
+                                vertexes["box-1"] = ArchiveBox(
+                                    Boundary(
                                         Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                         confidence = 1.0,
+                                    ),
+                                    listOf(
+                                        Boundary(
+                                            Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                            confidence = 0.5,
+                                        )
                                     )
-                                crops["crop-2"] =
-                                    JobFile.LabelCrop(
-                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                        confidence = 0.5,
-                                    )
+                                )
                             }
                         }
                         .toMutableMap(),
@@ -146,19 +150,20 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    crops =
-                                        mutableMapOf(
-                                            "crop-1" to
-                                                JobFile.BoxCrop(
-                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                    confidence = 1.0,
-                                                ),
-                                            "crop-2" to
-                                                JobFile.LabelCrop(
+                                    vertexes = mutableMapOf(
+                                        "box-1" to ArchiveBox(
+                                            Boundary(
+                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                confidence = 1.0,
+                                            ),
+                                            listOf(
+                                                Boundary(
                                                     Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 0.5,
-                                                ),
-                                        ),
+                                                )
+                                            )
+                                        )
+                                    )
                                 )
                             }
                         }
@@ -192,19 +197,20 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    crops =
-                                        mutableMapOf(
-                                            "crop-1" to
-                                                JobFile.BoxCrop(
-                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                    confidence = 1.0,
-                                                ),
-                                            "crop-2" to
-                                                JobFile.LabelCrop(
+                                    vertexes = mutableMapOf(
+                                        "box-1" to ArchiveBox(
+                                            Boundary(
+                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                confidence = 1.0,
+                                            ),
+                                            listOf(
+                                                Boundary(
                                                     Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 0.5,
-                                                ),
-                                        ),
+                                                )
+                                            )
+                                        )
+                                    )
                                 )
                             }
                         }
@@ -220,7 +226,7 @@ class SwitchboardTest {
 
         assert(log.contains("Running Mock OCR, nothing will be done."))
         assertNotNull(
-            ("(?:.*Transcribing $fileNameRegex::crop-[12]\n){55}"
+            ("(?:.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )
@@ -243,20 +249,22 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    crops =
+                                    vertexes =
                                         mutableMapOf(
-                                            "crop-1" to
-                                                JobFile.BoxCrop(
+                                            "box-1" to ArchiveBox(
+                                                Boundary(
                                                     Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 1.0,
-                                                    transcription = "test1",
+                                                    transcription = "test1"
                                                 ),
-                                            "crop-2" to
-                                                JobFile.LabelCrop(
-                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                                    confidence = 0.5,
-                                                    transcription = "test2",
-                                                ),
+                                                listOf(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 0.5,
+                                                        transcription = "test2"
+                                                    )
+                                                )
+                                            )
                                         ),
                                 )
                             }
@@ -272,7 +280,7 @@ class SwitchboardTest {
         val log = consumer.getLog()
 
         assertNotNull(
-            ("(?:${fileNameRegex}::crop-[12]: test[12];;){55}"
+            ("(?:${fileNameRegex}::box-1-(box|label-1): test[12];;){110}"
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )

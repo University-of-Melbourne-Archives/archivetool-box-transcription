@@ -21,7 +21,7 @@ class MockReviewInteraction : ReviewPreviewInteraction {
         Log.error("Using Mock Implementation of Review Preview. Nothing will be done.")
 
         Log.debug(
-            "${files.count()} total files, ${files.filterValues { it?.crops?.values?.all{crop -> crop.confidence > autoApproveThreshold} ?: false }.count() } above auto-approval threshold $autoApproveThreshold"
+            "${files.count()} total files, ${files.filterValues { (it?.minConfidence ?: -1.0) > autoApproveThreshold}.count() } above auto-approval threshold $autoApproveThreshold"
         )
 
         return mapOf()
@@ -35,5 +35,5 @@ interface ReviewPreviewInteraction : Interaction {
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.let { it.crops.isNotEmpty() && !it.approved }
+        file.second.let { it.vertexes.isNotEmpty() && !it.approved }
 }

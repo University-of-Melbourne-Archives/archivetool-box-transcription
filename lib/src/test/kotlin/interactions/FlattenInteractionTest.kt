@@ -5,6 +5,8 @@ import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
+import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.geometry.Quad
@@ -44,23 +46,25 @@ class FlattenInteractionTest {
                     it.value.run {
                         JobFile(
                             approved = true,
-                            crops =
+                            vertexes =
                                 mutableMapOf(
                                     "crop-1" to
-                                        JobFile.BoxCrop(
-                                            /*
-                                            Rectangle.fromCVRect(
-                                                selectROI("test", CV.readImage(it.key.absolute))
-                                            ),
-                                             */
-                                            Quad.create(
-                                                1144 to 1000,
-                                                1776 to 984,
-                                                1900 to 2355,
-                                                1271 to 2384,
-                                            ),
-                                            confidence = 1.0,
-                                        )
+                                            ArchiveBox(
+                                                /*
+                                                Rectangle.fromCVRect(
+                                                    selectROI("test", CV.readImage(it.key.absolute))
+                                                ),
+                                                 */
+                                                Boundary(
+                                                    Quad.create(
+                                                        1144 to 1000,
+                                                        1776 to 984,
+                                                        1900 to 2355,
+                                                        1271 to 2384,
+                                                    ),
+                                                    confidence = 1.0,
+                                                )
+                                            )
                                 ),
                         )
                     }

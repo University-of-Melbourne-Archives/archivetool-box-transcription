@@ -15,26 +15,29 @@ class FlattenInteraction : ImageManipulationInteraction {
         val outFiles: MutableMap<JobRelativePath, JobFile> = mutableMapOf()
 
         files.forEach { (jpath, info) ->
-            info.crops.forEach { (id, crop) ->
-                val _in = CV.readImage(jpath.absolute)
+            val _in = CV.readImage(jpath.absolute)
+            info.vertexes.forEach { (id, box) ->
+                box.keyedBoundaries.forEach { cropId, boundary ->
 
-                val srcQuad = crop.points
-                // The size we are projecting to.
-                val outRect: Rectangle =
-                    Rect(
+                    val srcQuad = boundary.points
+
+                    val destQuad = srcQuad.bestBoundingBox()
+                    // The size we are projecting to.
+                    val outRect: Rectangle =
+                        Rect(
                             0,
                             0,
-                            crop.points.bestBoundingBox().width,
-                            crop.points.bestBoundingBox().height,
-                        )
-                        .toRectangle()
+                            destQuad.width,
+                            destQuad.height,
+                        ).toRectangle()
 
-                val cropped = CV.perspectiveWarp(_in, srcQuad, outRect)
+                    val cropped = CV.perspectiveWarp(_in, srcQuad, outRect)
 
-                val outPath = JobState.cropPath(jpath, id)
-                cropped.writeImage(outPath.absolute)
+                    val outPath = JobState.cropPath(jpath, id, cropId)
+                    cropped.writeImage(outPath.absolute)
 
-                outFiles[jpath] = info
+                    outFiles[jpath] = info
+                }
             }
         }
 

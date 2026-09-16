@@ -5,6 +5,8 @@ import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CropInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
+import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.geometry.Rectangle
@@ -45,23 +47,25 @@ class CropInteractionTest {
                     it.value.run {
                         JobFile(
                             approved = true,
-                            crops =
+                            vertexes =
                                 mutableMapOf(
                                     "crop-1" to
-                                        JobFile.BoxCrop(
-                                            /*
-                                            Rectangle.fromCVRect(
-                                                selectROI("test", CV.readImage(it.key.absolute))
-                                            ),
-                                             */
-                                            Rectangle.create(
-                                                695 to 1276,
-                                                1340 to 1276,
-                                                695 to 2396,
-                                                1340 to 2396,
-                                            ),
-                                            confidence = 1.0,
-                                        )
+                                            ArchiveBox(
+                                                /*
+                                                Rectangle.fromCVRect(
+                                                    selectROI("test", CV.readImage(it.key.absolute))
+                                                ),
+                                                 */
+                                                Boundary(
+                                                    Rectangle.create(
+                                                        695 to 1276,
+                                                        1340 to 1276,
+                                                        695 to 2396,
+                                                        1340 to 2396,
+                                                    ),
+                                                    confidence = 1.0,
+                                                )
+                                            )
                                 ),
                         )
                     }

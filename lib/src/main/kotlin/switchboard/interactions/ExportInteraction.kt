@@ -37,9 +37,11 @@ class StringExportInteraction : ExportInteraction {
     val builder = StringBuilder()
 
     override fun export(files: Map<JobRelativePath, JobFile>) {
-        files.forEach { file ->
-            file.value.crops.forEach { (id, crop) ->
-                builder.append("${file.key.relative}::$id: ${crop.transcription};;")
+        files.forEach { (path, file) ->
+            file.vertexes.forEach { (boxId, box) ->
+                box.keyedBoundaries.forEach { cropId, crop ->
+                    builder.append("${path.relative}::${"$boxId-$cropId"}: ${crop.transcription};;")
+                }
             }
         }
     }
@@ -51,7 +53,7 @@ interface ExportInteraction : Interaction {
     fun export(files: Map<JobRelativePath, JobFile>)
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.crops.all { it.value.transcription != null }
+        file.second.vertexes.values.all { box -> box.keyedBoundaries.values.all { it.transcription != null } }
 
     companion object : ComposableInteraction<ExportInteraction> {
         override fun compose(vararg children: ExportInteraction): ExportInteraction {

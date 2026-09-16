@@ -12,15 +12,17 @@ class CropInteraction : ImageManipulationInteraction {
         val outFiles: MutableMap<JobRelativePath, JobFile> = mutableMapOf()
 
         files.forEach { (jpath, info) ->
-            info.crops.forEach { (id, crop) ->
-                val _in = CV.readImage(jpath.absolute)
+            info.vertexes.forEach { (id, box) ->
+                box.keyedBoundaries.forEach { cropId, boundary ->
+                    val _in = CV.readImage(jpath.absolute)
 
-                val cropped = _in.apply(crop.points.bestBoundingBox().intoCVRect())
+                    val cropped = _in.apply(boundary.points.bestBoundingBox().intoCVRect())
 
-                val outPath = JobState.cropPath(jpath, id)
-                cropped.writeImage(outPath.absolute)
+                    val outPath = JobState.cropPath(jpath, id, cropId)
+                    cropped.writeImage(outPath.absolute)
 
-                outFiles[jpath] = info
+                    outFiles[jpath] = info
+                }
             }
         }
 
