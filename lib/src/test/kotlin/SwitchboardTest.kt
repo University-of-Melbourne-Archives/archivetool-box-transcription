@@ -17,6 +17,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.time.Instant
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 
@@ -67,7 +68,10 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("createPreview")
+        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cache = cacheGuard.value
         cache.remove(directory)
+        cacheGuard.close()
 
         MockSwitchboard.createPreview(
             directory,
@@ -92,6 +96,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("reviewPreview")
+        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cache = cacheGuard.value
 
         // TODO setup so that we can have a specific number of files go over auto-approval.
         cache.put(
@@ -101,8 +107,15 @@ class SwitchboardTest {
                 starterState =
                     baseFiles
                         .mapValues {
+                            if (it.value.vertexes == null) {
+                                JobFile(approved = false, vertexes = mutableMapOf())
+                            } else {
+                                it.value
+                            }
+                        }
+                        .mapValues {
                             it.value.apply {
-                                vertexes["box-1"] =
+                                vertexes!!["box-1"] =
                                     ArchiveBox(
                                         Boundary(
                                             Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
@@ -120,6 +133,8 @@ class SwitchboardTest {
                         .toMutableMap(),
             ),
         )
+
+        cacheGuard.close()
 
         MockSwitchboard.reviewPreview(directory)
 
@@ -140,6 +155,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("imageManip")
+        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cache = cacheGuard.value
 
         cache.put(
             directory,
@@ -178,6 +195,8 @@ class SwitchboardTest {
                         .toMutableMap(),
             ),
         )
+
+        cacheGuard.close()
 
         MockSwitchboard.manipulateImages(directory)
 
@@ -194,6 +213,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("ocr")
+        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cache = cacheGuard.value
 
         cache.put(
             directory,
@@ -232,6 +253,8 @@ class SwitchboardTest {
                         .toMutableMap(),
             ),
         )
+
+        cacheGuard.close()
 
         MockSwitchboard.createOCR(directory)
 
@@ -253,6 +276,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("export")
+        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cache = cacheGuard.value
 
         cache.put(
             directory,
@@ -293,6 +318,8 @@ class SwitchboardTest {
                         .toMutableMap(),
             ),
         )
+
+        cacheGuard.close()
 
         MockSwitchboard.generateExport(directory)
 
