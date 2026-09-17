@@ -65,15 +65,15 @@ class JSONJobStateInteraction : JobStateInteraction {
             }
 
         return@runBlocking _try?.also { try_ ->
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).write(Clock.System.now()).use {
-                it.value.put(folder, try_)
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).withWriteLock {
+                it.put(folder, try_)
             }
         }
     }
 
     override fun write(folder: Path) {
         runBlocking {
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).write(Clock.System.now()).use {
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).writeLock().use {
                 lock ->
                 val s =
                     lock.value

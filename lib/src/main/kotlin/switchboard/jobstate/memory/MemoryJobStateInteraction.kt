@@ -14,8 +14,8 @@ class MemoryJobStateInteraction : JobStateInteraction {
     val variant = JobStateVariant.Memory
 
     override fun create(folder: Path): JobState = runBlocking {
-        getCache<JobStateVariant.Memory, ConcreteJobState>(variant).write(Clock.System.now()).use {
-            it.value.put(folder, ConcreteJobState(folder, initial = true))
+        getCache<JobStateVariant.Memory, ConcreteJobState>(variant).withWriteLock {
+            it.put(folder, ConcreteJobState(folder, initial = true))
         }
     }
 
@@ -24,16 +24,14 @@ class MemoryJobStateInteraction : JobStateInteraction {
     override fun read(folder: Path): JobState = runBlocking {
         val state =
             getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
-                .read(Clock.System.now())
-                .use { it.value.get(folder) }
+                .withWriteLock { it.get(folder) }
 
         if (state != null) return@runBlocking state
 
         val new = ConcreteJobState(folder)
 
         return@runBlocking getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
-            .write(Clock.System.now())
-            .use { it.value.put(folder, new) }
+            .withWriteLock { it.put(folder, new) }
     }
 
     override fun write(folder: Path) {

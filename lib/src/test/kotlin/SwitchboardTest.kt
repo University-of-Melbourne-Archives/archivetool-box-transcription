@@ -68,10 +68,9 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("createPreview")
-        val cacheGuard = cache.write(Instant.DISTANT_PAST)
-        val cache = cacheGuard.value
-        cache.remove(directory)
-        cacheGuard.close()
+        cache.withWriteLock {
+            it.remove(directory)
+        }
 
         MockSwitchboard.createPreview(
             directory,
@@ -96,7 +95,7 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("reviewPreview")
-        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cacheGuard = cache.writeLock()
         val cache = cacheGuard.value
 
         // TODO setup so that we can have a specific number of files go over auto-approval.
@@ -134,7 +133,7 @@ class SwitchboardTest {
             ),
         )
 
-        cacheGuard.close()
+        cacheGuard.release()
 
         MockSwitchboard.reviewPreview(directory)
 
@@ -155,7 +154,7 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("imageManip")
-        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cacheGuard = cache.writeLock()
         val cache = cacheGuard.value
 
         cache.put(
@@ -196,7 +195,7 @@ class SwitchboardTest {
             ),
         )
 
-        cacheGuard.close()
+        cacheGuard.release()
 
         MockSwitchboard.manipulateImages(directory)
 
@@ -213,7 +212,7 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("ocr")
-        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cacheGuard = cache.writeLock()
         val cache = cacheGuard.value
 
         cache.put(
@@ -254,7 +253,7 @@ class SwitchboardTest {
             ),
         )
 
-        cacheGuard.close()
+        cacheGuard.release()
 
         MockSwitchboard.createOCR(directory)
 
@@ -276,7 +275,7 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("export")
-        val cacheGuard = cache.write(Instant.DISTANT_PAST)
+        val cacheGuard = cache.writeLock()
         val cache = cacheGuard.value
 
         cache.put(
@@ -319,7 +318,7 @@ class SwitchboardTest {
             ),
         )
 
-        cacheGuard.close()
+        cacheGuard.release()
 
         MockSwitchboard.generateExport(directory)
 
