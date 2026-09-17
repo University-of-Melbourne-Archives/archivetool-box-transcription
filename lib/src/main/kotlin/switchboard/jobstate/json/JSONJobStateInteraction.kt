@@ -73,27 +73,27 @@ class JSONJobStateInteraction : JobStateInteraction {
 
     override fun write(folder: Path) {
         runBlocking {
-            getCache<JobStateVariant.JSON, JSONJobState>(variant)
-                .write(Clock.System.now())
-                .use { lock ->
-                    val s = lock.value
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).write(Clock.System.now()).use {
+                lock ->
+                val s =
+                    lock.value
                         .get(folder)
                         .expect("Tried to write non-existent JSON State.")
                         .toJsonElement()
                         .toStrictString()
-                    // We stay locked here because we don't want other file writes at the same time.
-                    folder
-                        .resolve(GENERATED_PATH)
-                        .resolve("job.json")
-                        .takeIf { it.isWritable() }
-                        .expect("Could not write state to file: $this")
-                        .writeText(
-                            s,
-                            Charsets.UTF_8,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.TRUNCATE_EXISTING,
-                        )
-                }
+                // We stay locked here because we don't want other file writes at the same time.
+                folder
+                    .resolve(GENERATED_PATH)
+                    .resolve("job.json")
+                    .takeIf { it.isWritable() }
+                    .expect("Could not write state to file: $this")
+                    .writeText(
+                        s,
+                        Charsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING,
+                    )
+            }
         }
     }
 

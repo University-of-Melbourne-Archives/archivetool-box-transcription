@@ -21,6 +21,7 @@ val GENERATED_PATH_REL_PAT: Regex = "^${Regex.escape(GENERATED_PATH)}".toRegex()
 abstract class JobState(
     val rootDir: Path,
     protected var files: MutableMap<Path, JobFile?> = mutableMapOf(),
+    open val save: (folder: Path) -> Unit = {},
 ) {
     abstract val variant: JobStateVariant<*>
 
@@ -55,6 +56,7 @@ abstract class JobState(
                     }
                 }
         toUpdate.forEach { (path, body) -> files[path] = body }
+        save(rootDir)
     }
 
     fun scan(directory: Path, initial: Boolean = false) {
