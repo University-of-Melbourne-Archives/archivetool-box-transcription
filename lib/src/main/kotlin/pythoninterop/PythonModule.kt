@@ -1,8 +1,7 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
 import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.util.unwrap
-import au.edu.unimelb.archivetool.util.validate
+import au.edu.unimelb.archivetool.logging.Log.expect
 import java.io.BufferedReader
 import java.lang.ref.WeakReference
 import java.nio.file.FileSystems
@@ -13,9 +12,9 @@ import kotlin.io.path.isRegularFile
 import kotlin.io.path.relativeTo
 import kotlin.io.path.toPath
 import kotlin.io.path.walk
+import kotlin.reflect.KProperty
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
-import kotlin.reflect.KProperty
 
 // A Python context where the code is treated as a "module".
 // The code is evaluated at load-time, and should ideally have minimal side-effects
@@ -31,10 +30,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
         {}.javaClass
             .getResource("/python/$folder")
             ?.toURI()
-            .unwrap {
-                Log.error("Python ModuleFolder $folder not found")
-                throw RuntimeException()
-            }
+            .expect("Python ModuleFolder $folder not found")
             .let { it.toPath() to it }
             .let {
                 val path = it.first
@@ -46,7 +42,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
                             dirPath
                                 .walk()
                                 .map {
-                                    it.validate { it.exists() && it.isRegularFile() }
+                                    it.takeIf { it.exists() && it.isRegularFile() }
                                         ?.relativeTo(jarFs.getPath("/python"))
                                 }
                                 .filter { it?.extension == "py" }
@@ -58,7 +54,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
                         path
                             .walk()
                             .map {
-                                it.validate { it.exists() && it.isRegularFile() }
+                                it.takeIf { it.exists() && it.isRegularFile() }
                                     ?.relativeTo(
                                         {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
                                     )
@@ -104,7 +100,6 @@ data class MemberSet(
     internal val filteredMembers
         get() = members.get()!!.toMap().filter { member -> filters.all { it(member.value) } }
 
-    @OptIn(ExperimentalStdlibApi::class)
     operator fun get(index: String): Value? {
         if (filteredMembers.containsKey(index)) return filteredMembers[index]
 
@@ -115,7 +110,7 @@ data class MemberSet(
 
             members[index] = out
 
-            out.validate { v -> filters.all { it(v) } }
+            out.takeIf { v -> filters.all { it(v) } }
         }
     }
 

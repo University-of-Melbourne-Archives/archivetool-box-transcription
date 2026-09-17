@@ -1,11 +1,11 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
 import au.edu.unimelb.archivetool.logging.Log
+import java.lang.ref.WeakReference
 import kotlin.getValue
 import org.graalvm.polyglot.Context
 import org.graalvm.python.embedding.GraalPyResources
 import org.graalvm.python.embedding.VirtualFileSystem
-import java.lang.ref.WeakReference
 
 sealed class PythonContext(inject: Set<Injectable> = setOf()) {
     private val vfs by lazy {
