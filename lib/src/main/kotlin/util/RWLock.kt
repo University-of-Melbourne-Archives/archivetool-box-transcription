@@ -10,7 +10,8 @@ const val RWLock_READERS_MAX = Int.MAX_VALUE
 
 class RWLock<T, LockIDType : Any>(private var inner: T, val maxReaders: Int = RWLock_READERS_MAX) {
     private val readers = mutableSetOf<LockRequest.Reader<LockIDType>>()
-    private val writer = Mutex()
+    private var writer: MutexHolder.Writer<LockIDType>? = null
+    private val mutex = Mutex()
 
     private val requestQueue = ArrayDeque<LockRequest<LockIDType>>()
 
@@ -18,12 +19,12 @@ class RWLock<T, LockIDType : Any>(private var inner: T, val maxReaders: Int = RW
 
     suspend fun read(lockId: LockIDType): RWLockReadGuard<T, LockIDType> {
         suspend fun actuallyLock(): RWLockReadGuard<T, LockIDType> {
-            if (!writer.isLocked) writer.lock(MutexHolder.Readers)
-            if (readers.add(LockRequest.Reader(lockId))) error("Lock Already Held by this ID")
+            if (!mutex.isLocked) mutex.lock(MutexHolder.Readers)
+            if (!readers.add(LockRequest.Reader(lockId))) error("Lock Already Held by this ID")
             return RWLockReadGuard(Box(inner), lockId, this::release)
         }
         if (
-            (!writer.isLocked || writer.holdsLock(MutexHolder.Readers)) && readers.size < maxReaders
+            (!mutex.isLocked || mutex.holdsLock(MutexHolder.Readers)) && readers.size < maxReaders
         ) {
             return actuallyLock()
         }
@@ -36,10 +37,11 @@ class RWLock<T, LockIDType : Any>(private var inner: T, val maxReaders: Int = RW
 
     suspend fun write(lockId: LockIDType): RWLockWriteGuard<T, LockIDType> {
         suspend fun actuallyLock(): RWLockWriteGuard<T, LockIDType> {
-            writer.lock(MutexHolder.Writer(lockId))
+            writer = MutexHolder.Writer(lockId)
+            mutex.lock(writer)
             return RWLockWriteGuard(Box(inner), lockId, this::release)
         }
-        if (writer.isLocked) {
+        if (!mutex.isLocked) {
             return actuallyLock()
         }
         val req = LockRequest.Reader(lockId)
@@ -55,15 +57,17 @@ class RWLock<T, LockIDType : Any>(private var inner: T, val maxReaders: Int = RW
                 readers.remove(LockRequest.Reader(guard.lockID))
             }
             is RWLockWriteGuard<T, LockIDType> -> {
-                writer.unlock(MutexHolder.Writer(guard.lockID))
+                assert(writer?.id?.equals(guard.lockID) ?: false)
+                mutex.unlock(writer)
+                writer = null
             }
         }
 
-        if (writer.holdsLock(MutexHolder.Readers)) {
-            if (readers.isEmpty()) writer.unlock(MutexHolder.Readers) else admitNewReaders()
+        if (mutex.holdsLock(MutexHolder.Readers)) {
+            if (readers.isEmpty()) mutex.unlock(MutexHolder.Readers) else admitNewReaders()
         }
 
-        if (!writer.isLocked) {
+        if (!mutex.isLocked) {
             when (requestQueue.firstOrNull()) {
                 is LockRequest.Reader<LockIDType> -> {
                     admitNewReaders()
@@ -148,7 +152,7 @@ class RWLock<T, LockIDType : Any>(private var inner: T, val maxReaders: Int = RW
     sealed interface MutexHolder {
         object Readers : MutexHolder
 
-        class Writer<LockIDType>(id: LockIDType) : MutexHolder
+        class Writer<LockIDType>(val id: LockIDType) : MutexHolder
     }
 
     sealed interface LockRequest<LockIDType : Any> {
