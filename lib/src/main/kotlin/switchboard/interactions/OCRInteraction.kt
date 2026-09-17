@@ -10,6 +10,7 @@ class PythonOCRInteraction : OCRInteraction {
     val module by lazy {
         PythonModule(folder = TODO("Put Module Path Here"), setOf(LoggerInjectable()))
     }
+
     override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         TODO("Concrete Implementation Incomplete.")
     }

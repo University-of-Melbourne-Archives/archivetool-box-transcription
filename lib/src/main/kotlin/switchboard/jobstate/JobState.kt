@@ -111,7 +111,7 @@ abstract class JobState(
 
     companion object {
         fun generatedCropPaths(file: JobRelativePath, data: JobFile): Set<JobRelativePath> {
-            if (data.vertexes.isEmpty()) return setOf()
+            if (data.vertexes.isNullOrEmpty()) return setOf()
             return data.vertexes.keys
                 // TODO: Remove extension from the middle resolution here.
                 .flatMap<String, JobRelativePath?> { boxName ->

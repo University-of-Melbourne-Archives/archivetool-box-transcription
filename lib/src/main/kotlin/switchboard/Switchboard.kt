@@ -27,7 +27,10 @@ object Switchboard :
         ReviewGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
-        CSVExportInteraction(Path("/")), // TODO: Flag if the export destination is not set. We should set this to a default in the CLI before getting here.
+        CSVExportInteraction(
+            Path("/")
+        ), // TODO: Flag if the export destination is not set. We should set this to a default in the
+        // CLI before getting here.
     )
 
 object MockSwitchboard :

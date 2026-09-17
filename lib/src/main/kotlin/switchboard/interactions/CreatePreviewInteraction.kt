@@ -11,6 +11,7 @@ class PythonCreatePreviewInteraction : CreatePreviewInteraction {
     val module by lazy {
         PythonModule(folder = TODO("Put Module Path Here"), setOf(LoggerInjectable()))
     }
+
     override fun createPreview(
         files: Set<JobRelativePath>,
         weights: Path,
@@ -54,5 +55,5 @@ interface CreatePreviewInteraction : Interaction {
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.let { it.vertexes.isEmpty() && !it.approved }
+        file.second.let { it.vertexes?.isEmpty() && !it.approved }
 }

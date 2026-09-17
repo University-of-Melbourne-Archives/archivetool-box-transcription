@@ -3,9 +3,6 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import java.nio.file.Path
-
-
 
 class StdOutExportInteraction : ExportInteraction {
     override fun export(files: Map<JobRelativePath, JobFile>) {
@@ -34,7 +31,7 @@ class StringExportInteraction : ExportInteraction {
 
     override fun export(files: Map<JobRelativePath, JobFile>) {
         files.forEach { (path, file) ->
-            file.vertexes.forEach { (boxId, box) ->
+            file.vertexes?.forEach { (boxId, box) ->
                 box.keyedBoundaries.forEach { cropId, crop ->
                     builder.append("${path.relative}::${"$boxId-$cropId"}: ${crop.transcription};;")
                 }
@@ -49,9 +46,9 @@ interface ExportInteraction : Interaction {
     fun export(files: Map<JobRelativePath, JobFile>)
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.vertexes.values.all { box ->
+        file.second.vertexes?.values?.all { box ->
             box.keyedBoundaries.values.all { it.transcription != null }
-        }
+        } ?: false
 
     companion object : ComposableInteraction<ExportInteraction> {
         override fun compose(vararg children: ExportInteraction): ExportInteraction {

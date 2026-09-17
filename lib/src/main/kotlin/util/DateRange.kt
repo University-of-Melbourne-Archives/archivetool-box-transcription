@@ -9,35 +9,27 @@ import kotlinx.datetime.format.char
 // The UoM CMS always stores this in the format "yyyy-yyyy;yyyy-MM-dd;yyy-MM-dd".
 // If there is no end date, store as just "yyyy;;".
 class DateRange(val startDate: LocalDate, val endDate: LocalDate?) {
-    val startYear by lazy {
-        startDate.year
-    }
-    val endYear by lazy {
-        endDate?.year
-    }
+    val startYear by lazy { startDate.year }
+    val endYear by lazy { endDate?.year }
 
-    val yearRange by lazy {
-        "$startYear${endYear?.let { "-$endYear" } ?: ""}"
-    }
+    val yearRange by lazy { "$startYear${endYear?.let { "-$endYear" } ?: ""}" }
 
     val dateFormatter: DateTimeFormat<LocalDate> by lazy {
         LocalDate.Format {
-            year(Padding.NONE); char('-'); monthNumber(); char('-'); day();
+            year(Padding.NONE)
+            char('-')
+            monthNumber()
+            char('-')
+            day()
         }
     }
 
-    val startDateString by lazy {
-        startDate.format(dateFormatter)
-    }
+    val startDateString by lazy { startDate.format(dateFormatter) }
 
-    val endDateString by lazy {
-        endDate?.format(dateFormatter)
-    }
+    val endDateString by lazy { endDate?.format(dateFormatter) }
 
     val CSVString by lazy {
-        yearRange + (endDate?.let {
-            ";$startDateString;$endDateString"
-        } ?: ";;")
+        yearRange + (endDate?.let { ";$startDateString;$endDateString" } ?: ";;")
     }
 
     companion object {
@@ -51,9 +43,12 @@ class DateRange(val startDate: LocalDate, val endDate: LocalDate?) {
             return DateRange(dates.min(), last)
         }
 
-        // If we only have years, insert them as YYYY-01-01 or YYYY-12-31 depending on if start or end.
-        // Right now this doesn't do anything because this scanning is potentially a weird algorithm.
-        // We should also be aware that sometimes boxes feature numbers that look like dates, but aren’t.
+        // If we only have years, insert them as YYYY-01-01 or YYYY-12-31 depending on if start or
+        // end.
+        // Right now this doesn't do anything because this scanning is potentially a weird
+        // algorithm.
+        // We should also be aware that sometimes boxes feature numbers that look like dates, but
+        // aren’t.
         private fun getAllDates(transcript: String): Set<LocalDate> {
             TODO("Do some pattern matching or something here.")
         }
