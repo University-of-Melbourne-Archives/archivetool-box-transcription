@@ -16,7 +16,7 @@ class FlattenInteraction : ImageManipulationInteraction {
 
         files.forEach { (jpath, info) ->
             val _in = CV.readImage(jpath.absolute)
-            info.vertexes.forEach { (id, box) ->
+            info.vertexes?.forEach { (id, box) ->
                 box.keyedBoundaries.forEach { cropId, boundary ->
                     val srcQuad = boundary.points
 

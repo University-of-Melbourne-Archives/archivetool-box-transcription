@@ -22,7 +22,7 @@ interface ImageManipulationInteraction : Interaction {
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
         // NOTE: We always re-run image processing because there's no good way to know if we need to
         // apply/reapply.
-        file.second.let { it.vertexes.isNotEmpty() && it.approved }
+        file.second.let { it.vertexes?.isNotEmpty() ?: false && it.approved }
 
     companion object : ComposableInteraction<ImageManipulationInteraction> {
         override fun compose(

@@ -20,7 +20,7 @@ class MockOCRInteraction : OCRInteraction {
     override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         Log.error("Running Mock OCR, nothing will be done.")
         files.forEach { (path, file) ->
-            file.vertexes.forEach { (boxId, box) ->
+            file.vertexes?.forEach { (boxId, box) ->
                 box.keyedBoundaries.forEach { (cropId, boundary) ->
                     Log.debug("Transcribing ${path.relative}::$boxId-$cropId")
                 }
@@ -35,10 +35,10 @@ interface OCRInteraction : Interaction {
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean {
         return file.second.let { jobFile ->
-            jobFile.vertexes.values.run {
+            jobFile.vertexes?.values?.run {
                 isNotEmpty() &&
                     this.any { box -> box.keyedBoundaries.values.any { it.transcription == null } }
-            }
+            } ?: false
         }
         /*TODO: Add a check for if the generated crop etc exists.*/
     }

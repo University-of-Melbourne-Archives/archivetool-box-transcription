@@ -55,5 +55,5 @@ interface CreatePreviewInteraction : Interaction {
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.let { it.vertexes?.isEmpty() && !it.approved }
+        file.second.let { it.vertexes.isNullOrEmpty() && !it.approved }
 }
