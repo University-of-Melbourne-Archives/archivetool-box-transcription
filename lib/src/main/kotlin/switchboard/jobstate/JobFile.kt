@@ -6,11 +6,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class JobFile(
-    val vertexes: MutableMap<String, ArchiveBox> = mutableMapOf(),
+    val vertexes: MutableMap<String, ArchiveBox>? = null,
     val approved: Boolean = false,
 ) {
     val minConfidence: Double
-        get() = vertexes.values.minOf { it.minConfidence }
+        get() = vertexes?.values?.minOf { it.minConfidence } ?: -999.0
 }
 
 @Serializable

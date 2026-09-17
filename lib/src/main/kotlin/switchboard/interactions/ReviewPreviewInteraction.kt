@@ -3,6 +3,7 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.isNotNull
 
 class ReviewGUIInteraction : ReviewPreviewInteraction {
     override fun review(
@@ -35,5 +36,5 @@ interface ReviewPreviewInteraction : Interaction {
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.let { it.vertexes.isNotEmpty() && !it.approved }
+        file.second.let { it.vertexes.isNotNull() && !it.approved }
 }
