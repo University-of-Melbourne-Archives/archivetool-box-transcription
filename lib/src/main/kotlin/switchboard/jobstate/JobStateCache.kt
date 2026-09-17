@@ -20,7 +20,8 @@ class JobStateCache<S : JobState> {
         inline fun <reified T : JobStateVariant<S>, S : JobState> getCache(
             variant: T
         ): JobStateCache<S> {
-            // We know that we have the right type, but Kotlin complains about the cast regardless.
+            // We know that we have the right type from the function's type constraints,
+            // but Kotlin complains about the cast regardless.
             @Suppress("UNCHECKED_CAST")
             return ((caches.entries.filter { it.key is T }.map { it.value }.firstOrNull()
                 ?: run {
