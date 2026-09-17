@@ -7,25 +7,43 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
+import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobState
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isReadable
 import kotlin.io.path.isWritable
+import kotlin.io.path.readText
+import kotlin.time.Clock
 
 class MemoryJobStateInteraction : JobStateInteraction {
     val variant = JobStateVariant.Memory
 
-    override fun create(folder: Path): JobState {
-        return getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
-            .put(folder, ConcreteJobState(folder, initial = true))
+    override fun create(folder: Path): JobState = runBlocking {
+        getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
+            .write(Clock.System.now()).use {
+                it.value.put(folder, ConcreteJobState(folder, initial = true))
+            }
     }
 
     // TODO: Some sort of check for a file hash or something to detect user file changes that miss
     // cache.
-    override fun read(folder: Path): JobState? =
-        getCache<JobStateVariant.Memory, ConcreteJobState>(variant).getOrTry(folder) {
-            ConcreteJobState(folder)
-        }
+    override fun read(folder: Path): JobState = runBlocking {
+        val state =
+            getCache<JobStateVariant.Memory, ConcreteJobState>(variant).read(Clock.System.now()).use {
+                it.value.get(folder)
+            }
+
+        if (state != null) return@runBlocking state
+
+        val new = ConcreteJobState(folder)
+
+        return@runBlocking getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
+            .write(Clock.System.now()).use {
+                it.value.put(folder, new)
+            }
+    }
 
     override fun write(folder: Path) {
         Log.debug("Noop writing in-memory job state.")
@@ -36,8 +54,6 @@ class MemoryJobStateInteraction : JobStateInteraction {
 
     companion object : JobStateInteractionCompanion {
         override fun present(folder: Path): Boolean =
-            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeIf {
-                it.exists() && it.isReadable() && it.isWritable()
-            } == null
+            false
     }
 }

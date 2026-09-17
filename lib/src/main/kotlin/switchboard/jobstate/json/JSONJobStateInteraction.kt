@@ -20,6 +20,8 @@ import kotlin.io.path.isWritable
 import kotlin.io.path.notExists
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
+import kotlin.time.Clock
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 class JSONJobStateInteraction : JobStateInteraction {
@@ -33,44 +35,66 @@ class JSONJobStateInteraction : JobStateInteraction {
             .expect("Could not create new Job State.")
             .createFile(asFileAttribute(fromString("rw-rw-r--")))
 
-        return getCache<JobStateVariant.JSON, JSONJobState>(variant)
-            .put(folder, JSONJobState(folder))
+        return runBlocking {
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).write(Clock.System.now()).use {
+                it.value.put(folder, JSONJobState(folder))
+            }
+        }
     }
 
     // TODO: Some sort of check for a file hash or something to detect user file changes that miss
     // cache.
-    override fun read(folder: Path): JobState? =
-        getCache<JobStateVariant.JSON, JSONJobState>(variant).getOrTry(folder) {
+    override fun read(folder: Path): JobState? = runBlocking {
+        val state =
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).read(Clock.System.now()).use {
+                it.value.get(folder)
+            }
+
+        if (state != null) return@runBlocking state
+
+        val _try =
             try {
                 val path =
                     folder.resolve(GENERATED_PATH).resolve("job.json").takeIf {
                         it.exists() && it.isReadable() && it.isWritable()
                     }
-                JSONJobState(folder, Json.parseToJsonElement(path!!.readText()))
+                JSONJobState(folder, Json.parseToJsonElement(path!!.readText()), ::write)
             } catch (e: Exception) {
                 Log.error("Failed to load Job State: ${e.message ?: ""}")
                 null
             }
+
+        return@runBlocking _try?.also { try_ ->
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).write(Clock.System.now()).use {
+                it.value.put(folder, try_)
+            }
         }
+    }
 
     override fun write(folder: Path) {
-        val s =
+        runBlocking {
             getCache<JobStateVariant.JSON, JSONJobState>(variant)
-                .get(folder)
-                .expect("Tried to write non-existent JSON State.")
-                .toJsonElement()
-                .toStrictString()
-        folder
-            .resolve(GENERATED_PATH)
-            .resolve("job.json")
-            .takeIf { it.isWritable() }
-            .expect("Could not write state to file: $this")
-            .writeText(
-                s,
-                Charsets.UTF_8,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING,
-            )
+                .write(Clock.System.now())
+                .use { lock ->
+                    val s = lock.value
+                        .get(folder)
+                        .expect("Tried to write non-existent JSON State.")
+                        .toJsonElement()
+                        .toStrictString()
+                    // We stay locked here because we don't want other file writes at the same time.
+                    folder
+                        .resolve(GENERATED_PATH)
+                        .resolve("job.json")
+                        .takeIf { it.isWritable() }
+                        .expect("Could not write state to file: $this")
+                        .writeText(
+                            s,
+                            Charsets.UTF_8,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.TRUNCATE_EXISTING,
+                        )
+                }
+        }
     }
 
     override val companion: JobStateInteractionCompanion
@@ -78,8 +102,8 @@ class JSONJobStateInteraction : JobStateInteraction {
 
     companion object : JobStateInteractionCompanion {
         override fun present(folder: Path): Boolean =
-            folder.resolve(GENERATED_PATH).resolve("job.json").first().takeIf {
+            folder.resolve(GENERATED_PATH).resolve("job.json").any {
                 it.exists() && it.isReadable() && it.isWritable()
-            } == null
+            }
     }
 }

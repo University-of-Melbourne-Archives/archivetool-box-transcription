@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
+import au.edu.unimelb.archivetool.util.RWLock
 import java.nio.file.Path
+import kotlin.time.Instant
 
 // Do not use this class' constructor. It is only public because `getCache` needs to be inline.
 class JobStateCache<S : JobState> {
@@ -15,21 +17,21 @@ class JobStateCache<S : JobState> {
     fun remove(idx: Path) = cache.remove(idx)
 
     companion object {
-        val caches = mutableMapOf<JobStateVariant<*>, JobStateCache<*>>()
+        val caches = mutableMapOf<JobStateVariant<*>, RWLock<JobStateCache<*>, Instant>>()
 
         inline fun <reified T : JobStateVariant<S>, S : JobState> getCache(
             variant: T
-        ): JobStateCache<S> {
+        ): RWLock<JobStateCache<S>, Instant> {
             // We know that we have the right type from the function's type constraints,
             // but Kotlin complains about the cast regardless.
             @Suppress("UNCHECKED_CAST")
             return ((caches.entries.filter { it.key is T }.map { it.value }.firstOrNull()
                 ?: run {
-                    val v = JobStateCache<S>()
+                    val v = RWLock<JobStateCache<*>, Instant>(JobStateCache<S>())
                     caches[variant] = v
                     v
                 })
-                as JobStateCache<S>)
+                as RWLock<JobStateCache<S>, Instant>)
         }
     }
 }
