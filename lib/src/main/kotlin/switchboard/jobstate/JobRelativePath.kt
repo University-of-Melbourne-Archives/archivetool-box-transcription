@@ -11,4 +11,8 @@ class JobRelativePath(val rootDirectory: Path, private val rel: Path) {
 
     val relative by this::rel
     val absolute by lazy { rootDirectory.resolve(rel).absolute() }
+
+    override fun toString(): String {
+        return "JobRelativePath($absolute: relative to $rootDirectory)"
+    }
 }
