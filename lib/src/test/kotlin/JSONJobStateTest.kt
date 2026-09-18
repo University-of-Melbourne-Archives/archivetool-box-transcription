@@ -102,8 +102,10 @@ class JSONJobStateTest {
                     .toMutableMap(),
         )
 
+        JSONJobStateWriterThread.waitWhileWriting()
+
         assertDoesNotThrow {
-            Json.parseToJsonElement(jsonPath.readText())
+            Json.parseToJsonElement(jsonPath.readText().also { Log.debug("${jsonPath.pathString} contains \"$it\"") })
         }
 
         cacheLock.unlock("exportJson")
@@ -214,8 +216,6 @@ class JSONJobStateTest {
                 ?.jsonObject["vertexes"]
                 ?.toStrictString()?.contains("{\"x\":1,\"y\":1}").takeIf { true }
         )
-
-
 
         cacheLock.unlock("exportMultiJson")
     }

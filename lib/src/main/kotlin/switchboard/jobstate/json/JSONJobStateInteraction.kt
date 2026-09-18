@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -25,20 +26,17 @@ import kotlin.io.path.isReadable
 import kotlin.io.path.isWritable
 import kotlin.io.path.notExists
 import kotlin.io.path.readText
-import kotlin.io.path.writeText
-import kotlin.time.Clock
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.json.Json
+import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createParentDirectories
 
 object JSONJobStateWriterThread {
     fun write(value: Pair<Path, JSONString>) = writerFlow.tryEmit(value)
 
-    private val writeMutex = Mutex()
     suspend fun waitWhileWriting() {
-        writeMutex.lock()
-        writeMutex.unlock()
+        val target = writerFlow.value ?: return
+        lastCompleted.first { it == target }
     }
 
     private val writerFlow: MutableStateFlow<Pair<Path, JSONString>?> by lazy {
@@ -49,11 +47,9 @@ object JSONJobStateWriterThread {
         // This emits a warning because it can play strangely with lifetimes.
         // However, we genuinely want this thread to run for the whole application, so this is okay.
         @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) { consumer.collect { pair ->
+        GlobalScope.launch(Dispatchers.IO) {
+            consumer.collect { pair ->
             if (pair != null) {
-                if (!writeMutex.isLocked) {
-                    writeMutex.lock()
-                }
                 val folder = pair.first
                 val s = pair.second
 
@@ -62,20 +58,23 @@ object JSONJobStateWriterThread {
                     .resolve("job.json")
                     .takeIf { it.isWritable() }
                     .expect("Could not write state to file: $this")
-                    .writeText(
-                        s,
+                    .bufferedWriter(
                         Charsets.UTF_8,
+                        bufferSize = DEFAULT_BUFFER_SIZE,
                         StandardOpenOption.CREATE,
-                        StandardOpenOption.TRUNCATE_EXISTING,
-                    )
+                        StandardOpenOption.TRUNCATE_EXISTING
+                    ).use {
+                        it.write(
+                            s.inner
+                        )
+                    }
 
-                if (consumer.value == pair) {
-                    writeMutex.unlock()
-                }
+                lastCompleted.emit(pair)
             }
         } }
         return@lazy flow
     }
+    private val lastCompleted = MutableStateFlow<Pair<Path, JSONString>?>(null)
 }
 
 class JSONJobStateInteraction : JobStateInteraction {
