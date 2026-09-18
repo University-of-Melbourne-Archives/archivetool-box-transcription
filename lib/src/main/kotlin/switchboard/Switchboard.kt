@@ -172,7 +172,7 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun reviewPreview(directory: Path) {
+    fun reviewPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
         val toUpdate =
             reviewPreview.review(
@@ -181,7 +181,8 @@ open class AbstractSwitchboard(
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
-                    .expect("Could not load list of valid files.")
+                    .expect("Could not load list of valid files."),
+                autoApproveThreshold
             )
         state?.update(toUpdate)
     }
