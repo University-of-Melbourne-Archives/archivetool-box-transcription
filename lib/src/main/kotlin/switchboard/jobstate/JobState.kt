@@ -60,14 +60,17 @@ abstract class JobState(
     }
 
     fun scan(directory: Path, initial: Boolean = false) {
-        val currentFiles = directory.walk()
-            .map {it.relativeTo(directory)}
-            .filter { ignore(it) }
-            .map { JobRelativePath(directory, it) }
+        val currentFiles =
+            directory
+                .walk()
+                .map { it.relativeTo(directory) }
+                .filter { ignore(it) }
+                .map { JobRelativePath(directory, it) }
 
         val missingFiles = currentFiles.filter { !files.keys.contains(it.relative) }
         if (!initial) {
-            val deletedFiles = files.keys.filter { f -> !currentFiles.map { it.relative }.contains(f) }
+            val deletedFiles =
+                files.keys.filter { f -> !currentFiles.map { it.relative }.contains(f) }
 
             // TODO Allow ignoring missing, removing deleted or suppressing warning or something.
             Log.warn(
@@ -97,7 +100,8 @@ abstract class JobState(
                 .let { file.absolute }
                 .takeIf {
                     // Don't bother indexing non-images or files we can't read.
-                    // Though we still need to store them as null to prevent rechecking them all the time
+                    // Though we still need to store them as null to prevent rechecking them all the
+                    // time
                     it.isReadable() && it.isImage()
                 }
                 ?.let { JobFile() }

@@ -1,13 +1,13 @@
 package au.edu.unimelb.archivetool.util.concurrency
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 // Implementation inspired by Allen B. Downey's wonderful Little Book of Semaphores:
 //                                          https://greenteapress.com/wp/semaphores/
-// This file is available under the AGPL license of the larger work, or CC BY-NC-SA 4.0 at your option.
+// This file is available under the AGPL license of the larger work, or CC BY-NC-SA 4.0 at your
+// option.
 class Lightswitch() {
     private val counter: AtomicInteger = AtomicInteger(0)
     private val mutex: Mutex = Mutex()
@@ -29,7 +29,7 @@ class Lightswitch() {
 
     suspend fun lock(otherMutex: Mutex) {
         mutex.withLock {
-            val counterSnapshot = counter.incrementAndGet();
+            val counterSnapshot = counter.incrementAndGet()
             if (counterSnapshot == 1) {
                 otherMutex.lock()
             }
@@ -48,7 +48,7 @@ class Lightswitch() {
 
     suspend fun unlock(otherMutex: Mutex) {
         mutex.withLock {
-            val counterSnapshot = counter.decrementAndGet();
+            val counterSnapshot = counter.decrementAndGet()
             if (counterSnapshot == 0) {
                 otherMutex.unlock()
             }

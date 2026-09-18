@@ -17,7 +17,7 @@ class PythonCreatePreviewInteraction : CreatePreviewInteraction {
         weights: Path,
         rejectConfidenceThreshold: Double,
         edgeBufferSize: Double,
-        rejectCentroidRadius: Double
+        rejectCentroidRadius: Double,
     ): Map<JobRelativePath, JobFile> {
         TODO("Concrete Implementation Incomplete.")
     }
@@ -29,7 +29,7 @@ class MockCreatePreviewInteraction : CreatePreviewInteraction {
         weights: Path,
         rejectConfidenceThreshold: Double,
         edgeBufferSize: Double,
-        rejectCentroidRadius: Double
+        rejectCentroidRadius: Double,
     ): Map<JobRelativePath, JobFile> {
         Log.error("Using Mock Implementation of Create Preview. Nothing will be done.")
         val fileCountLimit = 15
@@ -62,7 +62,7 @@ interface CreatePreviewInteraction : Interaction {
         // Distance from edge for which if a box is fully within, should be rejected.
         edgeBufferSize: Double = TODO(),
         // Compares the centroids of boxes to detect duplicates (in px)
-        rejectCentroidRadius: Double = TODO()
+        rejectCentroidRadius: Double = TODO(),
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =

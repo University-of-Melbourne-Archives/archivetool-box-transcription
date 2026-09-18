@@ -9,6 +9,18 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
+import java.nio.file.attribute.PosixFilePermissions.fromString
+import kotlin.io.path.bufferedWriter
+import kotlin.io.path.createFile
+import kotlin.io.path.createParentDirectories
+import kotlin.io.path.exists
+import kotlin.io.path.isReadable
+import kotlin.io.path.isWritable
+import kotlin.io.path.notExists
+import kotlin.io.path.readText
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -16,20 +28,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
-import java.nio.file.attribute.PosixFilePermissions.fromString
-import kotlin.io.path.createFile
-import kotlin.io.path.exists
-import kotlin.io.path.isReadable
-import kotlin.io.path.isWritable
-import kotlin.io.path.notExists
-import kotlin.io.path.readText
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import kotlin.io.path.bufferedWriter
-import kotlin.io.path.createParentDirectories
 
 object JSONJobStateWriterThread {
     fun write(value: Pair<Path, JSONString>) = writerFlow.tryEmit(value)
@@ -49,29 +49,27 @@ object JSONJobStateWriterThread {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             consumer.collect { pair ->
-            if (pair != null) {
-                val folder = pair.first
-                val s = pair.second
+                if (pair != null) {
+                    val folder = pair.first
+                    val s = pair.second
 
-                folder
-                    .resolve(GENERATED_PATH)
-                    .resolve("job.json")
-                    .takeIf { it.isWritable() }
-                    .expect("Could not write state to file: $this")
-                    .bufferedWriter(
-                        Charsets.UTF_8,
-                        bufferSize = DEFAULT_BUFFER_SIZE,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.TRUNCATE_EXISTING
-                    ).use {
-                        it.write(
-                            s.inner
+                    folder
+                        .resolve(GENERATED_PATH)
+                        .resolve("job.json")
+                        .takeIf { it.isWritable() }
+                        .expect("Could not write state to file: $this")
+                        .bufferedWriter(
+                            Charsets.UTF_8,
+                            bufferSize = DEFAULT_BUFFER_SIZE,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.TRUNCATE_EXISTING,
                         )
-                    }
+                        .use { it.write(s.inner) }
 
-                lastCompleted.emit(pair)
+                    lastCompleted.emit(pair)
+                }
             }
-        } }
+        }
         return@lazy flow
     }
     private val lastCompleted = MutableStateFlow<Pair<Path, JSONString>?>(null)
@@ -100,9 +98,7 @@ class JSONJobStateInteraction : JobStateInteraction {
     // cache.
     override fun read(folder: Path): JobState? = runBlocking {
         val state =
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).withReadLock {
-                it.get(folder)
-            }
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).withReadLock { it.get(folder) }
 
         if (state != null) return@runBlocking state
 
@@ -127,8 +123,7 @@ class JSONJobStateInteraction : JobStateInteraction {
 
     override fun write(folder: Path) {
         runBlocking {
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).readLock().use {
-                lock ->
+            getCache<JobStateVariant.JSON, JSONJobState>(variant).readLock().use { lock ->
                 val s =
                     lock.value
                         .get(folder)

@@ -17,7 +17,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.time.Instant
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 
@@ -68,9 +67,7 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("createPreview")
-        cache.withWriteLock {
-            it.remove(directory)
-        }
+        cache.withWriteLock { it.remove(directory) }
 
         MockSwitchboard.createPreview(
             directory,

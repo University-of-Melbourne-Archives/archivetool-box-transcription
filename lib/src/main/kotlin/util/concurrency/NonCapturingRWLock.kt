@@ -6,11 +6,15 @@ import kotlinx.coroutines.sync.Mutex
 const val MAX_UNLOCK_ATTEMPTS = 1000
 
 // Implementation inspired by the Writer-priority reader-writer problem
-// in Allen B. Downey's wonderful Little Book of Semaphores: https://greenteapress.com/wp/semaphores/
-// This file is available under the AGPL license of the larger work, or CC BY-NC-SA 4.0 at your option.
+// in Allen B. Downey's wonderful Little Book of Semaphores:
+// https://greenteapress.com/wp/semaphores/
+// This file is available under the AGPL license of the larger work, or CC BY-NC-SA 4.0 at your
+// option.
 class NonCapturingRWLock {
     typealias Unlocker = suspend () -> Unit
+
     typealias TryUnlocker = (() -> Unit)
+
     val readSwitch = Lightswitch()
     val writeSwitch = Lightswitch()
     val noReaders = Mutex()
@@ -19,8 +23,12 @@ class NonCapturingRWLock {
     suspend fun writeLock(): Unlocker {
         writeSwitch.lock(noReaders)
         noWriters.lock()
-        return { noWriters.unlock(); writeSwitch.unlock(noReaders) }
+        return {
+            noWriters.unlock()
+            writeSwitch.unlock(noReaders)
+        }
     }
+
     fun tryWriteLock(): TryUnlocker? {
         if (!writeSwitch.tryLock(noReaders)) return null
         if (!noWriters.tryLock()) {
@@ -53,7 +61,7 @@ class NonCapturingRWLock {
         if (!gotSwitch) return null
         return {
             var unlockAttempts = 0
-            while (!readSwitch.tryUnlock(noWriters))  {
+            while (!readSwitch.tryUnlock(noWriters)) {
                 (unlockAttempts++)
                     .takeIf { it < MAX_UNLOCK_ATTEMPTS }
                     .expect("Could not unlock non-suspending reader.")

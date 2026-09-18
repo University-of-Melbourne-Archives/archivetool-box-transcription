@@ -7,7 +7,6 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import java.nio.file.Path
-import kotlin.time.Clock
 import kotlinx.coroutines.runBlocking
 
 class MemoryJobStateInteraction : JobStateInteraction {
@@ -23,8 +22,9 @@ class MemoryJobStateInteraction : JobStateInteraction {
     // cache.
     override fun read(folder: Path): JobState = runBlocking {
         val state =
-            getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
-                .withWriteLock { it.get(folder) }
+            getCache<JobStateVariant.Memory, ConcreteJobState>(variant).withWriteLock {
+                it.get(folder)
+            }
 
         if (state != null) return@runBlocking state
 
