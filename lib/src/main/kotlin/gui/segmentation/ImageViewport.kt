@@ -5,6 +5,9 @@ import io.nacular.doodle.core.View
 import io.nacular.doodle.drawing.Canvas
 import io.nacular.doodle.drawing.Color
 import io.nacular.doodle.drawing.paint
+import io.nacular.doodle.event.PointerEvent
+import io.nacular.doodle.event.PointerListener
+import io.nacular.doodle.event.PointerMotionListener
 import io.nacular.doodle.geometry.Rectangle
 import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
@@ -38,6 +41,10 @@ class ImageViewport(
     private var originX = 0.0
     private var originY = 0.0
 
+    // Original mouse position when dragging
+    private var lastPointerX: Double? = null
+    private var lastPointerY: Double? = null
+
     // Marks if scaleToFit() should be called on startup
     private var didInitialFit = false
 
@@ -57,6 +64,43 @@ class ImageViewport(
             }
 
             rerender()
+        }
+
+        pointerChanged += object : PointerListener {
+            override fun pressed(event: PointerEvent) {
+                lastPointerX = event.location.x
+                lastPointerY = event.location.y
+            }
+
+            override fun released(event: PointerEvent) {
+                lastPointerX = null
+                lastPointerY = null
+            }
+
+            override fun exited(event: PointerEvent) {
+                lastPointerX = null
+                lastPointerY = null
+            }
+        }
+
+        pointerMotionChanged += object : PointerMotionListener {
+            override fun dragged(event: PointerEvent) {
+                val localX = lastPointerX
+                val localY = lastPointerY
+
+                if (localX != null && localY != null) {
+                    val currX = event.location.x
+                    val currY = event.location.y
+
+                    originX += (currX - localX)
+                    originY += (currY - localY)
+
+                    lastPointerX = currX
+                    lastPointerY = currY
+
+                    rerender()
+                }
+            }
         }
     }
 
