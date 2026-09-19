@@ -102,6 +102,26 @@ class ImageViewport(
         rerender()
     }
 
+    fun previous() {
+        print(" w" + width + " h" + height)
+    }
+
+    fun next() {
+        print("test")
+    }
+
+    fun confirm() {
+        print("test")
+    }
+
+    fun create() {
+        print("test")
+    }
+
+    fun delete() {
+        print("test")
+    }
+
     override fun render(canvas: Canvas) {
         canvas.rect(bounds.atOrigin, fill = Color.Lightgray.paint)
 

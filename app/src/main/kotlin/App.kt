@@ -11,6 +11,7 @@ import io.nacular.doodle.application.Modules.Companion.ImageModule
 import io.nacular.doodle.application.Modules.Companion.PointerModule
 import io.nacular.doodle.application.application
 import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicButtonBehavior
+import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicLabelBehavior
 import java.nio.file.Path
 import org.kodein.di.instance
 
@@ -84,7 +85,7 @@ fun main() {
                 ),
         )
 
-    application(modules = listOf(basicButtonBehavior(), PointerModule, ImageModule)) {
+    application(modules = listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule)) {
         SegmentationInterface(
             jobs = jobs,
             display = instance(),
