@@ -168,6 +168,11 @@ class ImageViewport(
     }
 
     override fun render(canvas: Canvas) {
+        // Fits image to viewport if image finished loading before view had been formatted
+        if (!didInitialFit && image != null && width > 0 && height > 0) {
+            scaleToFit()
+        }
+
         canvas.rect(bounds.atOrigin, fill = Color.Lightgray.paint)
 
         image?.let { img ->
