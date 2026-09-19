@@ -40,8 +40,8 @@ class SegmentationInterface(
         themeManager.selected = theme
 
         // Above viewport
-        val zoomInButton = PushButton("+")
-        val zoomOutButton = PushButton("-")
+        val zoomInButton = PushButton("+").apply { fired += { viewport.zoomIn() } }
+        val zoomOutButton = PushButton("-").apply   { fired += { viewport.zoomOut() } }
         val fitButton     = PushButton("Fit").apply      { fired += { viewport.scaleToFit() } }
 
         // Below viewport

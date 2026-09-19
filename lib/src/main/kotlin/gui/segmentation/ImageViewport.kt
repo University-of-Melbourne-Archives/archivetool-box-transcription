@@ -20,6 +20,12 @@ class ImageViewport(
     private val imageLoader: ImageLoader,
     appScope: CoroutineScope,
 ) : View() {
+    companion object {
+        private const val MIN_ZOOM       = 0.02
+        private const val MAX_ZOOM       = 40.0
+        private const val ZOOM_INTERVAL      = 1.25
+    }
+
     private var image: Image? = null
 
     private var imageWidth = 0.0
@@ -54,20 +60,45 @@ class ImageViewport(
         }
     }
 
+    fun zoomIn()  = zoomBy(ZOOM_INTERVAL)
+    fun zoomOut() = zoomBy(1.0 / ZOOM_INTERVAL)
+
+    private fun zoomBy(factor: Double) {
+        if (image == null) return
+
+        val newZoom = (zoom * factor).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        val centerX = width  / 2
+        val centerY = height / 2
+
+        // Retain image point at viewpoint's centre
+        val imagePointX = (centerX - originX) / zoom
+        val imagePointY = (centerY - originY) / zoom
+
+        zoom = newZoom
+
+        originX = centerX - imagePointX * zoom
+        originY = centerY - imagePointY * zoom
+
+        rerender()
+    }
+
     fun scaleToFit() {
         if (image == null || imageWidth <= 0 || imageHeight <= 0) return
         if (width <= 0 || height <= 0) return
 
         val scaleX = width / imageWidth
         val scaleY = height / imageHeight
+
         zoom = min(scaleX, scaleY)
 
         val renderedW = imageWidth * zoom
         val renderedH = imageHeight * zoom
+
         originX = (width - renderedW) / 2
         originY = (height - renderedH) / 2
 
         didInitialFit = true
+
         rerender()
     }
 
