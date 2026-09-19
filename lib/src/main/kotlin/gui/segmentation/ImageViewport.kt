@@ -21,9 +21,9 @@ class ImageViewport(
     appScope: CoroutineScope,
 ) : View() {
     companion object {
-        private const val MIN_ZOOM       = 0.02
-        private const val MAX_ZOOM       = 40.0
-        private const val ZOOM_INTERVAL      = 1.25
+        private const val MIN_ZOOM = 0.02
+        private const val MAX_ZOOM = 40.0
+        private const val ZOOM_INTERVAL = 1.25
     }
 
     private var image: Image? = null
@@ -60,14 +60,15 @@ class ImageViewport(
         }
     }
 
-    fun zoomIn()  = zoomBy(ZOOM_INTERVAL)
+    fun zoomIn() = zoomBy(ZOOM_INTERVAL)
+
     fun zoomOut() = zoomBy(1.0 / ZOOM_INTERVAL)
 
     private fun zoomBy(factor: Double) {
         if (image == null) return
 
         val newZoom = (zoom * factor).coerceIn(MIN_ZOOM, MAX_ZOOM)
-        val centerX = width  / 2
+        val centerX = width / 2
         val centerY = height / 2
 
         // Retain image point at viewpoint's centre
@@ -103,7 +104,7 @@ class ImageViewport(
     }
 
     fun previous() {
-        print(" w" + width + " h" + height)
+        print("test")
     }
 
     fun next() {

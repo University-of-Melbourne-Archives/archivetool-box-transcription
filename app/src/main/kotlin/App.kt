@@ -85,7 +85,9 @@ fun main() {
                 ),
         )
 
-    application(modules = listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule)) {
+    application(
+        modules = listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule)
+    ) {
         SegmentationInterface(
             jobs = jobs,
             display = instance(),

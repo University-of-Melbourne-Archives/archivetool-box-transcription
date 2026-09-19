@@ -12,10 +12,7 @@ import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.geometry.Size
 import io.nacular.doodle.image.ImageLoader
 import io.nacular.doodle.layout.constraints.Strength.Companion.Medium
-import io.nacular.doodle.layout.constraints.Strength.Companion.Strong
-import io.nacular.doodle.layout.constraints.Strength.Companion.Weak
 import io.nacular.doodle.layout.constraints.constrain
-import io.nacular.doodle.layout.constraints.fill
 import io.nacular.doodle.theme.Theme
 import io.nacular.doodle.theme.ThemeManager
 import java.nio.file.Path
@@ -45,39 +42,47 @@ class SegmentationInterface(
 
         // Above viewport
         val zoomInButton = PushButton("+").apply { fired += { viewport.zoomIn() } }
-        val zoomOutButton = PushButton("-").apply   { fired += { viewport.zoomOut() } }
-        val fitButton     = PushButton("Fit").apply      { fired += { viewport.scaleToFit() } }
+        val zoomOutButton = PushButton("-").apply { fired += { viewport.zoomOut() } }
+        val fitButton = PushButton("Fit").apply { fired += { viewport.scaleToFit() } }
 
         // Below viewport
-        val bottomButtons = listOf(
-            PushButton("Previous").apply      { fired += { viewport.previous() } },
-            PushButton("Next").apply      { fired += { viewport.next() } },
-            PushButton("Confirm").apply      { fired += { viewport.confirm() } },
-            PushButton("Create").apply      { fired += { viewport.create() } },
-            PushButton("Delete").apply      { fired += { viewport.delete() } }
-        )
+        val bottomButtons =
+            listOf(
+                PushButton("Previous").apply { fired += { viewport.previous() } },
+                PushButton("Next").apply { fired += { viewport.next() } },
+                PushButton("Confirm").apply { fired += { viewport.confirm() } },
+                PushButton("Create").apply { fired += { viewport.create() } },
+                PushButton("Delete").apply { fired += { viewport.delete() } },
+            )
 
-        val buttonWidth  = 90.0
+        val buttonWidth = 90.0
         val buttonHeight = 32.0
-        val buttonGap    = 20.0
-        val rowWidth     = bottomButtons.size * buttonWidth + (bottomButtons.size - 1) * buttonGap
+        val buttonGap = 20.0
+        val bottomRowWidth = bottomButtons.size * buttonWidth + (bottomButtons.size - 1) * buttonGap
 
         val buttonRow = container {
             bottomButtons.forEach { this += it }
 
-            layout = constrain(bottomButtons[0], bottomButtons[1], bottomButtons[2], bottomButtons[3], bottomButtons[4]) { b1, b2, b3, b4, b5 ->
-                listOf(b1, b2, b3, b4, b5).forEach {
-                    it.top    eq 0
-                    it.width  eq buttonWidth
-                    it.height eq buttonHeight
-                }
+            layout =
+                constrain(
+                    bottomButtons[0],
+                    bottomButtons[1],
+                    bottomButtons[2],
+                    bottomButtons[3],
+                    bottomButtons[4],
+                ) { b1, b2, b3, b4, b5 ->
+                    listOf(b1, b2, b3, b4, b5).forEach {
+                        it.top eq 0
+                        it.width eq buttonWidth
+                        it.height eq buttonHeight
+                    }
 
-                b1.left eq 0
-                b2.left eq b1.right + buttonGap
-                b3.left eq b2.right + buttonGap
-                b4.left eq b3.right + buttonGap
-                b5.left eq b4.right + buttonGap
-            }
+                    b1.left eq 0
+                    b2.left eq b1.right + buttonGap
+                    b3.left eq b2.right + buttonGap
+                    b4.left eq b3.right + buttonGap
+                    b5.left eq b4.right + buttonGap
+                }
         }
 
         val fileCounter = Label("000/" + String.format("%03d", jobs.size))
@@ -86,30 +91,37 @@ class SegmentationInterface(
             this += buttonRow
             this += fileCounter
 
-            layout = constrain(buttonRow, fileCounter) { row, txt ->
-                row.top     eq 0
-                row.centerX eq parent.centerX
-                row.width   eq rowWidth
-                row.height  eq buttonHeight
+            layout =
+                constrain(buttonRow, fileCounter) { row, txt ->
+                    row.top eq 0
+                    row.centerX eq parent.centerX
+                    row.width eq bottomRowWidth
+                    row.height eq buttonHeight
 
-                txt.top    eq row.bottom + 10
-                txt.right  eq parent.right
-                txt.width  eq fileCounter.idealSize.width
-                txt.height eq fileCounter.idealSize.height
-            }
+                    txt.top eq row.bottom + 10
+                    txt.right eq parent.right
+                    txt.width eq fileCounter.idealSize.width
+                    txt.height eq fileCounter.idealSize.height
+                }
         }
 
         display += listOf(zoomOutButton, zoomInButton, fitButton, viewport, bottomBar)
         display.fill(Color(0xECECECu).paint)
 
         display.layout =
-            constrain(zoomInButton, zoomOutButton, fitButton, viewport, bottomBar) { zIn, zOut, fit, vp, btm ->
+            constrain(zoomInButton, zoomOutButton, fitButton, viewport, bottomBar) {
+                zIn,
+                zOut,
+                fit,
+                vp,
+                btm ->
                 vp.top eq 60
+                vp.bottom eq parent.height - 80
                 vp.centerX eq parent.centerX
                 vp.height lessEq parent.height - vp.top - 30
                 vp.width lessEq parent.width - 40
                 vp.width eq vp.height * (4.0 / 3.0)
-                vp.width eq 5000 strength Weak
+                vp.width eq 5000 strength Medium
 
                 fit.top eq 14
                 fit.right eq vp.right
@@ -126,7 +138,7 @@ class SegmentationInterface(
                 zIn.width eq 32
                 zIn.height eq 32
 
-                btm.top    eq vp.bottom + 10
+                btm.top eq vp.bottom + 10
                 btm.centerX eq parent.centerX
                 btm.width eq parent.width - 40
                 btm.bottom eq parent.bottom - 10
