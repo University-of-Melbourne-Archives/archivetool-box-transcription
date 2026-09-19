@@ -5,9 +5,11 @@ import io.nacular.doodle.core.View
 import io.nacular.doodle.drawing.Canvas
 import io.nacular.doodle.drawing.Color
 import io.nacular.doodle.drawing.paint
+import io.nacular.doodle.drawing.stroke
 import io.nacular.doodle.event.PointerEvent
 import io.nacular.doodle.event.PointerListener
 import io.nacular.doodle.event.PointerMotionListener
+import io.nacular.doodle.geometry.Point
 import io.nacular.doodle.geometry.Rectangle
 import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
@@ -15,6 +17,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlin.math.min
+import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -27,6 +30,8 @@ class ImageViewport(
         private const val MIN_ZOOM = 0.02
         private const val MAX_ZOOM = 40.0
         private const val ZOOM_INTERVAL = 1.25
+        private const val VERTEX_SIZE = 8.0
+        private const val LINE_THICKNESS = 2.0
     }
 
     private var image: Image? = null
@@ -48,6 +53,9 @@ class ImageViewport(
     // Marks if scaleToFit() should be called on startup
     private var didInitialFit = false
 
+    // Guarantees each box crop retains its initial colouring
+    private val pairColours = mutableMapOf<Int, Color>()
+
     init {
         clipCanvasToBounds = true
 
@@ -66,42 +74,44 @@ class ImageViewport(
             rerender()
         }
 
-        pointerChanged += object : PointerListener {
-            override fun pressed(event: PointerEvent) {
-                lastPointerX = event.location.x
-                lastPointerY = event.location.y
-            }
+        pointerChanged +=
+            object : PointerListener {
+                override fun pressed(event: PointerEvent) {
+                    lastPointerX = event.location.x
+                    lastPointerY = event.location.y
+                }
 
-            override fun released(event: PointerEvent) {
-                lastPointerX = null
-                lastPointerY = null
-            }
+                override fun released(event: PointerEvent) {
+                    lastPointerX = null
+                    lastPointerY = null
+                }
 
-            override fun exited(event: PointerEvent) {
-                lastPointerX = null
-                lastPointerY = null
-            }
-        }
-
-        pointerMotionChanged += object : PointerMotionListener {
-            override fun dragged(event: PointerEvent) {
-                val localX = lastPointerX
-                val localY = lastPointerY
-
-                if (localX != null && localY != null) {
-                    val currX = event.location.x
-                    val currY = event.location.y
-
-                    originX += (currX - localX)
-                    originY += (currY - localY)
-
-                    lastPointerX = currX
-                    lastPointerY = currY
-
-                    rerender()
+                override fun exited(event: PointerEvent) {
+                    lastPointerX = null
+                    lastPointerY = null
                 }
             }
-        }
+
+        pointerMotionChanged +=
+            object : PointerMotionListener {
+                override fun dragged(event: PointerEvent) {
+                    val localX = lastPointerX
+                    val localY = lastPointerY
+
+                    if (localX != null && localY != null) {
+                        val currX = event.location.x
+                        val currY = event.location.y
+
+                        originX += (currX - localX)
+                        originY += (currY - localY)
+
+                        lastPointerX = currX
+                        lastPointerY = currY
+
+                        rerender()
+                    }
+                }
+            }
     }
 
     fun zoomIn() = zoomBy(ZOOM_INTERVAL)
@@ -185,6 +195,89 @@ class ImageViewport(
                         width = imageWidth * zoom,
                         height = imageHeight * zoom,
                     ),
+            )
+        }
+
+        // Runs for each pair of crops
+        val currJob = jobs.values.first() ?: return
+        currJob.crops
+            .filterKeys { it.startsWith("b") }
+            .forEach { (key, crop) ->
+                val i = key.drop(1)
+
+                val box = crop as? JobFile.BoxCrop ?: return@forEach
+                val label = currJob.crops["l$i"] as? JobFile.LabelCrop ?: return@forEach
+
+                val boxStrokeColour = indexColour(i.toInt())
+
+                drawPair(box, label, boxStrokeColour, canvas)
+            }
+    }
+
+    private fun drawPair(
+        box: JobFile.BoxCrop,
+        label: JobFile.LabelCrop,
+        boxStrokeColour: Color,
+        canvas: Canvas,
+    ) {
+        val boxPts = box.points.inner.map { toScreen(it) }
+        val labelPts = label.points.inner.map { toScreen(it) }
+
+        val boxStroke = (boxStrokeColour).paint.stroke(thickness = LINE_THICKNESS)
+        val labelStroke = (Color.Blue).paint.stroke(thickness = LINE_THICKNESS)
+
+        // Connecting lines
+        for (i in boxPts.indices) {
+            val point1 = boxPts[i]
+            val point2 = boxPts[(i + 1) % boxPts.size]
+
+            canvas.line(point1, point2, stroke = boxStroke)
+        }
+        for (i in labelPts.indices) {
+            val point1 = labelPts[i]
+            val point2 = labelPts[(i + 1) % labelPts.size]
+
+            canvas.line(point1, point2, stroke = labelStroke)
+        }
+
+        // Vertices for when selected
+        boxPts.forEach { point ->
+            canvas.rect(
+                Rectangle(
+                    x = point.x - VERTEX_SIZE / 2,
+                    y = point.y - VERTEX_SIZE / 2,
+                    width = VERTEX_SIZE,
+                    height = VERTEX_SIZE,
+                ),
+                fill = Color.White.paint,
+                stroke = Color.Blue.paint.stroke(thickness = 1.0),
+            )
+        }
+        labelPts.forEach { point ->
+            canvas.rect(
+                Rectangle(
+                    x = point.x - VERTEX_SIZE / 2,
+                    y = point.y - VERTEX_SIZE / 2,
+                    width = VERTEX_SIZE,
+                    height = VERTEX_SIZE,
+                ),
+                fill = Color.White.paint,
+                stroke = Color.Blue.paint.stroke(thickness = 1.0),
+            )
+        }
+    }
+
+    // Takes in singular point of crop and scales and returns it as Doodle Point object
+    private fun toScreen(v: au.edu.unimelb.archivetool.util.geometry.Point): Point {
+        return Point(originX + v.first * zoom, originY + v.second * zoom)
+    }
+
+    private fun indexColour(index: Int): Color {
+        return pairColours.getOrPut(index) {
+            Color(
+                Random.nextInt(256).toUByte(),
+                Random.nextInt(256).toUByte(),
+                Random.nextInt(256).toUByte(),
             )
         }
     }

@@ -47,11 +47,33 @@ fun main() {
                                     points =
                                         Rectangle.create(
                                             1700 to 150,
-                                            2180 to 250,
+                                            2180 to 210,
                                             2140 to 310,
                                             1700 to 300,
                                         ),
                                     confidence = 0.90,
+                                ),
+                            "b2" to
+                                JobFile.BoxCrop(
+                                    points =
+                                        Rectangle.create(
+                                            260 to 400,
+                                            2120 to 510,
+                                            2060 to 870,
+                                            300 to 750,
+                                        ),
+                                    confidence = 1.0,
+                                ),
+                            "l2" to
+                                JobFile.LabelCrop(
+                                    points =
+                                        Rectangle.create(
+                                            1630 to 630,
+                                            2020 to 670,
+                                            2030 to 800,
+                                            1600 to 760,
+                                        ),
+                                    confidence = 0.88,
                                 ),
                         )
                 ),
