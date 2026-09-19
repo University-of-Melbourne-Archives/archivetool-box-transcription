@@ -182,7 +182,7 @@ open class AbstractSwitchboard(
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
                     .expect("Could not load list of valid files."),
-                autoApproveThreshold
+                autoApproveThreshold,
             )
         state?.update(toUpdate)
     }
