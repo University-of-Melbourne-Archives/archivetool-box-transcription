@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.app
 
-// IMPORTS PURELY FOR TEST INPUT
 import au.edu.unimelb.archivetool.gui.segmentation.SegmentationInterface
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.LogLevel

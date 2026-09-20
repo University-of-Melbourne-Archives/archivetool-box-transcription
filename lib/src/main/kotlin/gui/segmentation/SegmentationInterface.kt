@@ -30,7 +30,16 @@ class SegmentationInterface(
 ) : Application {
     // For asynchronous image loading
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val viewport = ImageViewport(jobs, imageLoader, appScope)
+    private val fileCounter = Label("")
+    private val viewport =
+        ImageViewport(
+            jobs,
+            imageLoader,
+            appScope,
+            onImageChanged = { index, total ->
+                fileCounter.text = "%03d/%03d".format(index + 1, total)
+            },
+        )
 
     init {
         windows.main.apply {
@@ -85,7 +94,8 @@ class SegmentationInterface(
                 }
         }
 
-        val fileCounter = Label("000/" + String.format("%03d", jobs.size))
+        fileCounter.text = "%03d/%03d".format(viewport.currentIndex + 1, viewport.totalImages)
+        // val fileCounter = Label("000/" + String.format("%03d", jobs.size))
 
         val bottomBar = container {
             this += buttonRow

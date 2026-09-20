@@ -22,9 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class ImageViewport(
-    private val jobs: Map<Path, JobFile?>,
+    private val jobsIn: Map<Path, JobFile?>,
     private val imageLoader: ImageLoader,
-    appScope: CoroutineScope,
+    private val appScope: CoroutineScope,
+    private val onImageChanged: (index: Int, total: Int) -> Unit = { _, _ -> },
 ) : View() {
     companion object {
         private const val MIN_ZOOM = 0.02
@@ -34,8 +35,25 @@ class ImageViewport(
         private const val LINE_THICKNESS = 2.0
     }
 
-    private var image: Image? = null
+    // -- Job data ------------------------------
+    // need to maintain insertion order for create()
+    private val jobs: LinkedHashMap<Path, JobFile> =
+        LinkedHashMap<Path, JobFile>().apply {
+            jobsIn.forEach { (path, job) -> put(path, job ?: JobFile()) }
+        }
+    private val paths: List<Path> = jobs.keys.toList()
 
+    var currentIndex: Int = 0
+        private set
+
+    val totalImages: Int
+        get() = paths.size
+
+    private val currentJob: JobFile
+        get() = jobs.getValue(paths[currentIndex])
+
+    // -- Image display -------------------------
+    private var image: Image? = null
     private var imageWidth = 0.0
     private var imageHeight = 0.0
 
@@ -56,23 +74,12 @@ class ImageViewport(
     // Guarantees each box crop retains its initial colouring
     private val pairColours = mutableMapOf<Int, Color>()
 
+    // -- Selection -----------------------------
+    // stuff here
+
     init {
         clipCanvasToBounds = true
-
-        val path = jobs.keys.first()
-
-        appScope.launch {
-            val loaded = imageLoader.load(path.toDataUri()) ?: return@launch
-            image = loaded
-            imageWidth = loaded.size.width
-            imageHeight = loaded.size.height
-
-            if (width > 0 && height > 0) {
-                scaleToFit()
-            }
-
-            rerender()
-        }
+        loadImage(paths[currentIndex])
 
         pointerChanged +=
             object : PointerListener {
@@ -158,11 +165,39 @@ class ImageViewport(
     }
 
     fun previous() {
-        print("test")
+        if (currentIndex <= 0) {
+            return
+        }
+
+        currentIndex--
+        loadImage(paths[currentIndex])
+        onImageChanged(currentIndex, totalImages)
     }
 
     fun next() {
-        print("test")
+        if (currentIndex >= paths.size - 1) {
+            return
+        }
+
+        currentIndex++
+        loadImage(paths[currentIndex])
+        onImageChanged(currentIndex, totalImages)
+    }
+
+    private fun loadImage(path: Path) {
+        image = null
+        didInitialFit = false
+        appScope.launch {
+            val loaded = imageLoader.load(path.toDataUri()) ?: return@launch
+            image = loaded
+            imageWidth = loaded.size.width
+            imageHeight = loaded.size.height
+
+            if (width > 0 && height > 0) {
+                scaleToFit()
+            }
+            rerender()
+        }
     }
 
     fun confirm() {
@@ -199,14 +234,14 @@ class ImageViewport(
         }
 
         // Runs for each pair of crops
-        val currJob = jobs.values.first() ?: return
-        currJob.crops
+        val job = currentJob
+        job.crops
             .filterKeys { it.startsWith("b") }
             .forEach { (key, crop) ->
                 val i = key.drop(1)
 
                 val box = crop as? JobFile.BoxCrop ?: return@forEach
-                val label = currJob.crops["l$i"] as? JobFile.LabelCrop ?: return@forEach
+                val label = job.crops["l$i"] as? JobFile.LabelCrop ?: return@forEach
 
                 val boxStrokeColour = indexColour(i.toInt())
 
@@ -282,7 +317,6 @@ class ImageViewport(
         }
     }
 
-    // THIS IS TEMPORARY AND AM JUST READING ENTIRE JPEG INTO MEMORY
     private fun Path.toDataUri(): String {
         val bytes = Files.readAllBytes(this)
         val mime = Files.probeContentType(this) ?: "image/jpeg"
