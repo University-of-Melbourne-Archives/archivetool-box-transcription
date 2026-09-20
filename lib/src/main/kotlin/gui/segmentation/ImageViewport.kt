@@ -21,6 +21,23 @@ import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+/** Represents a vertex in image-pixel space and only for proposed selection state. */
+data class VertexDouble(val x: Double, val y: Double)
+
+/**
+ * The in-progress and unconfirmed edit state for the currently selected crop pair. "boxPoints" and
+ * "labelPoints" are initially copied from the input job state. Is changed by the user dragging
+ * selection. Saved to jobs only when "confirm()" is called.
+ */
+private class SelectionProposal(
+    val number: Int,
+    val boxPoints: MutableList<VertexDouble>,
+    val labelPoints: MutableList<VertexDouble>,
+
+    // Only true when the selection is a Create() so it can be deleted if never confirmed
+    var isUnconfirmedCreation: Boolean,
+)
+
 class ImageViewport(
     private val jobsIn: Map<Path, JobFile?>,
     private val imageLoader: ImageLoader,
@@ -35,7 +52,7 @@ class ImageViewport(
         private const val LINE_THICKNESS = 2.0
     }
 
-    // -- Job data ------------------------------
+    // -- Job data ------------------------------------------------------------
     // need to maintain insertion order for create()
     private val jobs: LinkedHashMap<Path, JobFile> =
         LinkedHashMap<Path, JobFile>().apply {
@@ -52,7 +69,7 @@ class ImageViewport(
     private val currentJob: JobFile
         get() = jobs.getValue(paths[currentIndex])
 
-    // -- Image display -------------------------
+    // -- Image display -------------------------------------------------------
     private var image: Image? = null
     private var imageWidth = 0.0
     private var imageHeight = 0.0
@@ -64,18 +81,18 @@ class ImageViewport(
     private var originX = 0.0
     private var originY = 0.0
 
-    // Original mouse position when dragging
-    private var lastPointerX: Double? = null
-    private var lastPointerY: Double? = null
-
     // Marks if scaleToFit() should be called on startup
     private var didInitialFit = false
 
     // Guarantees each box crop retains its initial colouring
     private val pairColours = mutableMapOf<Int, Color>()
 
-    // -- Selection -----------------------------
-    // stuff here
+    // -- Selection -----------------------------------------------------------
+    private var selection: SelectionProposal? = null
+
+    // Original mouse position when dragging
+    private var lastPointerX: Double? = null
+    private var lastPointerY: Double? = null
 
     init {
         clipCanvasToBounds = true
@@ -145,19 +162,24 @@ class ImageViewport(
     }
 
     fun scaleToFit() {
-        if (image == null || imageWidth <= 0 || imageHeight <= 0) return
-        if (width <= 0 || height <= 0) return
+        if (image == null || imageWidth <= 0 || imageHeight <= 0) {
+            return
+        }
+
+        if (width <= 0 || height <= 0) {
+            return
+        }
 
         val scaleX = width / imageWidth
         val scaleY = height / imageHeight
 
         zoom = min(scaleX, scaleY)
 
-        val renderedW = imageWidth * zoom
-        val renderedH = imageHeight * zoom
+        val renderedWidth = imageWidth * zoom
+        val renderedHeight = imageHeight * zoom
 
-        originX = (width - renderedW) / 2
-        originY = (height - renderedH) / 2
+        originX = (width - renderedWidth) / 2
+        originY = (height - renderedHeight) / 2
 
         didInitialFit = true
 
@@ -187,6 +209,7 @@ class ImageViewport(
     private fun loadImage(path: Path) {
         image = null
         didInitialFit = false
+
         appScope.launch {
             val loaded = imageLoader.load(path.toDataUri()) ?: return@launch
             image = loaded
@@ -196,6 +219,7 @@ class ImageViewport(
             if (width > 0 && height > 0) {
                 scaleToFit()
             }
+
             rerender()
         }
     }
@@ -211,6 +235,48 @@ class ImageViewport(
     fun delete() {
         print("test")
     }
+
+    // -- Selection -----------------------------------------------------------
+
+    private fun selectPair(n: Int) {
+        val job = currentJob
+        val box = (job.crops["b$n"] as? JobFile.BoxCrop)?.points?.toVertices() ?: mutableListOf()
+        val label =
+            (job.crops["l$n"] as? JobFile.LabelCrop)?.points?.toVertices() ?: mutableListOf()
+
+        selection = SelectionProposal(n, box, label, isUnconfirmedCreation = false)
+    }
+
+    // -- Helper Converters ---------------------------------------------------
+
+    private fun au.edu.unimelb.archivetool.util.geometry.Rectangle.toVertices():
+        MutableList<VertexDouble> {
+        return inner.map { VertexDouble(it.first.toDouble(), it.second.toDouble()) }.toMutableList()
+    }
+
+    private fun Path.toDataUri(): String {
+        val bytes = Files.readAllBytes(this)
+        val mime = Files.probeContentType(this) ?: "image/jpeg"
+        val encoded = Base64.getEncoder().encodeToString(bytes)
+        return "data:$mime;base64,$encoded"
+    }
+
+    // Takes in singular point of crop and scales and returns it as Doodle Point object
+    private fun toScreen(v: au.edu.unimelb.archivetool.util.geometry.Point): Point {
+        return Point(originX + v.first * zoom, originY + v.second * zoom)
+    }
+
+    private fun indexColour(index: Int): Color {
+        return pairColours.getOrPut(index) {
+            Color(
+                Random.nextInt(256).toUByte(),
+                Random.nextInt(256).toUByte(),
+                Random.nextInt(256).toUByte(),
+            )
+        }
+    }
+
+    // -- Rendering -----------------------------------------------------------
 
     override fun render(canvas: Canvas) {
         // Fits image to viewport if image finished loading before view had been formatted
@@ -300,27 +366,5 @@ class ImageViewport(
                 stroke = Color.Blue.paint.stroke(thickness = 1.0),
             )
         }
-    }
-
-    // Takes in singular point of crop and scales and returns it as Doodle Point object
-    private fun toScreen(v: au.edu.unimelb.archivetool.util.geometry.Point): Point {
-        return Point(originX + v.first * zoom, originY + v.second * zoom)
-    }
-
-    private fun indexColour(index: Int): Color {
-        return pairColours.getOrPut(index) {
-            Color(
-                Random.nextInt(256).toUByte(),
-                Random.nextInt(256).toUByte(),
-                Random.nextInt(256).toUByte(),
-            )
-        }
-    }
-
-    private fun Path.toDataUri(): String {
-        val bytes = Files.readAllBytes(this)
-        val mime = Files.probeContentType(this) ?: "image/jpeg"
-        val encoded = Base64.getEncoder().encodeToString(bytes)
-        return "data:$mime;base64,$encoded"
     }
 }
