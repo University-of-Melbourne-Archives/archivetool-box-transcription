@@ -20,6 +20,7 @@ import kotlin.math.min
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.sqrt
 
 /** Represents a vertex in image-pixel space and only for proposed selection state. */
 data class VertexDouble(val x: Double, val y: Double)
@@ -50,6 +51,7 @@ class ImageViewport(
         private const val ZOOM_INTERVAL = 1.25
         private const val VERTEX_SIZE = 8.0
         private const val LINE_THICKNESS = 2.0
+        private const val VERTEX_DETECTION_RADIUS = 10.0
     }
 
     // -- Job data ------------------------------------------------------------
@@ -101,9 +103,9 @@ class ImageViewport(
 
     private var dragMode: DragMode? = null
 
-    // Original mouse position when dragging
-    private var lastPointerX: Double? = null
-    private var lastPointerY: Double? = null
+    // Original viewport position where mouse press started
+    private var previousViewportX = 0.0
+    private var previousViewportY = 0.0
 
     init {
         clipCanvasToBounds = true
@@ -112,41 +114,21 @@ class ImageViewport(
         pointerChanged +=
             object : PointerListener {
                 override fun pressed(event: PointerEvent) {
-                    lastPointerX = event.location.x
-                    lastPointerY = event.location.y
+                    handlePointerEvent(event)
                 }
 
                 override fun released(event: PointerEvent) {
-                    lastPointerX = null
-                    lastPointerY = null
+                    dragMode = null
                 }
 
                 override fun exited(event: PointerEvent) {
-                    lastPointerX = null
-                    lastPointerY = null
+                    dragMode = null
                 }
             }
 
-        pointerMotionChanged +=
-            object : PointerMotionListener {
-                override fun dragged(event: PointerEvent) {
-                    val localX = lastPointerX
-                    val localY = lastPointerY
-
-                    if (localX != null && localY != null) {
-                        val currX = event.location.x
-                        val currY = event.location.y
-
-                        originX += (currX - localX)
-                        originY += (currY - localY)
-
-                        lastPointerX = currX
-                        lastPointerY = currY
-
-                        rerender()
-                    }
-                }
-            }
+        pointerMotionChanged += object : PointerMotionListener {
+            override fun dragged(event: PointerEvent) { handleDragged(event) }
+        }
     }
 
     fun zoomIn() = zoomBy(ZOOM_INTERVAL)
@@ -250,21 +232,54 @@ class ImageViewport(
     // -- Selection -----------------------------------------------------------
 
     private fun handlePressed(event: PointerEvent) {
-        val sx = event.location.x
-        val sy = event.location.y
+        // Current mouse position in viewport coordinates
+        val selectionX = event.location.x
+        val selectionY = event.location.y
 
-        // this is NOT normalised with the zoom yet
-        val imgPt = VertexDouble(sx, sy)
+        previousViewportX = selectionX
+        previousViewportY = selectionY
 
-        // DOESN'T handle deselect drag transition yet
-        val found = findCropAtPoint(imgPt)
+        // Convert mouse position to image coordinates
+        val imgPoint = VertexDouble(selectionX, selectionY)
+
+        val hadSelection = selection != null
+
+        selection?.let { selection ->
+            // Assigns current user drag to moving selected vertex
+            selectedVertex(selection, selectionX, selectionY)?.let { (isBox, index) ->
+                dragMode = DragMode.VertexDragging(isBox, index)
+                return
+            }
+
+            // Assigns current user drag to moving crop pair
+            if (pointInQuadrilateral(imgPoint, selection.boxPoints) || pointInQuadrilateral(imgPoint, selection.labelPoints)) {
+                dragMode = DragMode.AreaDragging
+                return
+            }
+        }
+
+        val foundNumber = findCropAtPoint(imgPoint)
         dragMode =
-            if (found != null) {
-                selectPair(found)
+            // Standard selection
+            if (foundNumber != null) {
+                selectPair(foundNumber)
                 DragMode.AreaDragging
-            } else {
+            }
+            // Deselect mouse click should not become pan
+            else if (hadSelection) {
+                null
+            }
+            else {
                 DragMode.Panning
             }
+
+        rerender()
+    }
+
+    private fun handleDragged(event: PointerEvent) {
+
+        // TO-DO IMPLEMENT
+
         rerender()
     }
 
@@ -323,6 +338,29 @@ class ImageViewport(
         return isInside
     }
 
+    // returns exact vertex of a crop pair the user interacts with
+    private fun selectedVertex(selection: SelectionProposal, selectionX: Double, selectionY: Double): Pair<Boolean, Int>? {
+        selection.boxPoints.forEachIndexed { i, vertex ->
+            if (distance(toScreen(vertex), selectionX, selectionY) <= VERTEX_DETECTION_RADIUS) {
+                return true to i
+            }
+        }
+
+        selection.labelPoints.forEachIndexed { i, vertex ->
+            if (distance(toScreen(vertex), selectionX, selectionY) <= VERTEX_DETECTION_RADIUS) {
+                return false to i
+            }
+        }
+
+        return null
+    }
+
+    private fun distance(p: Point, x: Double, y: Double): Double {
+        val dx = p.x - x
+        val dy = p.y - y
+        return sqrt(dx * dx + dy * dy)
+    }
+
     // -- Helper Converters ---------------------------------------------------
 
     private fun au.edu.unimelb.archivetool.util.geometry.Rectangle.toVertices():
@@ -338,8 +376,8 @@ class ImageViewport(
     }
 
     // Takes in singular point of crop and scales and returns it as Doodle Point object
-    private fun toScreen(v: au.edu.unimelb.archivetool.util.geometry.Point): Point {
-        return Point(originX + v.first * zoom, originY + v.second * zoom)
+    private fun toScreen(vertexDouble: VertexDouble): Point {
+        return Point(originX + vertexDouble.x * zoom, originY + vertexDouble.y * zoom)
     }
 
     private fun indexColour(index: Int): Color {
@@ -397,8 +435,17 @@ class ImageViewport(
         boxStrokeColour: Color,
         canvas: Canvas,
     ) {
-        val boxPts = box.points.inner.map { toScreen(it) }
-        val labelPts = label.points.inner.map { toScreen(it) }
+        val boxPts: List<VertexDouble> = box.points.inner.map { point ->
+            VertexDouble(
+                x = point.first.toDouble(),
+                y = point.second.toDouble()
+            )}
+
+        val labelPts: List<VertexDouble> = label.points.inner.map { point ->
+            VertexDouble(
+                x = point.first.toDouble(),
+                y = point.second.toDouble()
+            )}
 
         val boxStroke = (boxStrokeColour).paint.stroke(thickness = LINE_THICKNESS)
         val labelStroke = (Color.Blue).paint.stroke(thickness = LINE_THICKNESS)
