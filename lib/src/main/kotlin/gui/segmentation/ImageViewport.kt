@@ -17,10 +17,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlin.math.min
+import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.math.sqrt
 
 /** Represents a vertex in image-pixel space and only for proposed selection state. */
 data class VertexDouble(val x: Double, val y: Double)
@@ -126,14 +126,24 @@ class ImageViewport(
                 }
             }
 
-        pointerMotionChanged += object : PointerMotionListener {
-            override fun dragged(event: PointerEvent) { handleDragged(event) }
-        }
+        pointerMotionChanged +=
+            object : PointerMotionListener {
+                override fun dragged(event: PointerEvent) {
+                    handleDragged(event)
+                }
+            }
+
+        loadImage(paths[currentIndex])
+        onImageChanged(currentIndex, totalImages)
     }
 
-    fun zoomIn() = zoomBy(ZOOM_INTERVAL)
+    fun zoomIn() {
+        zoomBy(ZOOM_INTERVAL)
+    }
 
-    fun zoomOut() = zoomBy(1.0 / ZOOM_INTERVAL)
+    fun zoomOut() {
+        zoomBy(1.0 / ZOOM_INTERVAL)
+    }
 
     private fun zoomBy(factor: Double) {
         if (image == null) return
@@ -252,7 +262,10 @@ class ImageViewport(
             }
 
             // Assigns current user drag to moving crop pair
-            if (pointInQuadrilateral(imgPoint, selection.boxPoints) || pointInQuadrilateral(imgPoint, selection.labelPoints)) {
+            if (
+                pointInQuadrilateral(imgPoint, selection.boxPoints) ||
+                    pointInQuadrilateral(imgPoint, selection.labelPoints)
+            ) {
                 dragMode = DragMode.AreaDragging
                 return
             }
@@ -268,8 +281,7 @@ class ImageViewport(
             // Deselect mouse click should not become pan
             else if (hadSelection) {
                 null
-            }
-            else {
+            } else {
                 DragMode.Panning
             }
 
@@ -339,7 +351,11 @@ class ImageViewport(
     }
 
     // returns exact vertex of a crop pair the user interacts with
-    private fun selectedVertex(selection: SelectionProposal, selectionX: Double, selectionY: Double): Pair<Boolean, Int>? {
+    private fun selectedVertex(
+        selection: SelectionProposal,
+        selectionX: Double,
+        selectionY: Double,
+    ): Pair<Boolean, Int>? {
         selection.boxPoints.forEachIndexed { i, vertex ->
             if (distance(toScreen(vertex), selectionX, selectionY) <= VERTEX_DETECTION_RADIUS) {
                 return true to i
@@ -417,71 +433,48 @@ class ImageViewport(
             )
         }
 
-        // Runs for each pair of crops
         val job = currentJob
-        job.crops
-            .filterKeys { it.startsWith("b") }
-            .forEach { (key, crop) ->
-                val i = key.drop(1)
+        val selectedNumber = selection?.number
+        val numbers =
+            job.crops.keys
+                .mapNotNull {
+                    Regex("""^[bl](\d+)$""").find(it)?.groupValues?.get(1)?.toIntOrNull()
+                }
+                .distinct()
 
-                val box = crop as? JobFile.BoxCrop ?: return@forEach
-                val label = job.crops["l$i"] as? JobFile.LabelCrop ?: return@forEach
-
-                val boxStrokeColour = indexColour(i.toInt())
-
-                drawPair(box, label, boxStrokeColour, canvas)
+        // Draw all crop outlines.
+        for (n in numbers) {
+            if (n == selectedNumber) {
+                continue
             }
+
+            val boxStrokeColour = indexColour(n)
+            (job.crops["b$n"] as? JobFile.BoxCrop)?.let {
+                drawOutline(canvas, it.points.toVertices(), boxStrokeColour)
+            }
+            (job.crops["l$n"] as? JobFile.LabelCrop)?.let {
+                drawOutline(canvas, it.points.toVertices(), Color.Blue)
+            }
+        }
+
+        // Draw vertexes for crop pair if selected
+        selection?.let { sel ->
+            drawVertexes(canvas, sel.boxPoints)
+            drawVertexes(canvas, sel.labelPoints)
+        }
     }
 
-    private fun drawPair(
-        box: JobFile.BoxCrop,
-        label: JobFile.LabelCrop,
-        boxStrokeColour: Color,
-        canvas: Canvas,
-    ) {
-        val boxPts: List<VertexDouble> = box.points.inner.map { point ->
-            VertexDouble(
-                x = point.first.toDouble(),
-                y = point.second.toDouble()
-            )}
-
-        val labelPts: List<VertexDouble> = label.points.inner.map { point ->
-            VertexDouble(
-                x = point.first.toDouble(),
-                y = point.second.toDouble()
-            )}
-
-        val boxStroke = (boxStrokeColour).paint.stroke(thickness = LINE_THICKNESS)
-        val labelStroke = (Color.Blue).paint.stroke(thickness = LINE_THICKNESS)
-
-        // Connecting lines
-        for (i in boxPts.indices) {
-            val point1 = boxPts[i]
-            val point2 = boxPts[(i + 1) % boxPts.size]
-
-            canvas.line(point1, point2, stroke = boxStroke)
+    private fun drawOutline(canvas: Canvas, vertexes: List<VertexDouble>, colour: Color) {
+        val points = vertexes.map { toScreen(it) }
+        val stroke = colour.paint.stroke(thickness = LINE_THICKNESS)
+        for (i in points.indices) {
+            canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
         }
-        for (i in labelPts.indices) {
-            val point1 = labelPts[i]
-            val point2 = labelPts[(i + 1) % labelPts.size]
+    }
 
-            canvas.line(point1, point2, stroke = labelStroke)
-        }
-
-        // Vertices for when selected
-        boxPts.forEach { point ->
-            canvas.rect(
-                Rectangle(
-                    x = point.x - VERTEX_SIZE / 2,
-                    y = point.y - VERTEX_SIZE / 2,
-                    width = VERTEX_SIZE,
-                    height = VERTEX_SIZE,
-                ),
-                fill = Color.White.paint,
-                stroke = Color.Blue.paint.stroke(thickness = 1.0),
-            )
-        }
-        labelPts.forEach { point ->
+    private fun drawVertexes(canvas: Canvas, vertexes: List<VertexDouble>) {
+        vertexes.forEach { v ->
+            val point = toScreen(v)
             canvas.rect(
                 Rectangle(
                     x = point.x - VERTEX_SIZE / 2,
