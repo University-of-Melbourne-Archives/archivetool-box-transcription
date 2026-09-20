@@ -114,7 +114,7 @@ class ImageViewport(
         pointerChanged +=
             object : PointerListener {
                 override fun pressed(event: PointerEvent) {
-                    handlePointerEvent(event)
+                    handlePressed(event)
                 }
 
                 override fun released(event: PointerEvent) {
@@ -288,10 +288,69 @@ class ImageViewport(
         rerender()
     }
 
+    // Defines logic for each dragging state
     private fun handleDragged(event: PointerEvent) {
+        val selectionX = event.location.x
+        val selectionY = event.location.y
 
-        // TO-DO IMPLEMENT
+        when (val mode = dragMode) {
+            is DragMode.Panning -> {
+                originX += (selectionX - previousViewportX)
+                originY += (selectionY - previousViewportY)
+            }
 
+            is DragMode.VertexDragging -> {
+                selection?.let { selection ->
+                    val imgPoint = toImageSpace(selectionX, selectionY)
+                    val clampedToViewport =
+                        VertexDouble(
+                            imgPoint.x.coerceIn(0.0, imageWidth),
+                            imgPoint.y.coerceIn(0.0, imageHeight),
+                        )
+
+                    val list =
+                        if (mode.isBox) {
+                            selection.boxPoints
+                        } else {
+                            selection.labelPoints
+                        }
+
+                    list[mode.index] = clampedToViewport
+                }
+            }
+
+            is DragMode.AreaDragging -> {
+                selection?.let { selection ->
+                    val imageX = (selectionX - previousViewportX) / zoom
+                    val imageY = (selectionY - previousViewportY) / zoom
+
+                    // Group the crop pair and restrict to viewport bounds
+                    val all = selection.boxPoints + selection.labelPoints
+                    val minX = all.minOf { it.x }
+                    val maxX = all.maxOf { it.x }
+                    val minY = all.minOf { it.y }
+                    val maxY = all.maxOf { it.y }
+                    val clampedMovementX = imageX.coerceIn(-minX, imageWidth - maxX)
+                    val clampedMovementY = imageY.coerceIn(-minY, imageHeight - maxY)
+
+                    // Move all vertexes
+                    for (i in selection.boxPoints.indices) {
+                        selection.boxPoints[i] =
+                            VertexDouble(selection.boxPoints[i].x + clampedMovementX, selection.boxPoints[i].y + clampedMovementY)
+                    }
+                    for (i in selection.labelPoints.indices) {
+                        selection.labelPoints[i] =
+                            VertexDouble(selection.labelPoints[i].x + clampedMovementX, selection.labelPoints[i].y + clampedMovementY)
+                    }
+                }
+            }
+
+            null -> {}
+        }
+
+        // On drag release
+        previousViewportX = selectionX
+        previousViewportY = selectionY
         rerender()
     }
 
