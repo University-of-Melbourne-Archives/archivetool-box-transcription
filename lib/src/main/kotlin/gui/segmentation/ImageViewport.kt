@@ -240,7 +240,7 @@ class ImageViewport(
         previousViewportY = selectionY
 
         // Convert mouse position to image coordinates
-        val imgPoint = VertexDouble(selectionX, selectionY)
+        val imgPoint = toImageSpace(selectionX, selectionY)
 
         val hadSelection = selection != null
 
@@ -373,6 +373,10 @@ class ImageViewport(
         val mime = Files.probeContentType(this) ?: "image/jpeg"
         val encoded = Base64.getEncoder().encodeToString(bytes)
         return "data:$mime;base64,$encoded"
+    }
+
+    private fun toImageSpace(screenX: Double, screenY: Double): VertexDouble {
+        return VertexDouble((screenX - originX) / zoom, (screenY - originY) / zoom)
     }
 
     // Takes in singular point of crop and scales and returns it as Doodle Point object
