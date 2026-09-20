@@ -90,6 +90,17 @@ class ImageViewport(
     // -- Selection -----------------------------------------------------------
     private var selection: SelectionProposal? = null
 
+    // defines type of user drag input
+    private sealed class DragMode {
+        data object Panning : DragMode()
+
+        data class VertexDragging(val isBox: Boolean, val index: Int) : DragMode()
+
+        data object AreaDragging : DragMode()
+    }
+
+    private var dragMode: DragMode? = null
+
     // Original mouse position when dragging
     private var lastPointerX: Double? = null
     private var lastPointerY: Double? = null
@@ -238,6 +249,50 @@ class ImageViewport(
 
     // -- Selection -----------------------------------------------------------
 
+    private fun handlePressed(event: PointerEvent) {
+        val sx = event.location.x
+        val sy = event.location.y
+
+        // this is NOT normalised with the zoom yet
+        val imgPt = VertexDouble(sx, sy)
+
+        // DOESN'T handle deselect drag transition yet
+        val found = findCropAtPoint(imgPt)
+        dragMode =
+            if (found != null) {
+                selectPair(found)
+                DragMode.AreaDragging
+            } else {
+                DragMode.Panning
+            }
+        rerender()
+    }
+
+    private fun findCropAtPoint(pt: VertexDouble): Int? {
+        val job = currentJob
+        // checks all crop pairs that image contains
+        val numbers =
+            job.crops.keys
+                .mapNotNull {
+                    Regex("""^[bl](\d+)$""").find(it)?.groupValues?.get(1)?.toIntOrNull()
+                }
+                .distinct()
+
+        for (n in numbers) {
+            val box = job.crops["b$n"] as? JobFile.BoxCrop
+            val label = job.crops["l$n"] as? JobFile.LabelCrop
+
+            if (box != null && pointInQuadrilateral(pt, box.points.toVertices())) {
+                return n
+            }
+            if (label != null && pointInQuadrilateral(pt, label.points.toVertices())) {
+                return n
+            }
+        }
+
+        return null
+    }
+
     private fun selectPair(n: Int) {
         val job = currentJob
         val box = (job.crops["b$n"] as? JobFile.BoxCrop)?.points?.toVertices() ?: mutableListOf()
@@ -245,6 +300,27 @@ class ImageViewport(
             (job.crops["l$n"] as? JobFile.LabelCrop)?.points?.toVertices() ?: mutableListOf()
 
         selection = SelectionProposal(n, box, label, isUnconfirmedCreation = false)
+    }
+
+    // Returns if mouse point is inside crop area
+    private fun pointInQuadrilateral(p: VertexDouble, quad: List<VertexDouble>): Boolean {
+        var isInside = false
+        var j = quad.size - 1
+
+        for (i in quad.indices) {
+            val pi = quad[i]
+            val pj = quad[j]
+            if ((pi.y > p.y) != (pj.y > p.y)) {
+                val xIntersect = pj.x + (p.y - pj.y) / (pj.y - pi.y) * (pi.x - pj.x)
+                if (p.x < xIntersect) {
+                    isInside = !isInside
+                }
+            }
+
+            j = i
+        }
+
+        return isInside
     }
 
     // -- Helper Converters ---------------------------------------------------
