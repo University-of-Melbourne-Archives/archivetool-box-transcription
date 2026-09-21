@@ -318,7 +318,15 @@ class ImageViewport(
     }
 
     fun delete() {
-        print("test")
+        val s = selection ?: return
+
+        currentJob.crops.remove("b${s.number}")
+        currentJob.crops.remove("l${s.number}")
+
+        selection = null
+        dragMode = null
+
+        rerender()
     }
 
     // This function is for testing
@@ -346,6 +354,7 @@ class ImageViewport(
 
     private fun discardUnconfirmedSelection() {
         val s = selection ?: return
+
         if (s.isUnconfirmedCreation) {
             currentJob.crops.remove("b${s.number}")
             currentJob.crops.remove("l${s.number}")
