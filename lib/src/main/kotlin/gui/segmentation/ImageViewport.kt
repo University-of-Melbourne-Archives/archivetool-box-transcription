@@ -17,6 +17,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
@@ -228,15 +229,56 @@ class ImageViewport(
     }
 
     fun confirm() {
-        print("test")
+        selection?.let { selection ->
+            val crops = currentJob.crops
+            val oldBox = crops["b${selection.number}"] as? JobFile.BoxCrop
+            val oldLabel = crops["l${selection.number}"] as? JobFile.LabelCrop
+
+            crops["b${selection.number}"] =
+                JobFile.BoxCrop(
+                    points = selection.boxPoints.toRectangle(),
+                    transcription = oldBox?.transcription,
+                    confidence = oldBox?.confidence ?: 1.0,
+                )
+            crops["l${selection.number}"] =
+                JobFile.LabelCrop(
+                    points = selection.labelPoints.toRectangle(),
+                    transcription = oldLabel?.transcription,
+                    confidence = oldLabel?.confidence ?: 1.0,
+                )
+
+            selection.isUnconfirmedCreation = false
+        }
+
+        // Output for testing
+        printCrops()
+
+        selection = null
+        dragMode = null
+
+        rerender()
     }
 
     fun create() {
-        print("test")
+        rerender()
     }
 
     fun delete() {
         print("test")
+    }
+
+    // This function is for testing
+    private fun printCrops() {
+        println("Crops for ${paths[currentIndex]}:")
+        currentJob.crops.entries
+            .sortedBy { it.key }
+            .forEach { (id, crop) ->
+                val pts =
+                    crop.points.inner.joinToString(prefix = "[", postfix = "]") {
+                        "(${it.first},${it.second})"
+                    }
+                println("  $id: $pts  confidence = ${crop.confidence}")
+            }
     }
 
     // -- Selection -----------------------------------------------------------
@@ -336,11 +378,17 @@ class ImageViewport(
                     // Move all vertexes
                     for (i in selection.boxPoints.indices) {
                         selection.boxPoints[i] =
-                            VertexDouble(selection.boxPoints[i].x + clampedMovementX, selection.boxPoints[i].y + clampedMovementY)
+                            VertexDouble(
+                                selection.boxPoints[i].x + clampedMovementX,
+                                selection.boxPoints[i].y + clampedMovementY,
+                            )
                     }
                     for (i in selection.labelPoints.indices) {
                         selection.labelPoints[i] =
-                            VertexDouble(selection.labelPoints[i].x + clampedMovementX, selection.labelPoints[i].y + clampedMovementY)
+                            VertexDouble(
+                                selection.labelPoints[i].x + clampedMovementX,
+                                selection.labelPoints[i].y + clampedMovementY,
+                            )
                     }
                 }
             }
@@ -458,6 +506,12 @@ class ImageViewport(
     private fun toScreen(vertexDouble: VertexDouble): Point {
         return Point(originX + vertexDouble.x * zoom, originY + vertexDouble.y * zoom)
     }
+
+    private fun List<VertexDouble>.toRectangle():
+        au.edu.unimelb.archivetool.util.geometry.Rectangle =
+        au.edu.unimelb.archivetool.util.geometry.Rectangle.create(
+            *map { it.x.roundToInt() to it.y.roundToInt() }.toTypedArray()
+        )
 
     private fun indexColour(index: Int): Color {
         return pairColours.getOrPut(index) {
