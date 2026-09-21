@@ -103,6 +103,8 @@ class ImageViewport(
         data class VertexDragging(val isBox: Boolean, val index: Int) : DragMode()
 
         data object AreaDragging : DragMode()
+
+        data object LabelDragging : DragMode()
     }
 
     private var dragMode: DragMode? = null
@@ -399,10 +401,12 @@ class ImageViewport(
                 return
             }
 
-            if (
-                pointInQuadrilateral(imgPoint, selection.boxPoints) ||
-                    pointInQuadrilateral(imgPoint, selection.labelPoints)
-            ) {
+            if (pointInQuadrilateral(imgPoint, selection.labelPoints)) {
+                dragMode = DragMode.LabelDragging
+                return
+            }
+
+            if (pointInQuadrilateral(imgPoint, selection.boxPoints)) {
                 dragMode = DragMode.AreaDragging
                 return
             }
@@ -483,6 +487,36 @@ class ImageViewport(
                                 selection.boxPoints[i].y + clampedMovementY,
                             )
                     }
+                    for (i in selection.labelPoints.indices) {
+                        selection.labelPoints[i] =
+                            VertexDouble(
+                                selection.labelPoints[i].x + clampedMovementX,
+                                selection.labelPoints[i].y + clampedMovementY,
+                            )
+                    }
+                }
+            }
+
+            is DragMode.LabelDragging -> {
+                selection?.let { selection ->
+                    val imageX = (selectionX - previousViewportX) / zoom
+                    val imageY = (selectionY - previousViewportY) / zoom
+
+                    val boxMinX = selection.boxPoints.minOf { it.x }
+                    val boxMaxX = selection.boxPoints.maxOf { it.x }
+                    val boxMinY = selection.boxPoints.minOf { it.y }
+                    val boxMaxY = selection.boxPoints.maxOf { it.y }
+
+                    val labelMinX = selection.labelPoints.minOf { it.x }
+                    val labelMaxX = selection.labelPoints.maxOf { it.x }
+                    val labelMinY = selection.labelPoints.minOf { it.y }
+                    val labelMaxY = selection.labelPoints.maxOf { it.y }
+
+                    val clampedMovementX =
+                        imageX.coerceInBounds(boxMinX - labelMinX, boxMaxX - labelMaxX)
+                    val clampedMovementY =
+                        imageY.coerceInBounds(boxMinY - labelMinY, boxMaxY - labelMaxY)
+
                     for (i in selection.labelPoints.indices) {
                         selection.labelPoints[i] =
                             VertexDouble(
