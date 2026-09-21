@@ -1,5 +1,6 @@
 package interactions
 
+import SemiManual
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogLevel
@@ -39,6 +40,9 @@ class CLAHEInteractionTest {
         )
     }
 
+    @SemiManual(
+        "Check that the directory has properly thresholded images.",
+        lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5")
     @Test
     fun `try clahe interaction with no crop`() {
         // @OptIn(ExperimentalPathApi::class)
@@ -70,6 +74,9 @@ class CLAHEInteractionTest {
         // lib/build/resources/test/SwitchboardTest/
     }
 
+    @SemiManual(
+        "Check that the .archivetool_generated directory has images with the threshold and the right bounds.",
+        lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5")
     @Test
     fun `try clahe interaction with crops`() {
         val files =

@@ -1,5 +1,6 @@
 package interactions
 
+import SemiManual
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogLevel
@@ -37,6 +38,9 @@ class FlattenInteractionTest {
         )
     }
 
+    @SemiManual(
+        "Check that the flattened images are generated for the correct bounds.",
+        lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5")
     @Test
     fun `try flatten interaction`() {
         val files =

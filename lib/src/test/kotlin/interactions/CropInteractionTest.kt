@@ -1,5 +1,6 @@
 package interactions
 
+import SemiManual
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.logging.LogLevel
@@ -38,6 +39,9 @@ class CropInteractionTest {
         )
     }
 
+    @SemiManual(
+        "Check that the crop is generated for the correct bounds.",
+        lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5")
     @Test
     fun `try crop interaction`() {
         val files =
