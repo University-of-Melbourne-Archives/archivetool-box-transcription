@@ -199,6 +199,7 @@ class ImageViewport(
             return
         }
 
+        discardUnconfirmedSelection()
         currentIndex--
         loadImage(paths[currentIndex])
         onImageChanged(currentIndex, totalImages)
@@ -209,6 +210,7 @@ class ImageViewport(
             return
         }
 
+        discardUnconfirmedSelection()
         currentIndex++
         loadImage(paths[currentIndex])
         onImageChanged(currentIndex, totalImages)
@@ -281,30 +283,34 @@ class ImageViewport(
         val centreY = imageHeight / 2.0
         val boxWidth = 600.0
         val boxHeight = 1100.0
-        val boxTop  = centreY - boxHeight / 2
+        val boxTop = centreY - boxHeight / 2
         val boxLeft = centreX - boxWidth / 2
 
-        val boxPoints = mutableListOf(
-            VertexDouble(boxLeft,          boxTop),
-            VertexDouble(boxLeft + boxWidth,   boxTop),
-            VertexDouble(boxLeft + boxWidth,   boxTop + boxHeight),
-            VertexDouble(boxLeft,          boxTop + boxHeight)
-        )
+        val boxPoints =
+            mutableListOf(
+                VertexDouble(boxLeft, boxTop),
+                VertexDouble(boxLeft + boxWidth, boxTop),
+                VertexDouble(boxLeft + boxWidth, boxTop + boxHeight),
+                VertexDouble(boxLeft, boxTop + boxHeight),
+            )
 
         val labelWidth = 500.0
         val labelHeight = 170.0
-        val labelTop  = boxTop + 35.0
+        val labelTop = boxTop + 35.0
         val labelLeft = centreX - labelWidth / 2
-        val labelPoints = mutableListOf(
-            VertexDouble(labelLeft,         labelTop),
-            VertexDouble(labelLeft + labelWidth, labelTop),
-            VertexDouble(labelLeft + labelWidth, labelTop + labelHeight),
-            VertexDouble(labelLeft,         labelTop + labelHeight)
-        )
+        val labelPoints =
+            mutableListOf(
+                VertexDouble(labelLeft, labelTop),
+                VertexDouble(labelLeft + labelWidth, labelTop),
+                VertexDouble(labelLeft + labelWidth, labelTop + labelHeight),
+                VertexDouble(labelLeft, labelTop + labelHeight),
+            )
 
         // Adds created crop to current job at full confidence
-        currentJob.crops["b$number"] = JobFile.BoxCrop(points = boxPoints.toRectangle(), confidence = 1.0)
-        currentJob.crops["l$number"] = JobFile.LabelCrop(points = labelPoints.toRectangle(), confidence = 1.0)
+        currentJob.crops["b$number"] =
+            JobFile.BoxCrop(points = boxPoints.toRectangle(), confidence = 1.0)
+        currentJob.crops["l$number"] =
+            JobFile.LabelCrop(points = labelPoints.toRectangle(), confidence = 1.0)
 
         selection = SelectionProposal(number, boxPoints, labelPoints, isUnconfirmedCreation = true)
 
@@ -331,7 +337,7 @@ class ImageViewport(
 
     private fun nextAvailableIndex(job: JobFile): Int {
         var n = 1
-        while (job.crops.containsKey("b$n") || job.crops.containsKey("l$n")){
+        while (job.crops.containsKey("b$n") || job.crops.containsKey("l$n")) {
             n++
         }
 
@@ -339,8 +345,12 @@ class ImageViewport(
     }
 
     private fun discardUnconfirmedSelection() {
+        val s = selection ?: return
+        if (s.isUnconfirmedCreation) {
+            currentJob.crops.remove("b${s.number}")
+            currentJob.crops.remove("l${s.number}")
+        }
 
-        // TO IMPLEMENT
         selection = null
     }
 
@@ -374,6 +384,9 @@ class ImageViewport(
                 dragMode = DragMode.AreaDragging
                 return
             }
+
+            // Discards selection is user clicks elsewhere
+            discardUnconfirmedSelection()
         }
 
         val foundNumber = findCropAtPoint(imgPoint)
@@ -618,7 +631,7 @@ class ImageViewport(
                 }
                 .distinct()
 
-        // Draw all crop outlines.
+        // Draw outlines for every crop
         for (n in numbers) {
             if (n == selectedNumber) {
                 continue
