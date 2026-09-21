@@ -4,11 +4,13 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import io.nacular.doodle.core.View
 import io.nacular.doodle.drawing.Canvas
 import io.nacular.doodle.drawing.Color
+import io.nacular.doodle.drawing.opacity
 import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.drawing.stroke
 import io.nacular.doodle.event.PointerEvent
 import io.nacular.doodle.event.PointerListener
 import io.nacular.doodle.event.PointerMotionListener
+import io.nacular.doodle.geometry.ConvexPolygon
 import io.nacular.doodle.geometry.Point
 import io.nacular.doodle.geometry.Rectangle
 import io.nacular.doodle.image.Image
@@ -53,6 +55,7 @@ class ImageViewport(
         private const val VERTEX_SIZE = 8.0
         private const val LINE_THICKNESS = 2.0
         private const val VERTEX_DETECTION_RADIUS = 10.0
+        private val SELECTION_FILL = Color.Cyan.opacity(0.15f)
     }
 
     // -- Job data ------------------------------------------------------------
@@ -657,6 +660,9 @@ class ImageViewport(
 
         // Draw vertexes for crop pair if selected
         selection?.let { sel ->
+            val boxStrokeColour = indexColour(sel.number)
+            drawFilledSelection(canvas, sel.boxPoints, boxStrokeColour)
+            drawFilledSelection(canvas, sel.labelPoints, Color.Blue)
             drawVertexes(canvas, sel.boxPoints)
             drawVertexes(canvas, sel.labelPoints)
         }
@@ -665,6 +671,26 @@ class ImageViewport(
     private fun drawOutline(canvas: Canvas, vertexes: List<VertexDouble>, colour: Color) {
         val points = vertexes.map { toScreen(it) }
         val stroke = colour.paint.stroke(thickness = LINE_THICKNESS)
+        for (i in points.indices) {
+            canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
+        }
+    }
+
+    private fun drawFilledSelection(
+        canvas: Canvas,
+        vertexes: List<VertexDouble>,
+        outlineColor: Color,
+    ) {
+        val points = vertexes.map { toScreen(it) }
+
+        // Fill
+        canvas.poly(
+            ConvexPolygon(points[0], points[1], points[2], points[3]),
+            fill = SELECTION_FILL.paint,
+        )
+
+        // Standard outline
+        val stroke = outlineColor.paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
             canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
         }
