@@ -107,6 +107,9 @@ class ImageViewport(
 
     private var dragMode: DragMode? = null
 
+    // For distinguishing panning from deselection
+    private var pendingDeselectOnClick = false
+
     // Original viewport position where mouse press started
     private var previousViewportX = 0.0
     private var previousViewportY = 0.0
@@ -122,10 +125,17 @@ class ImageViewport(
                 }
 
                 override fun released(event: PointerEvent) {
+                    if (pendingDeselectOnClick) {
+                        discardUnconfirmedSelection()
+                        rerender()
+                    }
+
+                    pendingDeselectOnClick = false
                     dragMode = null
                 }
 
                 override fun exited(event: PointerEvent) {
+                    pendingDeselectOnClick = false
                     dragMode = null
                 }
             }
@@ -376,19 +386,17 @@ class ImageViewport(
         previousViewportX = selectionX
         previousViewportY = selectionY
 
+        pendingDeselectOnClick = false
+
         // Convert mouse position to image coordinates
         val imgPoint = toImageSpace(selectionX, selectionY)
 
-        val hadSelection = selection != null
-
         selection?.let { selection ->
-            // Assigns current user drag to moving selected vertex
             selectedVertex(selection, selectionX, selectionY)?.let { (isBox, index) ->
                 dragMode = DragMode.VertexDragging(isBox, index)
                 return
             }
 
-            // Assigns current user drag to moving crop pair
             if (
                 pointInQuadrilateral(imgPoint, selection.boxPoints) ||
                     pointInQuadrilateral(imgPoint, selection.labelPoints)
@@ -396,26 +404,21 @@ class ImageViewport(
                 dragMode = DragMode.AreaDragging
                 return
             }
-
-            // Discards selection is user clicks elsewhere
-            discardUnconfirmedSelection()
         }
 
+        // All selection interactions
         val foundNumber = findCropAtPoint(imgPoint)
-        dragMode =
-            // Standard selection
-            if (foundNumber != null) {
-                selectPair(foundNumber)
-                DragMode.AreaDragging
-            }
-            // Deselect mouse click should not become pan
-            else if (hadSelection) {
-                null
-            } else {
-                DragMode.Panning
-            }
+        if (foundNumber != null) {
+            discardUnconfirmedSelection()
+            selectPair(foundNumber)
+            dragMode = DragMode.AreaDragging
+            rerender()
+            return
+        }
 
-        rerender()
+        // Allow pan but a deselect mouse click should not become pan
+        pendingDeselectOnClick = (selection != null)
+        dragMode = DragMode.Panning
     }
 
     // Defines logic for each dragging state
@@ -425,8 +428,15 @@ class ImageViewport(
 
         when (val mode = dragMode) {
             is DragMode.Panning -> {
-                originX += (selectionX - previousViewportX)
-                originY += (selectionY - previousViewportY)
+                val changeX = selectionX - previousViewportX
+                val changeY = selectionY - previousViewportY
+
+                if (changeX != 0.0 || changeY != 0.0) {
+                    pendingDeselectOnClick = false
+                }
+
+                originX += changeX
+                originY += changeY
             }
 
             is DragMode.VertexDragging -> {
