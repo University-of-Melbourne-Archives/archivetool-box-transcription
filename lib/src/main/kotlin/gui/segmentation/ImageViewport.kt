@@ -138,6 +138,8 @@ class ImageViewport(
         onImageChanged(currentIndex, totalImages)
     }
 
+    // -- Zoom ----------------------------------------------------------------
+
     fun zoomIn() {
         zoomBy(ZOOM_INTERVAL)
     }
@@ -190,6 +192,8 @@ class ImageViewport(
         rerender()
     }
 
+    // -- Image Loading -------------------------------------------------------
+
     fun previous() {
         if (currentIndex <= 0) {
             return
@@ -228,6 +232,8 @@ class ImageViewport(
         }
     }
 
+    // -- Review --------------------------------------------------------------
+
     fun confirm() {
         selection?.let { selection ->
             val crops = currentJob.crops
@@ -260,6 +266,48 @@ class ImageViewport(
     }
 
     fun create() {
+        // Deletes unconfirmed created crop pair if a new one is created
+        selection?.let { selection ->
+            if (selection.isUnconfirmedCreation) {
+                currentJob.crops.remove("b${selection.number}")
+                currentJob.crops.remove("l${selection.number}")
+            }
+        }
+
+        selection = null
+
+        val number = nextAvailableIndex(currentJob)
+        val centreX = imageWidth / 2.0
+        val centreY = imageHeight / 2.0
+        val boxWidth = 600.0
+        val boxHeight = 1100.0
+        val boxTop  = centreY - boxHeight / 2
+        val boxLeft = centreX - boxWidth / 2
+
+        val boxPoints = mutableListOf(
+            VertexDouble(boxLeft,          boxTop),
+            VertexDouble(boxLeft + boxWidth,   boxTop),
+            VertexDouble(boxLeft + boxWidth,   boxTop + boxHeight),
+            VertexDouble(boxLeft,          boxTop + boxHeight)
+        )
+
+        val labelWidth = 500.0
+        val labelHeight = 170.0
+        val labelTop  = boxTop + 35.0
+        val labelLeft = centreX - labelWidth / 2
+        val labelPoints = mutableListOf(
+            VertexDouble(labelLeft,         labelTop),
+            VertexDouble(labelLeft + labelWidth, labelTop),
+            VertexDouble(labelLeft + labelWidth, labelTop + labelHeight),
+            VertexDouble(labelLeft,         labelTop + labelHeight)
+        )
+
+        // Adds created crop to current job at full confidence
+        currentJob.crops["b$number"] = JobFile.BoxCrop(points = boxPoints.toRectangle(), confidence = 1.0)
+        currentJob.crops["l$number"] = JobFile.LabelCrop(points = labelPoints.toRectangle(), confidence = 1.0)
+
+        selection = SelectionProposal(number, boxPoints, labelPoints, isUnconfirmedCreation = true)
+
         rerender()
     }
 
@@ -279,6 +327,21 @@ class ImageViewport(
                     }
                 println("  $id: $pts  confidence = ${crop.confidence}")
             }
+    }
+
+    private fun nextAvailableIndex(job: JobFile): Int {
+        var n = 1
+        while (job.crops.containsKey("b$n") || job.crops.containsKey("l$n")){
+            n++
+        }
+
+        return n
+    }
+
+    private fun discardUnconfirmedSelection() {
+
+        // TO IMPLEMENT
+        selection = null
     }
 
     // -- Selection -----------------------------------------------------------
