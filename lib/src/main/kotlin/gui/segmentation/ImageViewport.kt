@@ -460,8 +460,8 @@ class ImageViewport(
                     val maxX = all.maxOf { it.x }
                     val minY = all.minOf { it.y }
                     val maxY = all.maxOf { it.y }
-                    val clampedMovementX = imageX.coerceIn(-minX, imageWidth - maxX)
-                    val clampedMovementY = imageY.coerceIn(-minY, imageHeight - maxY)
+                    val clampedMovementX = imageX.coerceInBounds(-minX, imageWidth - maxX)
+                    val clampedMovementY = imageY.coerceInBounds(-minY, imageHeight - maxY)
 
                     // Move all vertexes
                     for (i in selection.boxPoints.indices) {
@@ -570,6 +570,14 @@ class ImageViewport(
         val dx = p.x - x
         val dy = p.y - y
         return sqrt(dx * dx + dy * dy)
+    }
+
+    private fun Double.coerceInBounds(lowPoint: Double, highPoint: Double): Double {
+        return if (lowPoint <= highPoint) {
+            coerceIn(lowPoint, highPoint)
+        } else {
+            this
+        }
     }
 
     // -- Helper Converters ---------------------------------------------------
