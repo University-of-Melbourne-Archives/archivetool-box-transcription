@@ -27,44 +27,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
         folder: String,
         inject: Set<Injectable> = setOf(),
     ) : this(
-        {}.javaClass
-            .getResource("/python/$folder")
-            ?.toURI()
-            .expect("Python ModuleFolder $folder not found")
-            .let { it.toPath() to it }
-            .let {
-                val path = it.first
-                val uri = it.second
-                when (uri.scheme) {
-                    "jar" -> {
-                        FileSystems.getFileSystem(uri).use { jarFs ->
-                            val dirPath: Path = jarFs.getPath("/python/$folder")
-                            dirPath
-                                .walk()
-                                .map {
-                                    it.takeIf { it.exists() && it.isRegularFile() }
-                                        ?.relativeTo(jarFs.getPath("/python"))
-                                }
-                                .filter { it?.extension == "py" }
-                                .map { it.toString() }
-                                .toSet()
-                        }
-                    }
-                    else -> {
-                        path
-                            .walk()
-                            .map {
-                                it.takeIf { it.exists() && it.isRegularFile() }
-                                    ?.relativeTo(
-                                        {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
-                                    )
-                            }
-                            .filter { it?.extension == "py" }
-                            .map { it.toString() }
-                            .toSet()
-                    }
-                }
-            },
+        resolveModuleFolder(folder),
         inject,
     )
 
@@ -88,6 +51,48 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
     private val allMembers: MutableMap<String, Value> by lazy { mutableMapOf() }
     val members by lazy { MemberSet(WeakReference(allMembers), _context) }
     val methods by lazy { members.withFilter({ it.canExecute() }) }
+
+    companion object {
+        fun resolveModuleFolder(folder: String) =
+            {}.javaClass
+                .getResource("/python/$folder")
+                ?.toURI()
+                .expect("Python ModuleFolder $folder not found")
+                .let { it.toPath() to it }
+                .let {
+                    val path = it.first
+                    val uri = it.second
+                    when (uri.scheme) {
+                        "jar" -> {
+                            FileSystems.getFileSystem(uri).use { jarFs ->
+                                val dirPath: Path = jarFs.getPath("/python/$folder")
+                                dirPath
+                                    .walk()
+                                    .map {
+                                        it.takeIf { it.exists() && it.isRegularFile() }
+                                            ?.relativeTo(jarFs.getPath("/python"))
+                                    }
+                                    .filter { it?.extension == "py" }
+                                    .map { it.toString() }
+                                    .toSet()
+                            }
+                        }
+                        else -> {
+                            path
+                                .walk()
+                                .map {
+                                    it.takeIf { it.exists() && it.isRegularFile() }
+                                        ?.relativeTo(
+                                            {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
+                                        )
+                                }
+                                .filter { it?.extension == "py" }
+                                .map { it.toString() }
+                                .toSet()
+                        }
+                    }
+                }
+    }
 }
 
 data class MemberSet(
