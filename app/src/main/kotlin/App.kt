@@ -56,10 +56,10 @@ fun main() {
                                 JobFile.BoxCrop(
                                     points =
                                         Rectangle.create(
-                                            260 to 400,
-                                            2120 to 510,
-                                            2060 to 870,
-                                            300 to 750,
+                                            154 to 860,
+                                            1785 to 1113,
+                                            1789 to 1600,
+                                            488 to 1581,
                                         ),
                                     confidence = 1.0,
                                 ),
@@ -67,10 +67,10 @@ fun main() {
                                 JobFile.LabelCrop(
                                     points =
                                         Rectangle.create(
-                                            1630 to 630,
-                                            2020 to 670,
-                                            2030 to 800,
-                                            1600 to 760,
+                                            1144 to 1493,
+                                            1421 to 1458,
+                                            1390 to 1282,
+                                            1133 to 1293,
                                         ),
                                     confidence = 0.88,
                                 ),

@@ -345,6 +345,7 @@ class ImageViewport(
     // This function is for testing
     private fun printCrops() {
         println("Crops for ${paths[currentIndex]}:")
+
         currentJob.crops.entries
             .sortedBy { it.key }
             .forEach { (id, crop) ->
@@ -352,6 +353,7 @@ class ImageViewport(
                     crop.points.inner.joinToString(prefix = "[", postfix = "]") {
                         "(${it.first},${it.second})"
                     }
+
                 println("  $id: $pts  confidence = ${crop.confidence}")
             }
     }
@@ -543,7 +545,7 @@ class ImageViewport(
             val pi = quad[i]
             val pj = quad[j]
             if ((pi.y > p.y) != (pj.y > p.y)) {
-                val xIntersect = pj.x + (p.y - pj.y) / (pj.y - pi.y) * (pi.x - pj.x)
+                val xIntersect = pj.x + (p.y - pj.y) / (pi.y - pj.y) * (pi.x - pj.x)
                 if (p.x < xIntersect) {
                     isInside = !isInside
                 }
