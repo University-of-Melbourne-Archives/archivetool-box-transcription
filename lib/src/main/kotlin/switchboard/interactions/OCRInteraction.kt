@@ -18,10 +18,66 @@ import kotlin.io.path.pathString
 
 class PythonOCRInteraction : OCRInteraction {
     val module by lazy {
-        PythonModule(folder = TODO("Put Module Path Here"), setOf(LoggerInjectable()))
-    }
         PythonModule(setOf("ocr.py"), setOf(LoggerInjectable()))
     }
+
+    private val method_executeOCR by lazy {
+        module
+            .methods["executeOCR"].expect(
+            "OCR Module is missing function OCR::executeOCR"
+        )
+    }
+
+    private val method_processOutputText by lazy {
+        module
+            .methods["processOutputText"].expect(
+            "OCR Module is missing function OCR::processOutputText"
+        )
+    }
+
+    fun executeOCR(path: JobRelativePath): String {
+        var output: String? = null
+        try {
+            output = method_executeOCR(path.absolute.pathString)
+                .asString()
+        } catch (e: Exception) {
+            Log.trace("$e")
+        }
+        return output
+            .expect("OCR::executeOCR failed or returned either null or a non-string value.")
+    }
+
+    fun processOutputText(transcript: String): BoxMetadata? {
+        var output: BoxMetadata? = null
+        try {
+            val py = method_processOutputText(transcript)
+            output = BoxMetadataConverter.toJvmValue(py)
+        } catch (e: Exception) {
+            Log.trace("OCR::processOutputText threw: $e")
+        }
+        return output // NOTE: I think failing and returning a nullable here is fine.
+                      // Some labels will not have 
+        //    .expect("OCR::processOutputText failed or returned either null or a non-string value.")
+    }
+
+    fun OCRBox(jpath: JobRelativePath, boxId: String, box: ArchiveBox): Boundary? =
+        box.boxBoundary
+            .takeIf { it.rawMetadata == null }
+            ?.let { bounds ->
+                val genPath = JobState.cropPath(jpath, boxId, BOX_CROP_NAME)
+                val transcript = executeOCR(genPath)
+                bounds.copy(rawMetadata = processOutputText(transcript))
+            }
+
+    fun OCRLabel(jpath: JobRelativePath, boxId: String, box: ArchiveBox): List<Boundary> =
+        box.labelBoundaries
+            .mapIndexed(ArchiveBox::keyedLabel)
+            .map { (cropId, crop) ->
+                if (crop.rawMetadata != null) return@map cropId to crop
+                val genPath = JobState.cropPath(jpath, boxId, cropId)
+                val transcript = executeOCR(genPath)
+                cropId to crop.copy(rawMetadata = processOutputText(transcript))
+            }.map { it.second }
 
     override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         val out = mutableMapOf<JobRelativePath, JobFile>()

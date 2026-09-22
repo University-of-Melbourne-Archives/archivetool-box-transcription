@@ -13,7 +13,7 @@ plugins {
 
 graalPy {
     resourceDirectory = "GRAALPY-VFS/${rootProject.name}/${project.name}"
-    packages = setOf() // Python dependencies (eg. "qrcode==7.4.2")
+    packages = setOf("openai==3.16.*") // Python dependencies (eg. "qrcode==7.4.2")
 }
 
 dependencies {

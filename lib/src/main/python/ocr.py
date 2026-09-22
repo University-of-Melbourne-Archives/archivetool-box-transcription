@@ -35,7 +35,9 @@ def executeOCR(imagePath):
                             "Extract all text from this image exactly as it appears. "
                             "Preserve line breaks and formatting. Do not summarize or add commentary. "
                             "Ignore strikethroughs, text on logo and randomly placed numbers outside the sticker."
-                            "Identify the unique date ranges and output them as 'Date ranges: {date ranges}'."
+                            "Identify the unique date ranges and output them as 'Date ranges: {date ranges}',"
+                            "with the start and end of the range separated by a '!', and each date in ISO8601."
+                            "If a single date appears, treat it as a range with no end"
                             "Return 'None' if there's none."
                         )
                     },

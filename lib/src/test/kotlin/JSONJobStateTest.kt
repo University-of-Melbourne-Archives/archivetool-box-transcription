@@ -4,15 +4,18 @@ import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
+import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
+import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateWriterThread
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
+import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.geometry.Quad
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -25,6 +28,7 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -80,14 +84,33 @@ class JSONJobStateTest {
                                                 Boundary(
                                                     Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 1.0,
-                                                    transcription = "test1",
+                                                    rawMetadata = BoxMetadata(
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        description = "test1"
+                                                    ),
                                                 ),
                                                 listOf(
                                                     Boundary(
                                                         Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                         confidence = 0.5,
-                                                        transcription = "test2",
+                                                        rawMetadata = BoxMetadata(
+                                                            RecordSetID.OldID("1976.0276"),
+                                                            1,
+                                                            DateRange(LocalDate(year = 1971, month = 1, day = 1), null),
+                                                            description = "test1"
+                                                        ),
                                                     )
+                                                ),
+                                                metadata = BoxMetadata(
+                                                    RecordSetID.OldID("1976.0276"),
+                                                    1,
+                                                    DateRange(
+                                                        LocalDate(year = 1971, month = 1, day = 1),
+                                                        null
+                                                    ),
+                                                    description = "test1;test2"
                                                 ),
                                             )
                                     ),
@@ -129,14 +152,33 @@ class JSONJobStateTest {
                                             Boundary(
                                                 Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                 confidence = 1.0,
-                                                transcription = "test1",
+                                                rawMetadata = BoxMetadata(
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    description = "test1"
+                                                ),
                                             ),
                                             listOf(
                                                 Boundary(
                                                     Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                     confidence = 0.5,
-                                                    transcription = "test2",
+                                                    rawMetadata = BoxMetadata(
+                                                        RecordSetID.OldID("1976.0276"),
+                                                        1,
+                                                        DateRange(LocalDate(year = 1971, month = 1, day = 1), null),
+                                                        description = "test1"
+                                                    ),
                                                 )
+                                            ),
+                                            metadata = BoxMetadata(
+                                                RecordSetID.OldID("1976.0276"),
+                                                1,
+                                                DateRange(
+                                                    LocalDate(year = 1971, month = 1, day = 1),
+                                                    null
+                                                ),
+                                                description = "test1;test2"
                                             ),
                                         )
                                 ),
@@ -159,7 +201,12 @@ class JSONJobStateTest {
                                             Boundary(
                                                 Quad.create(0 to 0, 100 to 0, 100 to 100, 0 to 100),
                                                 confidence = 1.0,
-                                                transcription = "test1",
+                                                rawMetadata = BoxMetadata(
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    description = "test1"
+                                                ),
                                             ),
                                             listOf(
                                                 Boundary(
@@ -170,7 +217,12 @@ class JSONJobStateTest {
                                                         0 to 100,
                                                     ),
                                                     confidence = 0.5,
-                                                    transcription = "test2",
+                                                    rawMetadata = BoxMetadata(
+                                                        RecordSetID.OldID("1976.0276"),
+                                                        1,
+                                                        DateRange(LocalDate(year = 1971, month = 1, day = 1), null),
+                                                        description = "test1"
+                                                    ),
                                                 )
                                             ),
                                         )
