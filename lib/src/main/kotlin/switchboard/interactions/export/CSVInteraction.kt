@@ -59,21 +59,17 @@ object CSV {
             "Node Type" to { "Item" }.with4IgnoredParameters(),
             "Node Title" to
                 { _, _, _, box ->
-                    box.labelBoundaries
-                        .firstNotNullOfOrNull { RecordSetID.scanForAll(it.transcription ?: "") }
-                        ?.CSVString(0 ?: TODO("Detect the Box Running Number"))
+                    box.metadata?.id
+                        ?.CSVString(box.metadata.unitNumber ?: 0)
                 },
             "Description" to
                 { _, _, _, box ->
                     // TODO: Also transcribe any non-primary labels.
-                    box.boxBoundary.transcription
+                    box.metadata?.description ?: ""
                 },
             "Date Range" to
                 { _, _, _, box ->
-                    // TODO: Also transcribe any non-primary labels.
-                    DateRange.scan(box.boxBoundary.transcription ?: "")?.CSVString
-                        // We don't fail if none are found.
-                        ?: ""
+                    box.metadata?.dateRange?.CSVString ?: ""
                 },
         )
     // Additional Fields, anything not required for the CMS, but useful for manual review.

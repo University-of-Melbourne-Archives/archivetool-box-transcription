@@ -1,6 +1,15 @@
-package au.edu.unimelb.archivetool.switchboard.interactions.export
+package au.edu.unimelb.archivetool.switchboard.jobstate
 
-import kotlin.collections.mapNotNull
+import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID.OldMultiID
+import au.edu.unimelb.archivetool.util.counted
+import au.edu.unimelb.archivetool.util.geometry.Point
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.reflect.full.companionObject
 
 // Record Set IDs are in one of several formats:
@@ -17,13 +26,20 @@ import kotlin.reflect.full.companionObject
 // There _should_ only be one type of set ID per box,
 //      and we should warn the user if there are multiple.
 // Format 3 should be preferred if possible in this case.
+@Serializable
 sealed class RecordSetID {
     abstract val id: String
+
+    abstract fun matchesType(other: RecordSetID): Boolean
+
+    override fun equals(other: Any?): Boolean {
+        return other is RecordSetID && other.id == id
+    }
 
     // Used to generate the canonical name for the CMS.
     // UoM naming convention is:
     //  "<Record Set ID> Unit <%04d Box Number>" -- ie. "1974.0029 Unit 0319".
-    fun CSVString(runningNumber: Int) = "$id Unit ${"%04d".format(runningNumber)}"
+    fun CSVString(unitNumber: Int) = "$id Unit ${"%04d".format(unitNumber)}"
 
     companion object {
         inline fun <reified I : RecordSetID> List<RecordSetID>.findSubclass(): I? =
@@ -34,6 +50,7 @@ sealed class RecordSetID {
                 ?: list.findSubclass<OldMultiID>()
                 ?: list.findSubclass<OldID>()
                 ?: list.findSubclass<OldShorthandID>()
+                // null be unreachable unless the list is empty.
 
         fun scanForAll(transcription: String): RecordSetID? {
             val ids =
@@ -41,6 +58,42 @@ sealed class RecordSetID {
                     (it.companionObject as RecordSetIDCompanion).scanFor(transcription)
                 }
             return searchInOrder(ids)
+        }
+
+        fun fromOCROutput(ids: List<String>): RecordSetID {
+            val scanned = ids.map {
+                scanForAll(it)
+            }
+            val type = scanned.first()
+            var result: RecordSetID
+            when (type) {
+                is ModernID -> {
+                    result = scanned.first()!!
+                }
+                is OldID -> {
+                    result = if (scanned.all { it is OldID } && scanned.size > 1) {
+                        OldMultiID(scanned.joinToString { it!!.id })
+                    } else {
+                        scanned.first()!!
+                    }
+                }
+                is OldShorthandID -> {
+                    result = scanned.first()!!
+                }
+                is OldMultiID, null -> {
+                    Log.error("Invalid Output from Python OCR module.")
+                    error("")
+                }
+            }
+            return result
+        }
+
+        // Sort by priority order, then the most frequent one remaining, with ties being broken by alphabetical order or something?
+        fun bestGuess(options: List<RecordSetID>): RecordSetID {
+            val typeOf = searchInOrder(options)!!
+            val ofBestType = options.filter { typeOf.matchesType(it) }
+            // TODO: Better tie-breaking if counts match.
+            return ofBestType.counted().maxBy {it.first}.second
         }
     }
 
@@ -50,7 +103,12 @@ sealed class RecordSetID {
         fun scanFor(transcription: String): RecordSetID?
     }
 
-    class ModernID private constructor(override val id: String) : RecordSetID() {
+    @Serializable
+    @SerialName("modern")
+    data class ModernID (override val id: String) : RecordSetID() {
+        init {
+            require("^${pattern.pattern}$".toRegex().matches(id))
+        }
         companion object : RecordSetIDCompanion {
             override val pattern = "UMA-(AC|SR)E?-\\d{8,9}".toRegex()
 
@@ -59,9 +117,19 @@ sealed class RecordSetID {
                 return ids.firstOrNull()?.let { ModernID(it.value) }
             }
         }
+
+        override fun matchesType(other: RecordSetID): Boolean = other is ModernID
     }
 
-    class OldMultiID private constructor(override val id: String) : RecordSetID() {
+    @Serializable
+    @SerialName("old-multi")
+    data class OldMultiID (override val id: String) : RecordSetID() {
+        init {
+            require("^${pattern.pattern}$".toRegex().matches(id))
+        }
+
+        override fun matchesType(other: RecordSetID): Boolean = other is OldMultiID
+
         companion object : RecordSetIDCompanion {
             override val pattern = "(?:.*${OldID.pattern}.*){2,}".toRegex()
 
@@ -72,7 +140,15 @@ sealed class RecordSetID {
         }
     }
 
-    class OldID private constructor(override val id: String) : RecordSetID() {
+    @Serializable
+    @SerialName("old")
+    data class OldID (override val id: String) : RecordSetID() {
+        init {
+            require("^${pattern.pattern}$".toRegex().matches(id))
+        }
+
+        override fun matchesType(other: RecordSetID): Boolean = other is OldID
+
         companion object : RecordSetIDCompanion {
             override val pattern = "\\d{4}\\.\\d{4}".toRegex()
 
@@ -83,7 +159,15 @@ sealed class RecordSetID {
         }
     }
 
-    class OldShorthandID private constructor(override val id: String) : RecordSetID() {
+    @Serializable
+    @SerialName("shorthand")
+    data class OldShorthandID (override val id: String) : RecordSetID() {
+        init {
+            require("^${pattern.pattern}$".toRegex().matches(id))
+        }
+
+        override fun matchesType(other: RecordSetID): Boolean = other is OldShorthandID
+
         companion object : RecordSetIDCompanion {
             override val pattern = "\\d{2}/\\d{1,4}".toRegex()
 

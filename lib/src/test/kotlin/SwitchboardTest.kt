@@ -6,10 +6,13 @@ import au.edu.unimelb.archivetool.logging.consumers.StringConsumer
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
+import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
+import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
+import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.geometry.Quad
 import kotlin.collections.mutableMapOf
 import kotlin.io.path.Path
@@ -19,6 +22,7 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 
 class SwitchboardTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -260,9 +264,11 @@ class SwitchboardTest {
 
         assert(log.contains("Running Mock OCR, nothing will be done."))
         assertNotNull(
-            ("(?:.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
+            (
+                    "(?:.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
                 .toRegex(RegexOption.MULTILINE)
-                .find(log))
+                .find(log)
+                    )
         )
     }
 
@@ -292,7 +298,12 @@ class SwitchboardTest {
                                                     Boundary(
                                                         Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                         confidence = 1.0,
-                                                        transcription = "test1",
+                                                        rawMetadata = BoxMetadata(
+                                                            null,
+                                                            null,
+                                                            null,
+                                                            description = "test1"
+                                                        ),
                                                     ),
                                                     listOf(
                                                         Boundary(
@@ -303,8 +314,25 @@ class SwitchboardTest {
                                                                 0 to 1,
                                                             ),
                                                             confidence = 0.5,
-                                                            transcription = "test2",
+                                                            rawMetadata = BoxMetadata(
+                                                                RecordSetID.OldID("1976.0276"),
+                                                                1,
+                                                                DateRange(
+                                                                    LocalDate(year = 1971, month = 1, day = 1),
+                                                                    null
+                                                                ),
+                                                                description = "test2"
+                                                            ),
                                                         )
+                                                    ),
+                                                    metadata = BoxMetadata(
+                                                        RecordSetID.OldID("1976.0276"),
+                                                        1,
+                                                        DateRange(
+                                                            LocalDate(year = 1971, month = 1, day = 1),
+                                                            null
+                                                        ),
+                                                        description = "test1;test2"
                                                     ),
                                                 )
                                         ),
@@ -324,7 +352,7 @@ class SwitchboardTest {
         val log = consumer.getLog()
 
         assertNotNull(
-            ("(?:${fileNameRegex}::box-1-(box|label-1): test[12];;){110}"
+            ("(?:${fileNameRegex}::box-1: BoxMetadata\\(id=OldID\\(id=1976\\.0276\\), unitNumber=1, dateRange=DateRange\\(startDate=1971-01-01, endDate=null\\), description=test1;test2\\);;){55}"
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )
