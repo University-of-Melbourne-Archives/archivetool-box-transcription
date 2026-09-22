@@ -4,9 +4,11 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import io.nacular.doodle.core.View
 import io.nacular.doodle.drawing.Canvas
 import io.nacular.doodle.drawing.Color
+import io.nacular.doodle.drawing.HslColor
 import io.nacular.doodle.drawing.opacity
 import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.drawing.stroke
+import io.nacular.doodle.drawing.toRgb
 import io.nacular.doodle.event.PointerEvent
 import io.nacular.doodle.event.PointerListener
 import io.nacular.doodle.event.PointerMotionListener
@@ -15,6 +17,8 @@ import io.nacular.doodle.geometry.Point
 import io.nacular.doodle.geometry.Rectangle
 import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
+import io.nacular.measured.units.Angle.Companion.degrees
+import io.nacular.measured.units.times
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -56,6 +60,7 @@ class ImageViewport(
         private const val LINE_THICKNESS = 2.0
         private const val VERTEX_DETECTION_RADIUS = 10.0
         private val SELECTION_FILL = Color.Cyan.opacity(0.15f)
+        private val HSL_BLUE = HslColor(240 * degrees, 1f, 0.50f)
     }
 
     // -- Job data ------------------------------------------------------------
@@ -91,7 +96,7 @@ class ImageViewport(
     private var didInitialFit = false
 
     // Guarantees each box crop retains its initial colouring
-    private val pairColours = mutableMapOf<Int, Color>()
+    private val pairColours = mutableMapOf<Int, HslColor>()
 
     // -- Selection -----------------------------------------------------------
     private var selection: SelectionProposal? = null
@@ -655,14 +660,8 @@ class ImageViewport(
             *map { it.x.roundToInt() to it.y.roundToInt() }.toTypedArray()
         )
 
-    private fun indexColour(index: Int): Color {
-        return pairColours.getOrPut(index) {
-            Color(
-                Random.nextInt(256).toUByte(),
-                Random.nextInt(256).toUByte(),
-                Random.nextInt(256).toUByte(),
-            )
-        }
+    private fun indexColour(index: Int): HslColor {
+        return pairColours.getOrPut(index) { HslColor(Random.nextInt(360) * degrees, 1f, 0.5f) }
     }
 
     // -- Rendering -----------------------------------------------------------
@@ -708,7 +707,7 @@ class ImageViewport(
                 drawOutline(canvas, it.points.toVertices(), boxStrokeColour)
             }
             (job.crops["l$n"] as? JobFile.LabelCrop)?.let {
-                drawOutline(canvas, it.points.toVertices(), Color.Blue)
+                drawOutline(canvas, it.points.toVertices(), HSL_BLUE)
             }
         }
 
@@ -716,15 +715,15 @@ class ImageViewport(
         selection?.let { sel ->
             val boxStrokeColour = indexColour(sel.number)
             drawFilledSelection(canvas, sel.boxPoints, boxStrokeColour)
-            drawFilledSelection(canvas, sel.labelPoints, Color.Blue)
+            drawFilledSelection(canvas, sel.labelPoints, HSL_BLUE)
             drawVertexes(canvas, sel.boxPoints)
             drawVertexes(canvas, sel.labelPoints)
         }
     }
 
-    private fun drawOutline(canvas: Canvas, vertexes: List<VertexDouble>, colour: Color) {
+    private fun drawOutline(canvas: Canvas, vertexes: List<VertexDouble>, colour: HslColor) {
         val points = vertexes.map { toScreen(it) }
-        val stroke = colour.paint.stroke(thickness = LINE_THICKNESS)
+        val stroke = colour.toRgb().paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
             canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
         }
@@ -733,7 +732,7 @@ class ImageViewport(
     private fun drawFilledSelection(
         canvas: Canvas,
         vertexes: List<VertexDouble>,
-        outlineColor: Color,
+        outlineColor: HslColor,
     ) {
         val points = vertexes.map { toScreen(it) }
 
@@ -744,7 +743,7 @@ class ImageViewport(
         )
 
         // Standard outline
-        val stroke = outlineColor.paint.stroke(thickness = LINE_THICKNESS)
+        val stroke = outlineColor.toRgb().paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
             canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
         }
