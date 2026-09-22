@@ -8,27 +8,36 @@ kotlinxDatetime = "0.8.0"
 kotlinxSerializationJSON = "1.11.0"
 kotlinxCoroutines = "1.10.2"
 clikt = "5.0.1"
+javacv = "1.5.14"
+polyglot = "25.0.3"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 
 kotlinxDatetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
 kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinxCoroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 
 clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref = "clikt" }
 
-polyglot = { module = "org.graalvm.polyglot:polyglot", version = "25.0.3" }
-polyglot-python = { module = "org.graalvm.polyglot:python", version = "25.0.3" }
+polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" }
+polyglot-python = { module = "org.graalvm.polyglot:python", version.ref = "polyglot" }
+
+javacv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv" }
+
+csv = { module = "com.jsoizo:kotlin-csv", version = "2.0.0" }
 
 # Libraries can be bundled together for easier import
 [bundles]
+kotlinEcosystem = ["kotlinReflect", "kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
 clikt = ["clikt", "clikt-markdown"]
 polyglot = ["polyglot", "polyglot-python"]
 
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-ktfmtGradlePlugin = { id = "com.ncorti.ktfmt.gradle",  version = "0.26.0" }
-graalpy = { id = "org.graalvm.python", version = "25.0.3"}
+ktfmtGradlePlugin = { id = "com.ncorti.ktfmt.gradle", version = "0.26.0" }
+graalpy = { id = "org.graalvm.python", version.ref = "polyglot" }

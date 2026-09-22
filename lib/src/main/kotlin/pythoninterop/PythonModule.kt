@@ -1,8 +1,7 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
 import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.util.unwrap
-import au.edu.unimelb.archivetool.util.validate
+import au.edu.unimelb.archivetool.logging.Log.expect
 import java.io.BufferedReader
 import java.lang.ref.WeakReference
 import java.nio.file.FileSystems
@@ -28,47 +27,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
         folder: String,
         inject: Set<Injectable> = setOf(),
     ) : this(
-        {}.javaClass
-            .getResource("/python/$folder")
-            ?.toURI()
-            .unwrap {
-                Log.error("Python ModuleFolder $folder not found")
-                throw RuntimeException()
-            }
-            .let { it.toPath() to it }
-            .let {
-                val path = it.first
-                val uri = it.second
-                when (uri.scheme) {
-                    "jar" -> {
-                        FileSystems.getFileSystem(uri).use { jarFs ->
-                            val dirPath: Path = jarFs.getPath("/python/$folder")
-                            dirPath
-                                .walk()
-                                .map {
-                                    it.validate { it.exists() && it.isRegularFile() }
-                                        ?.relativeTo(jarFs.getPath("/python"))
-                                }
-                                .filter { it?.extension == "py" }
-                                .map { it.toString() }
-                                .toSet()
-                        }
-                    }
-                    else -> {
-                        path
-                            .walk()
-                            .map {
-                                it.validate { it.exists() && it.isRegularFile() }
-                                    ?.relativeTo(
-                                        {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
-                                    )
-                            }
-                            .filter { it?.extension == "py" }
-                            .map { it.toString() }
-                            .toSet()
-                    }
-                }
-            },
+        resolveModuleFolder(folder),
         inject,
     )
 
@@ -92,6 +51,48 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
     private val allMembers: MutableMap<String, Value> by lazy { mutableMapOf() }
     val members by lazy { MemberSet(WeakReference(allMembers), _context) }
     val methods by lazy { members.withFilter({ it.canExecute() }) }
+
+    companion object {
+        fun resolveModuleFolder(folder: String) =
+            {}.javaClass
+                .getResource("/python/$folder")
+                ?.toURI()
+                .expect("Python ModuleFolder $folder not found")
+                .let { it.toPath() to it }
+                .let {
+                    val path = it.first
+                    val uri = it.second
+                    when (uri.scheme) {
+                        "jar" -> {
+                            FileSystems.getFileSystem(uri).use { jarFs ->
+                                val dirPath: Path = jarFs.getPath("/python/$folder")
+                                dirPath
+                                    .walk()
+                                    .map {
+                                        it.takeIf { it.exists() && it.isRegularFile() }
+                                            ?.relativeTo(jarFs.getPath("/python"))
+                                    }
+                                    .filter { it?.extension == "py" }
+                                    .map { it.toString() }
+                                    .toSet()
+                            }
+                        }
+                        else -> {
+                            path
+                                .walk()
+                                .map {
+                                    it.takeIf { it.exists() && it.isRegularFile() }
+                                        ?.relativeTo(
+                                            {}.javaClass.getResource("/python")?.toURI()?.toPath()!!
+                                        )
+                                }
+                                .filter { it?.extension == "py" }
+                                .map { it.toString() }
+                                .toSet()
+                        }
+                    }
+                }
+    }
 }
 
 data class MemberSet(
@@ -104,7 +105,6 @@ data class MemberSet(
     internal val filteredMembers
         get() = members.get()!!.toMap().filter { member -> filters.all { it(member.value) } }
 
-    @OptIn(ExperimentalStdlibApi::class)
     operator fun get(index: String): Value? {
         if (filteredMembers.containsKey(index)) return filteredMembers[index]
 
@@ -115,7 +115,7 @@ data class MemberSet(
 
             members[index] = out
 
-            out.validate { v -> filters.all { it(v) } }
+            out.takeIf { v -> filters.all { it(v) } }
         }
     }
 

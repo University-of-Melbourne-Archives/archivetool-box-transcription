@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.logging
 
+import au.edu.unimelb.archivetool.util.unwrap
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Clock
 
@@ -64,6 +65,12 @@ object Log {
     fun warn(message: String) = log(LogLevel.Warn, message)
 
     fun error(message: String) = log(LogLevel.Error, message)
+
+    fun <T> T?.expect(message: String): T =
+        this.unwrap {
+            Log.error(message)
+            throw RuntimeException(message)
+        }
 }
 
 enum class LogLevel {
