@@ -212,6 +212,7 @@ open class AbstractSwitchboard(
                     }
                     .expect("Could not load list of valid files.")
             )
+        state?.update(toUpdate)
     }
 
     fun generateExport(directory: Path) {
