@@ -88,6 +88,7 @@ object CSV {
         }
         return sequence {
             yield(fields.headRow)
+            // TODO: Disambiguate and deduplicate on ID
             paramSets.forEach {
                 val row = fields.computedRow(it)
                 if (row != null) yield(row)
@@ -125,7 +126,7 @@ object CSV {
                             value.second.second,
                         )
                     }
-                    .takeIf { l -> l.any { it == null } }
+                    .takeUnless { l -> l.any { it == null } }
                     ?.map { it!!.CSVSafe() }
         }
     }
