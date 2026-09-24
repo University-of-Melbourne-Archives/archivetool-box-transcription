@@ -47,6 +47,6 @@ class RunCommand : Command(name = "run") {
             .restrictTo(0, 100)
 
     override fun run() {
-        TODO("Connect this command to the Switchboard")
+        CliSwitchboard.runWorkflow(inputDirectory, outputPath, resume, autoApproveThreshold)
     }
 }

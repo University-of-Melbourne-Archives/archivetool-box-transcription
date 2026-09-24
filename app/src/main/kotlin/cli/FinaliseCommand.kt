@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
+import kotlin.io.path.Path
 
 class FinaliseCommand : Command(name = "finalise") {
 
@@ -12,7 +13,7 @@ class FinaliseCommand : Command(name = "finalise") {
         """
         Finalise an approved job and generate its CSV output.
 
-        The Switchboard loads the current job state and writes the export to the requested path.
+        The current working directory is used as the job root.
         """
             .trimIndent()
 
@@ -22,6 +23,6 @@ class FinaliseCommand : Command(name = "finalise") {
             .required()
 
     override fun run() {
-        TODO("Connect this command to the Switchboard")
+        CliSwitchboard.finalise(Path("."), outputPath)
     }
 }
