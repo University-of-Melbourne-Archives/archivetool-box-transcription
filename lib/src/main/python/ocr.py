@@ -20,11 +20,8 @@ def executeOCR(imagePath, base_url, api_key, model):
     # Encode image into Base64 string for the API
     with open(imagePath, "rb") as f:
         b64 = base64.b64encode(f.read()).decode("utf-8")
-        
-    client = OpenAI(
-        api_key=api_key,
-        base_url=base_url
-    )
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
 
     response = client.chat.completions.create(
         model=model,
@@ -42,7 +39,7 @@ def executeOCR(imagePath, base_url, api_key, model):
                             "with the start and end of the range separated by a '!', and each date in ISO8601."
                             "If a single date appears, treat it as a range with no end"
                             "Return 'None' if there's none."
-                        )
+                        ),
                     },
                     {
                         "type": "image_url",
@@ -51,7 +48,7 @@ def executeOCR(imagePath, base_url, api_key, model):
                 ],
             },
         ],
-        reasoning_effort="low"
+        reasoning_effort="low",
     )
 
     return response.choices[0].message.content
@@ -80,10 +77,10 @@ def processOutputText(extractedText):
     # Identify date range(s)
     dateRangePattern = r"Date ranges: [\w\W]+"
     dateRangeMatch = re.findall(dateRangePattern, extractedText)[0]
-    outputDict["Date ranges"] = dateRangeMatch[len("Date ranges: "):]
+    outputDict["Date ranges"] = dateRangeMatch[len("Date ranges: ") :]
     # Remove date ranges to prevent dupes in description
     extractedText = re.sub(dateRangePattern, "", extractedText)
-    extractedText = extractedText.replace(dateRangeMatch[len("Date ranges: "):], "")
+    extractedText = extractedText.replace(dateRangeMatch[len("Date ranges: ") :], "")
 
     # Identify format of ID string(s)
     # - {4 digit year}.{4 digit} ID string (e.g. 1964.0009)
@@ -102,7 +99,7 @@ def processOutputText(extractedText):
             # Use set to ensure ID string(s) are unique
             idStrings = set(idStringMatches)
             outputDict["ID strings"] = idStrings
-            # Remove ID strings from the extracted text to prevent dupes in description 
+            # Remove ID strings from the extracted text to prevent dupes in description
             if len(idStrings) > 1:
                 for idString in idStrings:
                     extractedText = extractedText.replace(idString, "")
@@ -126,5 +123,5 @@ def processOutputText(extractedText):
         if line and bool(re.match(r"[a-zA-Z0-9\s]+", line)):
             description.append(line)
     outputDict["Description"] = "; ".join(description)
-    
+
     return outputDict

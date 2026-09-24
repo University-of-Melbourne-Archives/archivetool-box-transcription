@@ -17,21 +17,19 @@ data class ArchiveBox(
     val labelBoundaries: List<Boundary> =
         listOf(), // Also TODO: We may need to make sure this is enumerated.
     // This should also never be empty in practice, labelless boxes are out of scope.
-    @SerialName("meta")
-    val metadata: BoxMetadata? = null
+    @SerialName("meta") val metadata: BoxMetadata? = null,
 ) {
     val keyedBoundaries: Map<String, Boundary> by lazy {
         mapOf(
             BOX_CROP_NAME to boxBoundary,
-            *labelBoundaries
-                .mapIndexed(::keyedLabel)
-                .toTypedArray(),
+            *labelBoundaries.mapIndexed(::keyedLabel).toTypedArray(),
         )
     }
     val minConfidence: Double by lazy { keyedBoundaries.values.minOf { it.confidence } }
 
     companion object {
         const val BOX_CROP_NAME = "box"
+
         fun keyedLabel(index: Int, boundary: Boundary): Pair<String, Boundary> =
             "label-${index + 1}" to boundary
     }
@@ -42,5 +40,5 @@ data class Boundary(
     val points: Quad,
     val confidence: Double,
     // Contains the best-guess at a specific box's metadata.
-    val rawMetadata: BoxMetadata? = null
+    val rawMetadata: BoxMetadata? = null,
 )

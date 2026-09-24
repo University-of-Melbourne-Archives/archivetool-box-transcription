@@ -3,14 +3,9 @@ package au.edu.unimelb.archivetool.switchboard.jobstate
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID.OldMultiID
 import au.edu.unimelb.archivetool.util.counted
-import au.edu.unimelb.archivetool.util.geometry.Point
-import kotlinx.serialization.KSerializer
+import kotlin.reflect.full.companionObject
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlin.reflect.full.companionObject
 
 // Record Set IDs are in one of several formats:
 //  1.  <year>.<%04d running number> -- ie. 1976.0029
@@ -50,7 +45,8 @@ sealed class RecordSetID {
                 ?: list.findSubclass<OldMultiID>()
                 ?: list.findSubclass<OldID>()
                 ?: list.findSubclass<OldShorthandID>()
-                // null be unreachable unless the list is empty.
+
+        // null be unreachable unless the list is empty.
 
         fun scanForAll(transcription: String): RecordSetID? {
             val ids =
@@ -61,9 +57,7 @@ sealed class RecordSetID {
         }
 
         fun fromOCROutput(ids: List<String>): RecordSetID {
-            val scanned = ids.map {
-                scanForAll(it)
-            }
+            val scanned = ids.map { scanForAll(it) }
             val type = scanned.first()
             var result: RecordSetID
             when (type) {
@@ -71,16 +65,18 @@ sealed class RecordSetID {
                     result = scanned.first()!!
                 }
                 is OldID -> {
-                    result = if (scanned.all { it is OldID } && scanned.size > 1) {
-                        OldMultiID(scanned.joinToString { it!!.id })
-                    } else {
-                        scanned.first()!!
-                    }
+                    result =
+                        if (scanned.all { it is OldID } && scanned.size > 1) {
+                            OldMultiID(scanned.joinToString { it!!.id })
+                        } else {
+                            scanned.first()!!
+                        }
                 }
                 is OldShorthandID -> {
                     result = scanned.first()!!
                 }
-                is OldMultiID, null -> {
+                is OldMultiID,
+                null -> {
                     Log.error("Invalid Output from Python OCR module.")
                     error("")
                 }
@@ -88,12 +84,13 @@ sealed class RecordSetID {
             return result
         }
 
-        // Sort by priority order, then the most frequent one remaining, with ties being broken by alphabetical order or something?
+        // Sort by priority order, then the most frequent one remaining, with ties being broken by
+        // alphabetical order or something?
         fun bestGuess(options: List<RecordSetID>): RecordSetID {
             val typeOf = searchInOrder(options)!!
             val ofBestType = options.filter { typeOf.matchesType(it) }
             // TODO: Better tie-breaking if counts match.
-            return ofBestType.counted().maxBy {it.first}.second
+            return ofBestType.counted().maxBy { it.first }.second
         }
     }
 
@@ -105,10 +102,11 @@ sealed class RecordSetID {
 
     @Serializable
     @SerialName("modern")
-    data class ModernID (override val id: String) : RecordSetID() {
+    data class ModernID(override val id: String) : RecordSetID() {
         init {
             require("^${pattern.pattern}$".toRegex().matches(id))
         }
+
         companion object : RecordSetIDCompanion {
             override val pattern = "UMA-(AC|SR)E?-\\d{8,9}".toRegex()
 
@@ -123,7 +121,7 @@ sealed class RecordSetID {
 
     @Serializable
     @SerialName("old-multi")
-    data class OldMultiID (override val id: String) : RecordSetID() {
+    data class OldMultiID(override val id: String) : RecordSetID() {
         init {
             require("^${pattern.pattern}$".toRegex().matches(id))
         }
@@ -142,7 +140,7 @@ sealed class RecordSetID {
 
     @Serializable
     @SerialName("old")
-    data class OldID (override val id: String) : RecordSetID() {
+    data class OldID(override val id: String) : RecordSetID() {
         init {
             require("^${pattern.pattern}$".toRegex().matches(id))
         }
@@ -161,7 +159,7 @@ sealed class RecordSetID {
 
     @Serializable
     @SerialName("shorthand")
-    data class OldShorthandID (override val id: String) : RecordSetID() {
+    data class OldShorthandID(override val id: String) : RecordSetID() {
         init {
             require("^${pattern.pattern}$".toRegex().matches(id))
         }
