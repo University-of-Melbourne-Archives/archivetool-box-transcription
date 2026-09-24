@@ -21,6 +21,7 @@ import kotlin.io.path.Path
 object Switchboard :
     AbstractSwitchboard(
         LogInitInteraction(),
+        JSONConfigInteraction(),
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
         PythonCreatePreviewInteraction(),
@@ -36,6 +37,7 @@ object Switchboard :
 object MockSwitchboard :
     AbstractSwitchboard(
         MockInitInteraction(),
+        MockConfigInteraction(),
         MemoryJobStateInteraction(),
         StdoutStatusInteraction(),
         MockCreatePreviewInteraction(),
@@ -50,6 +52,7 @@ object MockSwitchboard :
 // but will later also take stuff for things like Job data format parsing, or initial setup things.
 open class AbstractSwitchboard(
     _init: InitInteraction,
+    _config: ConfigInteraction,
     _job: JobStateInteraction,
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
@@ -59,6 +62,9 @@ open class AbstractSwitchboard(
     _export: ExportInteraction,
 ) {
     var init: InitInteraction
+        private set
+
+    var config: ConfigInteraction
         private set
 
     var job: JobStateInteraction
@@ -84,6 +90,7 @@ open class AbstractSwitchboard(
 
     init {
         init = _init
+        config = _config
         job = _job
         status = _status
         createPreview = _createPreview
@@ -98,6 +105,7 @@ open class AbstractSwitchboard(
         sw: AbstractSwitchboard
     ) : this(
         sw.init,
+        sw.config,
         sw.job,
         sw.status,
         sw.createPreview,
@@ -117,6 +125,7 @@ open class AbstractSwitchboard(
     // Allows for on-the-fly swapping of interactions.
     fun swap(swapFor: Interaction) {
         when (swapFor) {
+            is ConfigInteraction -> config = swapFor
             is CreatePreviewInteraction -> createPreview = swapFor
             is ImageManipulationInteraction -> manip = swapFor
             is ExportInteraction -> export = swapFor
