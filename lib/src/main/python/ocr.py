@@ -4,12 +4,15 @@ import re
 from openai import OpenAI
 
 
-def executeOCR(imagePath):
+def executeOCR(imagePath, base_url, api_key, model):
     """Perform OCR to read printed and handwritten texts from an image using Gemini model
     via OpenAI's library.
 
     Args:
         imagePath (str): Path of an image file.
+        base_url (str): "Base URL" for the OpenAI API
+        api_key (str): API key for the URL model.
+        model (str): Model available at base_url that you want to use
 
     Returns:
         str: Extracted text from the image file.
@@ -19,12 +22,12 @@ def executeOCR(imagePath):
         b64 = base64.b64encode(f.read()).decode("utf-8")
         
     client = OpenAI(
-        api_key=os.environ.get("GEMINI_API_KEY"),
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+        api_key=api_key,
+        base_url=base_url
     )
 
     response = client.chat.completions.create(
-        model="gemini-3-flash-preview",
+        model=model,
         messages=[
             {
                 "role": "user",

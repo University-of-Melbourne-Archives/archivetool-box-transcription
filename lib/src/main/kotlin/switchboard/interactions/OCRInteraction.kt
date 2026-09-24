@@ -1,5 +1,8 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
+import au.edu.unimelb.archivetool.config.API_KEY_ENV_VAR
+import au.edu.unimelb.archivetool.config.Config
+import au.edu.unimelb.archivetool.config.OpenAIAPIData
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.pythoninterop.PythonModule
@@ -35,10 +38,10 @@ class PythonOCRInteraction : OCRInteraction {
         )
     }
 
-    fun executeOCR(path: JobRelativePath): String {
+    fun executeOCR(path: JobRelativePath, api: OpenAIAPIData): String {
         var output: String? = null
         try {
-            output = method_executeOCR(path.absolute.pathString)
+            output = method_executeOCR(path.absolute.pathString, api.baseUrl, api.apiKey, api.model)
                 .asString()
         } catch (e: Exception) {
             Log.trace("$e")
@@ -60,31 +63,31 @@ class PythonOCRInteraction : OCRInteraction {
         //    .expect("OCR::processOutputText failed or returned either null or a non-string value.")
     }
 
-    fun OCRBox(jpath: JobRelativePath, boxId: String, box: ArchiveBox): Boundary? =
+    fun OCRBox(jpath: JobRelativePath, boxId: String, box: ArchiveBox, api: OpenAIAPIData): Boundary? =
         box.boxBoundary
             .takeIf { it.rawMetadata == null }
             ?.let { bounds ->
                 val genPath = JobState.cropPath(jpath, boxId, BOX_CROP_NAME)
-                val transcript = executeOCR(genPath)
+                val transcript = executeOCR(genPath, api)
                 bounds.copy(rawMetadata = processOutputText(transcript))
             }
 
-    fun OCRLabel(jpath: JobRelativePath, boxId: String, box: ArchiveBox): List<Boundary> =
+    fun OCRLabel(jpath: JobRelativePath, boxId: String, box: ArchiveBox, api: OpenAIAPIData): List<Boundary> =
         box.labelBoundaries
             .mapIndexed(ArchiveBox::keyedLabel)
             .map { (cropId, crop) ->
                 if (crop.rawMetadata != null) return@map cropId to crop
                 val genPath = JobState.cropPath(jpath, boxId, cropId)
-                val transcript = executeOCR(genPath)
+                val transcript = executeOCR(genPath, api)
                 cropId to crop.copy(rawMetadata = processOutputText(transcript))
             }.map { it.second }
 
-    override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
+    override fun generateOCR(files: Map<JobRelativePath, JobFile>, config: Config): Map<JobRelativePath, JobFile> {
         val out = mutableMapOf<JobRelativePath, JobFile>()
         files.forEach { (jpath, file) ->
             file.vertexes!!.forEach { (boxId, box) ->
-                val boxBoundary = OCRBox(jpath, boxId, box)
-                val labelBoundaries = OCRLabel(jpath, boxId, box)
+                val boxBoundary = OCRBox(jpath, boxId, box, config.ocrApiSettings)
+                val labelBoundaries = OCRLabel(jpath, boxId, box, config.ocrApiSettings)
 
                 val meta = BoxMetadata.bestGuess(boxBoundary, labelBoundaries)
 
@@ -103,7 +106,7 @@ class PythonOCRInteraction : OCRInteraction {
 }
 
 class MockOCRInteraction : OCRInteraction {
-    override fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
+    override fun generateOCR(files: Map<JobRelativePath, JobFile>, config: Config): Map<JobRelativePath, JobFile> {
         Log.error("Running Mock OCR, nothing will be done.")
         files.forEach { (path, file) ->
             file.vertexes?.forEach { (boxId, box) ->
@@ -117,7 +120,7 @@ class MockOCRInteraction : OCRInteraction {
 }
 
 interface OCRInteraction : Interaction {
-    fun generateOCR(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile>
+    fun generateOCR(files: Map<JobRelativePath, JobFile>, config: Config): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean {
         return file.second.let { jobFile ->

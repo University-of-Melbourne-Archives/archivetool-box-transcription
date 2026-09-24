@@ -219,7 +219,8 @@ open class AbstractSwitchboard(
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
-                    .expect("Could not load list of valid files.")
+                    .expect("Could not load list of valid files."),
+                config.getConfig()
             )
         state?.update(toUpdate)
     }
