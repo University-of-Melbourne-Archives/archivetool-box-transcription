@@ -9,3 +9,6 @@ fun <T> T.validate(validator: (T) -> Boolean): T? {
 
     return this
 }
+
+fun <T, R> T.takeIfNotNull(validator: (T) -> R?): T? =
+    this.takeIf { validator(this) != null }

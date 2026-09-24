@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
+import au.edu.unimelb.archivetool.config.API_KEY_ENV_VAR
 import au.edu.unimelb.archivetool.config.Config
 import au.edu.unimelb.archivetool.config.OpenAIAPIData
 import au.edu.unimelb.archivetool.logging.Log
@@ -10,13 +11,9 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
-import java.io.FileOutputStream
-import java.nio.file.Path
 import kotlin.io.path.inputStream
 import kotlin.io.path.notExists
 import kotlin.io.path.outputStream
-import kotlin.io.path.writeText
-import kotlin.io.path.writer
 
 class JSONConfigInteraction : ConfigInteraction {
     val json by lazy {
@@ -27,7 +24,7 @@ class JSONConfigInteraction : ConfigInteraction {
     }
     override fun getConfig(): Config {
         if (filePath.notExists()) {
-            val hasApiKeyInEnv = System.getenv("ARCHIVETOOL_API_KEY") == null
+            val hasApiKeyInEnv = System.getenv(API_KEY_ENV_VAR) == null
             Log.error("Could not find config file!" +
                     if (hasApiKeyInEnv) {
                         "Without this, we will not be able to perform OCR.\n"
@@ -60,7 +57,7 @@ class JSONConfigInteraction : ConfigInteraction {
 class MockConfigInteraction : ConfigInteraction {
     override fun getConfig(): Config = Config(
         ocrApiSettings = OpenAIAPIData(
-            apiKey = "not_a_real_key"
+            _apiKey = "not_a_real_key"
         )
     )
 
