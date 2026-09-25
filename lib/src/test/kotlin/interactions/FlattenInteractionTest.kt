@@ -68,7 +68,16 @@ class FlattenInteractionTest {
                                                     1271 to 2384,
                                                 ),
                                                 confidence = 1.0,
-                                            )
+                                            ),
+                                            listOf(Boundary(
+                                                Quad.create(
+                                                    1390 to 1680,
+                                                    1815 to 1680,
+                                                    1815 to 1850,
+                                                    1390 to 1850,
+                                                ),
+                                                confidence = 1.0,
+                                            ))
                                         )
                                 ),
                         )

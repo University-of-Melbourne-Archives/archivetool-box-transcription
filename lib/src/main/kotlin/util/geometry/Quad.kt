@@ -19,6 +19,20 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
         )
     }
 
+    override fun mapPoints(mapper: (Point) -> Point): Quad = create(vertices.map(mapper))
+
+    fun offsetBy(x: Int, y: Int): Quad = create(vertices.map { it + Point.create(x, y) })
+
+    fun confinedTo(outer: Rectangle): Quad =
+        create(
+            vertices.map {
+                it.clamp(
+                    Point.fromPair(outer.xMin to outer.yMin),
+                    Point.fromPair(outer.xMax to outer.yMax),
+                )
+            }
+        )
+
     companion object {
         fun create(vararg points: Pair<Int, Int>): Quad = create(points.map { Point.fromPair(it) })
 
