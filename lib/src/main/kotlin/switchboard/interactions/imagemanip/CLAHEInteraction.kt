@@ -53,5 +53,9 @@ class CLAHEInteraction : ImageManipulationInteraction {
                     path.extension
             )
         )
+
+        clahe.release()
+        gray.release()
+        src.release()
     }
 }
