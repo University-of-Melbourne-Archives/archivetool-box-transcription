@@ -21,7 +21,6 @@ import org.bytedeco.opencv.global.opencv_imgproc.*
 import org.bytedeco.opencv.opencv_core.CvMat
 import org.bytedeco.opencv.opencv_core.Mat
 import org.bytedeco.opencv.opencv_core.Point as CVPoint
-import org.bytedeco.opencv.opencv_core.Scalar
 import org.bytedeco.opencv.opencv_core.Size
 
 object CV {
@@ -35,6 +34,7 @@ object CV {
             F32,
             F64,
         }
+
         companion object {
             fun fromMatType(colorSpace: Int): ColourSpace {
                 val nDepth: Int = colorSpace and CV_MAT_DEPTH_MASK
@@ -110,12 +110,7 @@ object CV {
     fun perspectiveWarp(sourceImage: Mat, bounds: Quad, destinationBounds: Rectangle): Mat {
         val result = Mat()
         PerspectiveTransformMatrix.create(bounds, destinationBounds).use {
-            warpPerspective(
-                sourceImage,
-                result,
-                it.mat,
-                it.dSize,
-            )
+            warpPerspective(sourceImage, result, it.mat, it.dSize)
         }
 
         return result
@@ -123,12 +118,7 @@ object CV {
 
     fun perspectiveWarp(sourceImage: Mat, m: PerspectiveTransformMatrix): Mat {
         val result = Mat()
-        warpPerspective(
-            sourceImage,
-            result,
-            m.mat,
-            m.dSize,
-        )
+        warpPerspective(sourceImage, result, m.mat, m.dSize)
 
         return result
     }
