@@ -71,15 +71,17 @@ class CropInteractionTest {
                                                 ),
                                                 confidence = 1.0,
                                             ),
-                                            listOf(Boundary(
-                                                Quad.create(
-                                                    695 to 1376,
-                                                    1000 to 1476,
-                                                    695 to 1876,
-                                                    1000 to 1876,
-                                                ),
-                                                confidence = 1.0,
-                                            ))
+                                            listOf(
+                                                Boundary(
+                                                    Quad.create(
+                                                        695 to 1376,
+                                                        1000 to 1476,
+                                                        695 to 1876,
+                                                        1000 to 1876,
+                                                    ),
+                                                    confidence = 1.0,
+                                                )
+                                            ),
                                         )
                                 ),
                         )

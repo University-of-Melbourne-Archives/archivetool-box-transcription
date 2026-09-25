@@ -6,7 +6,7 @@ import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
 import java.nio.file.Path
 
-class ImageViewport(private val jobs: Map<Path, JobFile?>, private val imageLoader: ImageLoader) : View() {
+class ImageViewport(private val jobs: Map<Path, JobFile?>, private val imageLoader: ImageLoader) :
+    View() {
     private var image: Image? = null
-
 }

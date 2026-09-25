@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard.interactions.imagemanip
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox.Companion.BOX_CROP_NAME
@@ -55,7 +54,9 @@ class FlattenInteraction : ImageManipulationInteraction {
 
                             blanked =
                                 LabelBlanker.blankLabels(cropped, box.labelBoundaries) {
-                                    val newPoints = mapPoints { CV.perspectiveTransformRel(it, mat) }
+                                    val newPoints = mapPoints {
+                                        CV.perspectiveTransformRel(it, mat)
+                                    }
                                     newPoints.confinedTo(outRect)
                                 }
                         }

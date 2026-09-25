@@ -14,10 +14,11 @@ sealed interface Colour {
 
 @JvmInline
 value class RGBColour(val inner: UInt) : Colour {
-    constructor(r: UByte, g: UByte, b: UByte) : this(
-        @OptIn(ExperimentalUnsignedTypes::class)
-        uBytesToUInt(r, g, b, 0.toUByte())
-    )
+    constructor(
+        r: UByte,
+        g: UByte,
+        b: UByte,
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(r, g, b, 0.toUByte()))
 
     val r
         get() = (inner shr 24) and 0xffu
@@ -70,12 +71,7 @@ value class RGBAColour(val inner: UInt) : Colour {
         get() = inner and 0xffu
 
     // Don't ask me why this needs these to be doubles when it's still a 0-255 range
-    fun toCVBGRAScalar(): Scalar = Scalar(
-        b.toDouble(),
-        g.toDouble(),
-        r.toDouble(),
-        a.toDouble()
-    )
+    fun toCVBGRAScalar(): Scalar = Scalar(b.toDouble(), g.toDouble(), r.toDouble(), a.toDouble())
 
     override fun rgb(): RGBColour = RGBColour(this.inner)
 
