@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.app
 
-//
 import au.edu.unimelb.archivetool.gui.segmentation.SegmentationInterface
 import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.logging.LogLevel
@@ -13,6 +12,15 @@ import io.nacular.doodle.application.application
 import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicButtonBehavior
 import java.nio.file.Path
 import org.kodein.di.instance
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.util.geometry.Rectangle
+import io.nacular.doodle.application.Modules.Companion.ImageModule
+import io.nacular.doodle.application.Modules.Companion.PointerModule
+import io.nacular.doodle.application.application
+import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicButtonBehavior
+import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicLabelBehavior
+import java.nio.file.Path
+import org.kodein.di.instance
 
 fun main() {
     Log.registerConsumer(StdoutConsumer())
@@ -23,67 +31,56 @@ fun main() {
     Log.debug("test")
     Log.trace("test")
 
-    val jobs: Map<Path, JobFile?> =
-        mapOf(
-            Path.of("PXL_20251127_230150462") to
-                JobFile(
-                    crops =
-                        mutableMapOf(
-                            "b1" to
-                                JobFile.BoxCrop(
-                                    points =
-                                        Rectangle.create(
-                                            230 to 10,
-                                            2350 to 130,
-                                            2170 to 500,
-                                            260 to 360,
-                                        ),
-                                    confidence = 0.08,
-                                ),
-                            "l1" to
-                                JobFile.LabelCrop(
-                                    points =
-                                        Rectangle.create(
-                                            1700 to 150,
-                                            2180 to 250,
-                                            2140 to 310,
-                                            1700 to 300,
-                                        ),
-                                    confidence = 0.90,
-                                ),
-                        )
+    val jobs: Map<Path, JobFile?> = mapOf(
+        Path.of("lib/src/test/resources/SwitchboardTest/PXL_20251127_230150462") to JobFile(
+            crops = mutableMapOf(
+                "b1" to JobFile.BoxCrop(
+                    points = Quad.create(
+                        230 to 10,
+                        2350 to 130,
+                        2170 to 500,
+                        260 to 360,
+                    ),
+                    confidence = 0.08,
                 ),
-            Path.of("PXL_20251127_230207837") to
-                JobFile(
-                    crops =
-                        mutableMapOf(
-                            "b1" to
-                                JobFile.BoxCrop(
-                                    points =
-                                        Rectangle.create(
-                                            260 to 400,
-                                            2120 to 510,
-                                            2060 to 870,
-                                            300 to 750,
-                                        ),
-                                    confidence = 1.0,
-                                ),
-                            "l1" to
-                                JobFile.LabelCrop(
-                                    points =
-                                        Rectangle.create(
-                                            1630 to 630,
-                                            2150 to 170,
-                                            2030 to 800,
-                                            1600 to 760,
-                                        ),
-                                    confidence = 0.88,
-                                ),
-                        )
+                "l1" to JobFile.LabelCrop(
+                    points = Quad.create(
+                        1700 to 150,
+                        2180 to 210,
+                        2140 to 310,
+                        1700 to 300,
+                    ),
+                    confidence = 0.90,
                 ),
-        )
+            ),
+        ),
+        Path.of("lib/src/test/resources/SwitchboardTest/PXL_20251127_230207837") to JobFile(
+            crops = mutableMapOf(
+                "b1" to JobFile.BoxCrop(
+                    points = Quad.create(
+                        154 to 860,
+                        1785 to 1113,
+                        1789 to 1600,
+                        488 to 1581,
+                    ),
+                    confidence = 1.0,
+                ),
+                "l1" to JobFile.LabelCrop(
+                    points = Quad.create(
+                        1144 to 1493,
+                        1421 to 1458,
+                        1390 to 1282,
+                        1133 to 1293,
+                    ),
+                    confidence = 0.88,
+                ),
+            ),
+        ),
+    )
 
-    application(modules = listOf(basicButtonBehavior(), PointerModule, ImageModule)) {
+    application(
+        modules = listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule)
+    ) {
         SegmentationInterface(
             jobs = jobs,
             display = instance(),
