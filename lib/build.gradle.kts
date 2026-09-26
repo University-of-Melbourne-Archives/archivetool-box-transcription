@@ -25,17 +25,9 @@ dependencies {
     implementation(libs.bundles.polyglot)
     implementation(libs.javacv)
     implementation(libs.csv)
+    api("io.nacular.doodle:desktop-jvm-${osTarget()}:$doodleVersion")
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
-
-    when (osTarget()) {
-        "macos-x64" -> api("io.nacular.doodle:desktop-jvm-macos-x64:$doodleVersion")
-        "macos-arm64" -> api("io.nacular.doodle:desktop-jvm-macos-arm64:$doodleVersion")
-        "linux-x64" -> api("io.nacular.doodle:desktop-jvm-linux-x64:$doodleVersion")
-        "linux-arm64" -> api("io.nacular.doodle:desktop-jvm-linux-arm64:$doodleVersion")
-        "windows-x64" -> api("io.nacular.doodle:desktop-jvm-windows-x64:$doodleVersion")
-        "windows-arm64" -> api("io.nacular.doodle:desktop-jvm-windows-arm64:$doodleVersion")
-    }
 }
 
 fun osTarget(): String {
@@ -56,7 +48,7 @@ fun osTarget(): String {
             else -> error("Unsupported arch: $osArch")
         }
 
-    return "${targetOs}-${targetArch}"
+    return "$targetOs-$targetArch"
 }
 
 // Enable bytecode -> machinecode JIT for faster python execution.
