@@ -39,6 +39,8 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
         fun create(points: Array<out Point>): Quad = Quad(points)
 
         fun create(points: List<Point>): Quad = Quad(points.toTypedArray())
+
+        fun upcast(poly: Polygon): Quad = Quad(poly.vertices)
     }
 }
 
