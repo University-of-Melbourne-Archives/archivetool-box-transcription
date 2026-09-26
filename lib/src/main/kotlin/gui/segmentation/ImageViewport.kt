@@ -7,6 +7,7 @@ import au.edu.unimelb.archivetool.util.geometry.Point
 import au.edu.unimelb.archivetool.util.geometry.Point.Companion.toPoint
 import au.edu.unimelb.archivetool.util.geometry.Polygon
 import au.edu.unimelb.archivetool.util.geometry.Quad
+import au.edu.unimelb.archivetool.util.geometry.Rectangle
 import io.nacular.doodle.core.View
 import io.nacular.doodle.drawing.Canvas
 import io.nacular.doodle.drawing.Color
@@ -21,7 +22,6 @@ import io.nacular.doodle.event.PointerMotionListener
 import io.nacular.doodle.geometry.ConvexPolygon
 import io.nacular.doodle.geometry.Point as DoodlePoint
 import io.nacular.doodle.geometry.Rectangle as DoodleRectangle
-import au.edu.unimelb.archivetool.util.geometry.Rectangle
 import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
 import io.nacular.measured.units.Angle.Companion.degrees
@@ -30,12 +30,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlin.math.min
-import kotlin.math.roundToInt
-import kotlin.math.sqrt
 import kotlin.random.Random
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.uuid.Uuid
 
 /** Represents a vertex in image-pixel space and only for proposed selection state. */
 data class VertexDouble(val x: Double, val y: Double)
@@ -268,33 +266,29 @@ class ImageViewport(
             // TODO Allow multiple labels
             val oldLabel = oldContainer?.labelBoundaries?.first()
 
-            currentJob.vertexes!![selection.key] = oldContainer?.copy(
-                boxBoundary = oldBox?.copy(
-                    points = Quad.upcast(selection.boxPoints),
-                ) ?: Boundary(
-                    points = Quad.upcast(selection.boxPoints),
-                    confidence = 1.0,
-                ),
-                labelBoundaries = listOf(
-                    oldLabel?.copy(
-                        points = Quad.upcast(selection.boxPoints),
-                    ) ?: Boundary(
-                        points = Quad.upcast(selection.boxPoints),
-                        confidence = 1.0,
-                    ),
+            currentJob.vertexes!![selection.key] =
+                oldContainer?.copy(
+                    boxBoundary =
+                        oldBox?.copy(points = Quad.upcast(selection.boxPoints))
+                            ?: Boundary(
+                                points = Quad.upcast(selection.boxPoints),
+                                confidence = 1.0,
+                            ),
+                    labelBoundaries =
+                        listOf(
+                            oldLabel?.copy(points = Quad.upcast(selection.boxPoints))
+                                ?: Boundary(
+                                    points = Quad.upcast(selection.boxPoints),
+                                    confidence = 1.0,
+                                )
+                        ),
                 )
-            ) ?: ArchiveBox(
-                Boundary(
-                        points = Quad.upcast(selection.boxPoints),
-                        confidence = 1.0,
-                    ),
-                    listOf(
-                        Boundary(
-                            points = Quad.upcast(selection.boxPoints),
-                            confidence = 1.0,
+                    ?: ArchiveBox(
+                        Boundary(points = Quad.upcast(selection.boxPoints), confidence = 1.0),
+                        listOf(
+                            Boundary(points = Quad.upcast(selection.boxPoints), confidence = 1.0)
                         ),
                     )
-            )
 
             selection.isUnconfirmedCreation = false
         }
@@ -323,38 +317,22 @@ class ImageViewport(
         val boxTop = (centreY - boxHeight / 2).toInt()
         val boxLeft = (centreX - boxWidth / 2).toInt()
 
-        val box =
-            Rectangle.create(
-                boxLeft,
-                boxTop,
-                boxWidth,
-                boxHeight
-            )
+        val box = Rectangle.create(boxLeft, boxTop, boxWidth, boxHeight)
 
         val labelWidth = 500
         val labelHeight = 170
         val labelTop = boxTop + 35
         val labelLeft = (centreX - labelWidth / 2).toInt()
-        val label =
-            Rectangle.create(
-                labelLeft,
-                labelTop,
-                labelWidth,
-                labelHeight
-            )
+        val label = Rectangle.create(labelLeft, labelTop, labelWidth, labelHeight)
 
         val key = Uuid.random().toHexDashString()
 
         // Adds created crop to current job at full confidence
-        currentJob.vertexes!![key] = ArchiveBox(
-            boxBoundary = Boundary(box, 1.0),
-            labelBoundaries = listOf(
-                Boundary(
-                    label,
-                    1.0
-                )
+        currentJob.vertexes!![key] =
+            ArchiveBox(
+                boxBoundary = Boundary(box, 1.0),
+                labelBoundaries = listOf(Boundary(label, 1.0)),
             )
-        )
 
         selection = SelectionProposal(key, box, label, isUnconfirmedCreation = true)
 
@@ -362,12 +340,13 @@ class ImageViewport(
     }
 
     fun delete() {
-        selection = null.also{
-            selection?.let{ s ->
-                currentJob.vertexes!!.remove(s.key)
-                dragMode = null
+        selection =
+            null.also {
+                selection?.let { s ->
+                    currentJob.vertexes!!.remove(s.key)
+                    dragMode = null
+                }
             }
-        }
 
         rerender()
     }
@@ -376,11 +355,13 @@ class ImageViewport(
     private fun printCrops() {
         println("Crops for ${paths[currentIndex]}:")
 
-        currentJob.vertexes!!.entries
+        currentJob.vertexes!!
+            .entries
             .sortedBy { it.key }
             .forEach { (id, crops) ->
                 val pts =
-                    crops.keyedBoundaries.entries.joinToString(prefix = "[", postfix = "]") { (k, v) ->
+                    crops.keyedBoundaries.entries.joinToString(prefix = "[", postfix = "]") { (k, v)
+                        ->
                         "$k: (${v.points.vertices.joinToString {(x, y) -> 
                             "($x, $y)" 
                         }}), confidence = ${v.confidence}"
@@ -391,13 +372,14 @@ class ImageViewport(
     }
 
     private fun discardUnconfirmedSelection() {
-        selection = null.also{
-            selection?.let { s ->
-                if (s.isUnconfirmedCreation) {
-                    currentJob.vertexes!!.remove(s.key)
+        selection =
+            null.also {
+                selection?.let { s ->
+                    if (s.isUnconfirmedCreation) {
+                        currentJob.vertexes!!.remove(s.key)
+                    }
                 }
             }
-        }
     }
 
     // -- Selection -----------------------------------------------------------
@@ -467,20 +449,20 @@ class ImageViewport(
             is DragMode.VertexDragging -> {
                 selection?.let { s ->
                     val imgPoint = toImageSpace(selectionX, selectionY).toPoint()
-                    val clampedToViewport = imgPoint.clamp(
-                        0 to 0,
-                        imageWidth.toInt() to imageHeight.toInt()
-                    )
+                    val clampedToViewport =
+                        imgPoint.clamp(0 to 0, imageWidth.toInt() to imageHeight.toInt())
 
-                    selection = if (mode.isBox) {
-                        s.copy(
-                            boxPoints = s.boxPoints.replaceIndex(mode.index, clampedToViewport)
-                        )
-                    } else {
-                        s.copy(
-                            labelPoints = s.labelPoints.replaceIndex(mode.index, clampedToViewport)
-                        )
-                    }
+                    selection =
+                        if (mode.isBox) {
+                            s.copy(
+                                boxPoints = s.boxPoints.replaceIndex(mode.index, clampedToViewport)
+                            )
+                        } else {
+                            s.copy(
+                                labelPoints =
+                                    s.labelPoints.replaceIndex(mode.index, clampedToViewport)
+                            )
+                        }
                 }
             }
 
@@ -490,22 +472,25 @@ class ImageViewport(
                     val imageY = (selectionY - previousViewportY) / zoom
 
                     // Group the crop pair and restrict to viewport bounds
-                    val all = Polygon.create(
-                        *(s.boxPoints.vertices.toList() + s.labelPoints.vertices)
-                            .map { it.inner }.toTypedArray()
-                    )
+                    val all =
+                        Polygon.create(
+                            *(s.boxPoints.vertices.toList() + s.labelPoints.vertices)
+                                .map { it.inner }
+                                .toTypedArray()
+                        )
 
-                    val clampedMovementX = imageX.coerceInBounds((-all.xMin).toDouble(), imageWidth - all.xMax)
-                    val clampedMovementY = imageY.coerceInBounds((-all.yMin).toDouble(), imageHeight - all.yMax)
+                    val clampedMovementX =
+                        imageX.coerceInBounds((-all.xMin).toDouble(), imageWidth - all.xMax)
+                    val clampedMovementY =
+                        imageY.coerceInBounds((-all.yMin).toDouble(), imageHeight - all.yMax)
 
                     // Move all vertexes
-                    val box = s.boxPoints.offsetBy(clampedMovementX.toInt(), clampedMovementY.toInt())
-                    val label = s.labelPoints.offsetBy(clampedMovementX.toInt(), clampedMovementY.toInt())
+                    val box =
+                        s.boxPoints.offsetBy(clampedMovementX.toInt(), clampedMovementY.toInt())
+                    val label =
+                        s.labelPoints.offsetBy(clampedMovementX.toInt(), clampedMovementY.toInt())
 
-                    selection = s.copy(
-                        boxPoints = box,
-                        labelPoints = label
-                    )
+                    selection = s.copy(boxPoints = box, labelPoints = label)
                 }
             }
 
@@ -515,13 +500,24 @@ class ImageViewport(
                     val imageY = (selectionY - previousViewportY) / zoom
 
                     val clampedMovementX =
-                        imageX.toInt().coerceIn(s.boxPoints.xMin - s.labelPoints.xMin, s.boxPoints.xMax - s.labelPoints.xMax)
+                        imageX
+                            .toInt()
+                            .coerceIn(
+                                s.boxPoints.xMin - s.labelPoints.xMin,
+                                s.boxPoints.xMax - s.labelPoints.xMax,
+                            )
                     val clampedMovementY =
-                        imageY.toInt().coerceIn(s.boxPoints.yMin - s.labelPoints.yMin, s.boxPoints.yMax - s.labelPoints.yMax)
+                        imageY
+                            .toInt()
+                            .coerceIn(
+                                s.boxPoints.yMin - s.labelPoints.yMin,
+                                s.boxPoints.yMax - s.labelPoints.yMax,
+                            )
 
-                    selection = s.copy(
-                        labelPoints = s.labelPoints.offsetBy(clampedMovementX, clampedMovementY)
-                    )
+                    selection =
+                        s.copy(
+                            labelPoints = s.labelPoints.offsetBy(clampedMovementX, clampedMovementY)
+                        )
                 }
             }
 
@@ -560,8 +556,9 @@ class ImageViewport(
         val job = currentJob.vertexes!![k]!!
         val box = job.boxBoundary.points
 
-        val label = job.labelBoundaries.firstOrNull()?.points ?:
-            Rectangle.create(box.xMin + 35, box.yMin + 35, 500, 170)
+        val label =
+            job.labelBoundaries.firstOrNull()?.points
+                ?: Rectangle.create(box.xMin + 35, box.yMin + 35, 500, 170)
 
         selection = SelectionProposal(k, box, label, isUnconfirmedCreation = false)
     }
@@ -573,13 +570,21 @@ class ImageViewport(
         selectionY: Double,
     ): Pair<Boolean, Int>? {
         selection.boxPoints.vertices.forEachIndexed { i, vertex ->
-            if (toScreen(vertex.toDoodlePoint()).toPoint().distanceTo(selectionX.toInt() to selectionY.toInt()) <= VERTEX_DETECTION_RADIUS) {
+            if (
+                toScreen(vertex.toDoodlePoint())
+                    .toPoint()
+                    .distanceTo(selectionX.toInt() to selectionY.toInt()) <= VERTEX_DETECTION_RADIUS
+            ) {
                 return true to i
             }
         }
 
         selection.labelPoints.vertices.forEachIndexed { i, vertex ->
-            if (toScreen(vertex.toDoodlePoint()).toPoint().distanceTo(selectionX.toInt() to selectionY.toInt()) <= VERTEX_DETECTION_RADIUS) {
+            if (
+                toScreen(vertex.toDoodlePoint())
+                    .toPoint()
+                    .distanceTo(selectionX.toInt() to selectionY.toInt()) <= VERTEX_DETECTION_RADIUS
+            ) {
                 return true to i
             }
         }
@@ -614,9 +619,7 @@ class ImageViewport(
     }
 
     private fun indexColour(index: String): HslColor {
-        return pairColours.getOrPut(index) {
-            HslColor(Random.nextInt(360) * degrees, 1f, 0.5f)
-        }
+        return pairColours.getOrPut(index) { HslColor(Random.nextInt(360) * degrees, 1f, 0.5f) }
     }
 
     // -- Rendering -----------------------------------------------------------
@@ -653,9 +656,7 @@ class ImageViewport(
 
             val boxStrokeColour = indexColour(k)
             drawOutline(canvas, v.boxBoundary.points, boxStrokeColour)
-            v.labelBoundaries.firstOrNull()?.let {
-                drawOutline(canvas, it.points, HSL_BLUE)
-            }
+            v.labelBoundaries.firstOrNull()?.let { drawOutline(canvas, it.points, HSL_BLUE) }
         }
 
         // Draw vertexes for crop pair if selected
@@ -676,11 +677,7 @@ class ImageViewport(
         }
     }
 
-    private fun drawFilledSelection(
-        canvas: Canvas,
-        poly: Quad,
-        outlineColor: HslColor,
-    ) {
+    private fun drawFilledSelection(canvas: Canvas, poly: Quad, outlineColor: HslColor) {
         val screenPoly = poly.vertices.map { toScreen(it.toDoodlePoint()) }
 
         val vertexIterator = screenPoly.take(3).iterator()
@@ -691,7 +688,7 @@ class ImageViewport(
                 vertexIterator.next(),
                 vertexIterator.next(),
                 vertexIterator.next(),
-                *remaining
+                *remaining,
             ),
             fill = SELECTION_FILL.paint,
         )

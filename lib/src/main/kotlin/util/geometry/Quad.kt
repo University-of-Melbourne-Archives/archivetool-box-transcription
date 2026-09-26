@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.util.geometry
 
-import au.edu.unimelb.archivetool.gui.segmentation.VertexDouble
 import kotlin.math.atan2
 import kotlinx.serialization.Serializable
 

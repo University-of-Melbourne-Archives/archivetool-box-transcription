@@ -1,14 +1,14 @@
 package au.edu.unimelb.archivetool.util.geometry
 
 import au.edu.unimelb.archivetool.util.CV
+import io.nacular.doodle.geometry.Point as DoodlePoint
+import kotlin.math.sqrt
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.math.sqrt
-import io.nacular.doodle.geometry.Point as DoodlePoint
 
 @Serializable(PointSerializer::class)
 @JvmInline
@@ -49,10 +49,10 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
         val d = this - other
         return sqrt((d.x * d.x + d.y * d.y).toDouble())
     }
+
     fun distanceTo(pair: Pair<Int, Int>): Double = distanceTo(fromPair(pair))
 
-    fun toDoodlePoint(): DoodlePoint =
-        DoodlePoint(x.toDouble(), y.toDouble())
+    fun toDoodlePoint(): DoodlePoint = DoodlePoint(x.toDouble(), y.toDouble())
 
     companion object {
         fun create(x: Int, y: Int): Point = Point(Pair(x, y))
