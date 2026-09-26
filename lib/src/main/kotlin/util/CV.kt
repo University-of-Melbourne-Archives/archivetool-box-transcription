@@ -2,6 +2,7 @@ package au.edu.unimelb.archivetool.util
 
 import au.edu.unimelb.archivetool.util.geometry.Point as GeoPoint
 import au.edu.unimelb.archivetool.util.geometry.Point.Companion.flatten
+import au.edu.unimelb.archivetool.util.geometry.Polygon
 import au.edu.unimelb.archivetool.util.geometry.Quad
 import au.edu.unimelb.archivetool.util.geometry.Rectangle
 import java.nio.file.Path
@@ -10,15 +11,16 @@ import kotlin.io.path.pathString
 import kotlin.math.roundToInt
 import org.bytedeco.javacpp.FloatPointer
 import org.bytedeco.javacpp.IntPointer
-import org.bytedeco.javacv.JavaCV.perspectiveTransform
+import org.bytedeco.javacpp.indexer.DoubleIndexer
 import org.bytedeco.opencv.global.opencv_core.ALGO_HINT_DEFAULT
 import org.bytedeco.opencv.global.opencv_core.CV_32F
+import org.bytedeco.opencv.global.opencv_core.CV_64FC2
 import org.bytedeco.opencv.global.opencv_core.CV_CN_SHIFT
 import org.bytedeco.opencv.global.opencv_core.CV_MAT_DEPTH_MASK
+import org.bytedeco.opencv.global.opencv_core.perspectiveTransform
 import org.bytedeco.opencv.global.opencv_imgcodecs.imread
 import org.bytedeco.opencv.global.opencv_imgcodecs.imwrite
 import org.bytedeco.opencv.global.opencv_imgproc.*
-import org.bytedeco.opencv.opencv_core.CvMat
 import org.bytedeco.opencv.opencv_core.Mat
 import org.bytedeco.opencv.opencv_core.Point as CVPoint
 import org.bytedeco.opencv.opencv_core.Size
@@ -123,14 +125,65 @@ object CV {
         return result
     }
 
-    fun perspectiveTransformRel(point: GeoPoint, m: PerspectiveTransformMatrix): GeoPoint {
-        val result = DoubleArray(2)
+    fun perspectiveTransformRel(m: PerspectiveTransformMatrix, vararg points: Point): List<Point> {
+        val src = Mat(points.size, 1, CV_64FC2)
+        val idxr = src.createIndexer<DoubleIndexer>()
+        points.forEachIndexed { i, p ->
+            idxr.put(i.toLong(), 0, 0, p.x().toDouble())
+            idxr.put(i.toLong(), 0, 1, p.y().toDouble())
+        }
 
-        val src = listOf(point.x, point.y).map(Int::toDouble).toDoubleArray()
+        val result = Mat()
 
-        perspectiveTransform(src, result, CvMat(m.mat))
+        perspectiveTransform(src, result, m.mat)
 
-        return result.map { it.roundToInt() }.take(2).let { (x, y) -> GeoPoint.create(x, y) }
+        val resultIdxr: DoubleIndexer = result.createIndexer()
+        return (0 until points.size).map { i ->
+            val x = resultIdxr.get(i.toLong(), 0, 0)
+            val y = resultIdxr.get(i.toLong(), 0, 1)
+            Point(x.roundToInt(), y.roundToInt())
+        }
+    }
+
+    // Because varargs doesn't work, I need an overload.
+    fun perspectiveTransformRel(m: PerspectiveTransformMatrix, point: GeoPoint): List<GeoPoint> =
+        perspectiveTransformRel(m, point)
+
+    fun perspectiveTransformRel(
+        m: PerspectiveTransformMatrix,
+        points: Array<out GeoPoint>,
+    ): List<GeoPoint> = perspectiveTransformRel(m, points.asIterable())
+
+    fun <I : Iterable<GeoPoint>> perspectiveTransformRel(
+        m: PerspectiveTransformMatrix,
+        points: I,
+    ): List<GeoPoint> {
+        val n = points.count()
+        val src = Mat(n, 1, CV_64FC2)
+        val idxr = src.createIndexer<DoubleIndexer>()
+        points.forEachIndexed { i, p ->
+            idxr.put(i.toLong(), 0, 0, p.x.toDouble())
+            idxr.put(i.toLong(), 0, 1, p.y.toDouble())
+        }
+
+        val result = Mat()
+
+        perspectiveTransform(src, result, m.mat)
+
+        val resultIdxr: DoubleIndexer = result.createIndexer()
+        return (0 until n).map { i ->
+            val x = resultIdxr.get(i.toLong(), 0, 0)
+            val y = resultIdxr.get(i.toLong(), 0, 1)
+            GeoPoint.create(x.roundToInt(), y.roundToInt())
+        }
+    }
+
+    fun polyPerspectiveTransformRel(poly: Polygon, m: PerspectiveTransformMatrix): Polygon {
+        val points = poly.vertices
+
+        val vertices = perspectiveTransformRel(m, points)
+
+        return Polygon.create(vertices)
     }
 
     fun readImage(path: Path): Mat = imread(path.pathString)

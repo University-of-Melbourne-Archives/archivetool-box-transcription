@@ -8,6 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.util.CV
 import au.edu.unimelb.archivetool.util.CV.writeImage
+import au.edu.unimelb.archivetool.util.geometry.Quad
 import au.edu.unimelb.archivetool.util.geometry.Rectangle
 import org.bytedeco.opencv.opencv_core.Mat
 
@@ -54,9 +55,8 @@ class FlattenInteraction : ImageManipulationInteraction {
 
                             blanked =
                                 LabelBlanker.blankLabels(cropped, box.labelBoundaries) {
-                                    val newPoints = mapPoints {
-                                        CV.perspectiveTransformRel(it, mat)
-                                    }
+                                    val newPoints =
+                                        Quad.upcast(CV.polyPerspectiveTransformRel(this, mat))
                                     newPoints.confinedTo(outRect)
                                 }
                         }
