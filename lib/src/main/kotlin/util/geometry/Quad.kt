@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.util.geometry
 
+import au.edu.unimelb.archivetool.gui.segmentation.VertexDouble
 import kotlin.math.atan2
 import kotlinx.serialization.Serializable
 
@@ -17,6 +18,33 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
                 (vx - center).let { atan2(it.y.toDouble(), it.x.toDouble()) }
             }
         )
+    }
+
+    fun containsPoint(p: Point): Boolean {
+        var isInside = false
+
+        val quad = vertices
+
+        var j = quad.size - 1
+
+        for (i in quad.indices) {
+            val pi = quad[i]
+            val pj = quad[j]
+            if ((pi.y > p.y) != (pj.y > p.y)) {
+                val xIntersect = pj.x + (p.y - pj.y) / (pi.y - pj.y) * (pi.x - pj.x)
+                if (p.x < xIntersect) {
+                    isInside = !isInside
+                }
+            }
+
+            j = i
+        }
+
+        return isInside
+    }
+
+    override fun replaceIndex(i: Int, p: Point): Quad {
+        return upcast(super.replaceIndex(i, p))
     }
 
     override fun mapPoints(mapper: (Point) -> Point): Quad = create(vertices.map(mapper))

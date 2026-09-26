@@ -1,5 +1,7 @@
 package au.edu.unimelb.archivetool.util.geometry
 
+import au.edu.unimelb.archivetool.gui.segmentation.VertexDouble
+import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.util.map
 import kotlin.getValue
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -24,6 +26,20 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
             .flatMap { it.toList() }
             .toFloatArray()
     }
+
+    open fun replaceIndex(i: Int, p: Point): Polygon =
+        create(
+            vertices
+                .takeIf {i < it.size}
+                .expect("Tried to replace an OOB index")
+                .mapIndexed { index, point ->
+                    if (index == i) {
+                        p
+                    } else {
+                        point
+                    }
+                }
+        )
 
     open fun mapPoints(mapper: (Point) -> Point): Polygon = create(vertices.map(mapper))
 

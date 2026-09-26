@@ -1,12 +1,14 @@
 package au.edu.unimelb.archivetool.util.geometry
 
+import au.edu.unimelb.archivetool.util.CV
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import org.bytedeco.opencv.opencv_core.Point as CVPoint
+import kotlin.math.sqrt
+import io.nacular.doodle.geometry.Point as DoodlePoint
 
 @Serializable(PointSerializer::class)
 @JvmInline
@@ -27,7 +29,14 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
 
     operator fun component2(): Int = inner.component2()
 
-    fun toCVPoint(): CVPoint = CVPoint(x, y)
+    fun toCVPoint(): CV.Point = CV.Point(x, y)
+
+    fun clamp(min: Pair<Int, Int>, max: Pair<Int, Int>): Point =
+        fromPair(
+            min.let { (minX, minY) ->
+                max.let { (maxX, maxY) -> x.coerceIn(minX, maxX) to y.coerceIn(minY, maxY) }
+            }
+        )
 
     fun clamp(min: Point, max: Point): Point =
         fromPair(
@@ -35,6 +44,15 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
                 max.let { (maxX, maxY) -> x.coerceIn(minX, maxX) to y.coerceIn(minY, maxY) }
             }
         )
+
+    fun distanceTo(other: Point): Double {
+        val d = this - other
+        return sqrt((d.x * d.x + d.y * d.y).toDouble())
+    }
+    fun distanceTo(pair: Pair<Int, Int>): Double = distanceTo(fromPair(pair))
+
+    fun toDoodlePoint(): DoodlePoint =
+        DoodlePoint(x.toDouble(), y.toDouble())
 
     companion object {
         fun create(x: Int, y: Int): Point = Point(Pair(x, y))
@@ -56,6 +74,8 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
                     add(y)
                 }
             }
+
+        fun DoodlePoint.toPoint(): Point = create(x.toInt(), y.toInt())
     }
 }
 
