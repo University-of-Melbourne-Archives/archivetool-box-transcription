@@ -1,8 +1,8 @@
 package au.edu.unimelb.archivetool.util.geometry
 
 import au.edu.unimelb.archivetool.util.CV
+import au.edu.unimelb.archivetool.util.Doodle
 import au.edu.unimelb.archivetool.util.map
-import io.nacular.doodle.geometry.Point as DoodlePoint
 import kotlin.math.sqrt
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -39,7 +39,7 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
 
     operator fun component2(): Int = inner.component2()
 
-    fun toCVPoint(): CV.Point = CV.Point(x, y)
+    fun toCV(): CV.Point = CV.Point(x, y)
 
     fun clamp(min: Pair<Int, Int>, max: Pair<Int, Int>): Point =
         fromPair(
@@ -62,7 +62,7 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
 
     fun distanceTo(pair: Pair<Int, Int>): Double = distanceTo(fromPair(pair))
 
-    fun toDoodlePoint(): DoodlePoint = DoodlePoint(x.toDouble(), y.toDouble())
+    fun toDoodle(): Doodle.Point = Doodle.Point(x.toDouble(), y.toDouble())
 
     companion object {
         fun create(x: Int, y: Int): Point = Point(Pair(x, y))
@@ -85,7 +85,7 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
                 }
             }
 
-        fun DoodlePoint.toPoint(): Point = create(x.roundToInt(), y.roundToInt())
+        fun Doodle.Point.toPoint(): Point = create(x.roundToInt(), y.roundToInt())
     }
 }
 

@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.util
 
+import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.drawing.Color as DoodleColor
 import io.nacular.doodle.drawing.HslColor as DoodleHSLColor
 import io.nacular.doodle.drawing.HsvColor as DoodleHSVColor
@@ -8,6 +9,9 @@ import io.nacular.measured.units.Angle.Companion.degrees
 
 object Doodle {
     sealed interface AnyColor {
+        val paint
+            get() = toRGB().paint
+
         fun toRGB(): DoodleColor =
             rgb()?.inner
                 ?: when (this) {
@@ -81,5 +85,6 @@ object Doodle {
         }
     }
 
+    typealias Point = io.nacular.doodle.geometry.Point
     typealias Rectangle = io.nacular.doodle.geometry.Rectangle
 }

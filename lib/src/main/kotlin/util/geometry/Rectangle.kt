@@ -24,7 +24,7 @@ open class Rectangle protected constructor(vertices: Array<out Point>) : Quad(ve
         create(xMin to yMin, xMax to yMin, xMax to yMax, xMin to yMax)
 
     fun toCVRect(): Rect = Rect(xMin, yMin, width, height)
-    fun toDoodleRectangle(): Doodle.Rectangle = Doodle.Rectangle(xMin, yMin, width, height)
+    fun toDoodle(): Doodle.Rectangle = Doodle.Rectangle(xMin, yMin, width, height)
 
     fun getCVSize(): Size = Size(width, height)
 

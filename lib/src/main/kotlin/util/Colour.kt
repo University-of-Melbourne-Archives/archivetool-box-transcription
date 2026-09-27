@@ -27,10 +27,13 @@ sealed interface Colour {
 
     fun withAlpha(a: UByte): Colour
 
-    fun toDoodleColor(): Doodle.AnyColor
+    fun toDoodle(): Doodle.AnyColor
 
     companion object {
         val WHITE = RGBAColour.WHITE
+        val LIGHT_GREY = RGBAColour.LIGHT_GREY
+        val BLUE = HSLAColour.BLUE
+        val CYAN = RGBAColour.CYAN
     }
 }
 
@@ -116,7 +119,7 @@ value class HSLColour(val inner: UInt) : Colour {
 
     override fun rgba(): RGBAColour = rgb().rgba()
 
-    override fun toDoodleColor(): Doodle.AnyColor =
+    override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.HSL(
             DoodleHSLColor(
                 Measure(h, degrees),
@@ -124,6 +127,9 @@ value class HSLColour(val inner: UInt) : Colour {
                 byte0255ToFloat01(l).toFloat(),
             )
         )
+    companion object {
+        val BLUE = HSLColour(240.0, 255u, 127u)
+    }
 }
 
 @JvmInline
@@ -165,7 +171,7 @@ value class HSLAColour(val inner: UInt) : Colour {
 
     override fun withAlpha(a: UByte): HSLAColour = HSLAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
-    override fun toDoodleColor(): Doodle.AnyColor =
+    override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.HSL(
             DoodleHSLColor(
                 Measure(h, degrees),
@@ -174,6 +180,9 @@ value class HSLAColour(val inner: UInt) : Colour {
                 byte0255ToFloat01(a).toFloat(),
             )
         )
+    companion object {
+        val BLUE = HSLAColour(240.0, 255u, 127u, 255u)
+    }
 }
 
 @JvmInline
@@ -241,7 +250,7 @@ value class HSVColour(val inner: UInt) : Colour {
 
     override fun rgba(): RGBAColour = rgb().withAlpha(255u)
 
-    override fun toDoodleColor(): Doodle.AnyColor =
+    override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.HSV(
             DoodleHSVColor(
                 Measure(h, degrees),
@@ -290,7 +299,7 @@ value class HSVAColour(val inner: UInt) : Colour {
 
     override fun withAlpha(a: UByte): HSVAColour = HSVAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
-    override fun toDoodleColor(): Doodle.AnyColor =
+    override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.HSV(
             DoodleHSVColor(
                 Measure(h, degrees),
@@ -319,7 +328,7 @@ value class MonoColour(val v: UByte) : Colour {
 
     override fun withAlpha(a: UByte): MonoAColour = MonoAColour(v, a)
 
-    override fun toDoodleColor(): Doodle.AnyColor {
+    override fun toDoodle(): Doodle.AnyColor {
         TODO("Not yet implemented")
     }
 }
@@ -357,7 +366,7 @@ value class MonoAColour(val inner: UShort) : Colour {
 
     override fun withAlpha(a: UByte): Colour = MonoAColour(inner xor (inner and 0xffu) and a.toUShort())
 
-    override fun toDoodleColor(): Doodle.AnyColor = rgba().toDoodleColor()
+    override fun toDoodle(): Doodle.AnyColor = rgba().toDoodle()
 }
 
 @JvmInline
@@ -399,9 +408,11 @@ value class RGBColour(val inner: UInt) : Colour {
 
     companion object {
         val WHITE = RGBColour(0xffffffffu)
+        val LIGHT_GREY = RGBAColour(0xd3d3d3u)
+        val CYAN = RGBAColour(0x09d0efffu)
     }
 
-    override fun toDoodleColor(): Doodle.AnyColor =
+    override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.RGB(DoodleColor(r.toUByte(), g.toUByte(), b.toUByte()))
 }
 
@@ -468,12 +479,14 @@ value class RGBAColour(val inner: UInt) : Colour {
 
     override fun withAlpha(a: UByte): RGBAColour = RGBAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
-    override fun toDoodleColor(): Doodle.AnyColor =
+    override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.RGB(
             DoodleColor(r.toUByte(), g.toUByte(), b.toUByte(), byte0255ToFloat01(a).toFloat())
         )
 
     companion object {
         val WHITE = RGBAColour(0xffffffffu)
+        val LIGHT_GREY = RGBAColour(0xd3d3d3ffu)
+        val CYAN = RGBAColour(0x09d0efffu)
     }
 }

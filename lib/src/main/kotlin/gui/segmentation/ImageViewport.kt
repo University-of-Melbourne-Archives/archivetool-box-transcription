@@ -4,47 +4,41 @@ import au.edu.unimelb.archivetool.gui.segmentation.Coord.ViewportSpaceCoord
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.util.Colour
+import au.edu.unimelb.archivetool.util.Doodle
+import au.edu.unimelb.archivetool.util.HSLColour
 import au.edu.unimelb.archivetool.util.any
 import au.edu.unimelb.archivetool.util.geometry.Point
-import au.edu.unimelb.archivetool.util.geometry.Point.Companion.toPoint
 import au.edu.unimelb.archivetool.util.geometry.Polygon
 import au.edu.unimelb.archivetool.util.geometry.Quad
 import au.edu.unimelb.archivetool.util.geometry.Rectangle
 import io.nacular.doodle.core.View
 import io.nacular.doodle.drawing.Canvas
-import io.nacular.doodle.drawing.Color
-import io.nacular.doodle.drawing.HslColor
-import io.nacular.doodle.drawing.opacity
-import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.drawing.stroke
-import io.nacular.doodle.drawing.toRgb
 import io.nacular.doodle.event.PointerEvent
 import io.nacular.doodle.event.PointerListener
 import io.nacular.doodle.event.PointerMotionListener
 import io.nacular.doodle.geometry.ConvexPolygon
-import io.nacular.doodle.geometry.Point as DoodlePoint
-import io.nacular.doodle.geometry.Rectangle as DoodleRectangle
 import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
-import io.nacular.doodle.utils.observable
-import io.nacular.measured.units.Angle.Companion.degrees
-import io.nacular.measured.units.times
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.Base64
+import kotlin.io.encoding.Base64.Default as Base64
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.io.path.readBytes
 import kotlin.math.roundToInt
+import kotlin.properties.Delegates.observable
 
 sealed interface Coord {
     fun imageSpace(origin: ViewportSpaceCoord, zoom: Double): ImageSpaceCoord
     fun viewportSpace(origin: ViewportSpaceCoord, zoom: Double): ViewportSpaceCoord
 
-    fun toDoodlePoint(origin: ViewportSpaceCoord, zoom: Double): DoodlePoint =
-        viewportSpace(origin, zoom).point.toDoodlePoint()
+    fun toDoodlePoint(origin: ViewportSpaceCoord, zoom: Double): Doodle.Point =
+        viewportSpace(origin, zoom).point.toDoodle()
 
     data class ImageSpaceCoord(val point: Point) : Coord {
         constructor(pair: Pair<Int, Int>): this(Point.fromPair(pair))
@@ -95,8 +89,7 @@ class ImageViewport(
         private const val VERTEX_SIZE = 8.0
         private const val LINE_THICKNESS = 2.0
         private const val VERTEX_DETECTION_RADIUS = 10.0
-        private val SELECTION_FILL = Color.Cyan.opacity(0.15f)
-        private val HSL_BLUE = HslColor(240 * degrees, 1f, 0.50f)
+        private val SELECTION_FILL = Colour.CYAN.withAlpha(38u)
     }
 
     // -- Job data ------------------------------------------------------------
@@ -119,7 +112,7 @@ class ImageViewport(
         get() = jobs[paths[currentIndex]]!!
 
     // -- Image display -------------------------------------------------------
-    private var image: Image? by observable(null) { _, new ->
+    private var image: Image? by observable(null) { _, _, new ->
         new?.let {
             onImageChanged(currentIndex, totalImages)
         }
@@ -139,7 +132,7 @@ class ImageViewport(
     private var didInitialFit = false
 
     // Guarantees each box crop retains its initial colouring
-    private val pairColours = mutableMapOf<String, HslColor>()
+    private val pairColours = mutableMapOf<String, Colour>()
 
     // -- Selection -----------------------------------------------------------
     private var selection: SelectionProposal? = null
@@ -607,15 +600,14 @@ class ImageViewport(
     // -- Helper Converters ---------------------------------------------------
 
     private fun Path.toDataUri(): String {
-        val bytes = Files.readAllBytes(this)
+        val bytes = readBytes()
         val mime = Files.probeContentType(this) ?: "image/jpeg"
-        val encoded = Base64.getEncoder().encodeToString(bytes)
+        val encoded = Base64.encode(bytes)
         return "data:$mime;base64,$encoded"
     }
 
-    private fun indexColour(index: String): HslColor {
-        return pairColours.getOrPut(index) { HslColor(Random.nextInt(360) * degrees, 1f, 0.5f) }
-    }
+    private fun indexColour(index: String): Colour =
+        pairColours.getOrPut(index) { HSLColour(Random.nextDouble(360.0), 255u, 127u) }
 
     // -- Rendering -----------------------------------------------------------
 
@@ -625,7 +617,7 @@ class ImageViewport(
             scaleToFit()
         }
 
-        canvas.rect(bounds.atOrigin, fill = Color.Lightgray.paint)
+        canvas.rect(bounds.atOrigin, fill = Colour.LIGHT_GREY.toDoodle().paint)
 
         image?.let { img ->
             canvas.image(
@@ -636,7 +628,7 @@ class ImageViewport(
                         y = origin.y,
                         w = (imageWidth * zoom).roundToInt(),
                         h = (imageHeight * zoom).roundToInt(),
-                    ).toDoodleRectangle(),
+                    ).toDoodle(),
             )
         }
 
@@ -647,28 +639,28 @@ class ImageViewport(
         job.vertexes!!.entries.filter { (k, v) -> k != selectedKey }.forEach { (k, v) ->
             val boxStrokeColour = indexColour(k)
             drawOutline(canvas, v.boxBoundary.points, boxStrokeColour)
-            v.labelBoundaries.firstOrNull()?.let { drawOutline(canvas, it.points, HSL_BLUE) }
+            v.labelBoundaries.firstOrNull()?.let { drawOutline(canvas, it.points, Colour.BLUE) }
         }
 
         // Draw vertexes for crop pair if selected
         selection?.let { sel ->
             val boxStrokeColour = indexColour(sel.key)
             drawFilledSelection(canvas, sel.boxPoints, boxStrokeColour)
-            drawFilledSelection(canvas, sel.labelPoints, HSL_BLUE)
+            drawFilledSelection(canvas, sel.labelPoints, Colour.BLUE)
             drawVertexes(canvas, sel.boxPoints)
             drawVertexes(canvas, sel.labelPoints)
         }
     }
 
-    private fun drawOutline(canvas: Canvas, poly: Polygon, colour: HslColor) {
+    private fun drawOutline(canvas: Canvas, poly: Polygon, colour: Colour) {
         val points = poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
-        val stroke = colour.toRgb().paint.stroke(thickness = LINE_THICKNESS)
+        val stroke = colour.toDoodle().paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
             canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
         }
     }
 
-    private fun drawFilledSelection(canvas: Canvas, poly: Quad, outlineColor: HslColor) {
+    private fun drawFilledSelection(canvas: Canvas, poly: Quad, outlineColor: Colour) {
         val screenPoly = poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
 
         val vertexIterator = screenPoly.take(3).iterator()
@@ -681,10 +673,10 @@ class ImageViewport(
                 vertexIterator.next(),
                 *remaining,
             ),
-            fill = SELECTION_FILL.paint,
+            fill = SELECTION_FILL.toDoodle().paint,
         )
 
-        val stroke = outlineColor.toRgb().paint.stroke(thickness = LINE_THICKNESS)
+        val stroke = outlineColor.toDoodle().paint.stroke(thickness = LINE_THICKNESS)
         for (i in screenPoly.indices) {
             canvas.line(screenPoly[i], screenPoly[(i + 1) % screenPoly.size], stroke = stroke)
         }
@@ -694,14 +686,14 @@ class ImageViewport(
         poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }.forEach { v ->
             val point = v
             canvas.rect(
-                DoodleRectangle(
+                Doodle.Rectangle(
                     x = point.x - VERTEX_SIZE / 2,
                     y = point.y - VERTEX_SIZE / 2,
                     width = VERTEX_SIZE,
                     height = VERTEX_SIZE,
                 ),
-                fill = Color.White.paint,
-                stroke = Color.Blue.paint.stroke(thickness = 1.0),
+                fill = Colour.WHITE.toDoodle().paint,
+                stroke = Colour.BLUE.toDoodle().paint.stroke(thickness = 1.0),
             )
         }
     }

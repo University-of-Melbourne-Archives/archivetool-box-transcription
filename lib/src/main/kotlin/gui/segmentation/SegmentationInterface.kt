@@ -8,7 +8,6 @@ import io.nacular.doodle.controls.text.Label
 import io.nacular.doodle.core.Display
 import io.nacular.doodle.core.WindowGroup
 import io.nacular.doodle.core.container
-import io.nacular.doodle.drawing.Color
 import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.geometry.Size
 import io.nacular.doodle.image.ImageLoader
@@ -117,7 +116,7 @@ class SegmentationInterface(
         }
 
         display += listOf(zoomOutButton, zoomInButton, fitButton, viewport, bottomBar)
-        display.fill(MonoColour(0xECu).toDoodleColor().toRGB().paint)
+        display.fill(MonoColour(0xECu).toDoodle().toRGB().paint)
 
         display.layout =
             constrain(zoomInButton, zoomOutButton, fitButton, viewport, bottomBar) {
