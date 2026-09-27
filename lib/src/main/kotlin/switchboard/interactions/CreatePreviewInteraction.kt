@@ -1,10 +1,10 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.pythoninterop.PythonModule
 import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 
 class PythonCreatePreviewInteraction : CreatePreviewInteraction {

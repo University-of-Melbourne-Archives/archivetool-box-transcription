@@ -1,7 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate.json
 
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteractionCompanion
 import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
@@ -9,6 +7,8 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute

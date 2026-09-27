@@ -6,8 +6,9 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox.Companion.BOX_
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
-import au.edu.unimelb.archivetool.util.CV
-import au.edu.unimelb.archivetool.util.CV.writeImage
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import au.edu.unimelb.archivetool.util.wrap.CV
+import au.edu.unimelb.archivetool.util.wrap.CV.writeImage
 import org.bytedeco.opencv.opencv_core.Mat
 
 class CropInteraction : ImageManipulationInteraction {
@@ -39,7 +40,7 @@ class CropInteraction : ImageManipulationInteraction {
                             LabelBlanker.blankLabels(cropped, box.labelBoundaries) {
                                 confinedTo(bbox)
                                 val i = offsetBy(-bbox.xMin, -bbox.yMin)
-                                i
+                                i as Quad
                             }
 
                         val outPath = JobState.cropPath(jpath, id, cropId)

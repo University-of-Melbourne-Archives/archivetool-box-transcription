@@ -1,6 +1,6 @@
-package au.edu.unimelb.archivetool.util.geometry
+package au.edu.unimelb.archivetool.util.math.geometry
 
-import au.edu.unimelb.archivetool.util.Doodle
+import au.edu.unimelb.archivetool.util.wrap.Doodle
 import kotlinx.serialization.Serializable
 import org.bytedeco.opencv.opencv_core.Rect
 import org.bytedeco.opencv.opencv_core.Size
@@ -24,6 +24,7 @@ open class Rectangle protected constructor(vertices: Array<out Point>) : Quad(ve
         create(xMin to yMin, xMax to yMin, xMax to yMax, xMin to yMax)
 
     fun toCVRect(): Rect = Rect(xMin, yMin, width, height)
+
     fun toDoodle(): Doodle.Rectangle = Doodle.Rectangle(xMin, yMin, width, height)
 
     fun getCVSize(): Size = Size(width, height)

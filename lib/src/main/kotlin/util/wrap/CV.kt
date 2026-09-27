@@ -1,10 +1,10 @@
-package au.edu.unimelb.archivetool.util
+package au.edu.unimelb.archivetool.util.wrap
 
-import au.edu.unimelb.archivetool.util.geometry.Point as GeoPoint
-import au.edu.unimelb.archivetool.util.geometry.Point.Companion.flatten
-import au.edu.unimelb.archivetool.util.geometry.Polygon
-import au.edu.unimelb.archivetool.util.geometry.Quad
-import au.edu.unimelb.archivetool.util.geometry.Rectangle
+import au.edu.unimelb.archivetool.util.Colour
+import au.edu.unimelb.archivetool.util.math.geometry.Point.Companion.flatten
+import au.edu.unimelb.archivetool.util.math.geometry.Polygon
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import java.nio.file.Path
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.pathString
@@ -12,17 +12,10 @@ import kotlin.math.roundToInt
 import org.bytedeco.javacpp.FloatPointer
 import org.bytedeco.javacpp.IntPointer
 import org.bytedeco.javacpp.indexer.DoubleIndexer
-import org.bytedeco.opencv.global.opencv_core.ALGO_HINT_DEFAULT
-import org.bytedeco.opencv.global.opencv_core.CV_32F
-import org.bytedeco.opencv.global.opencv_core.CV_64FC2
-import org.bytedeco.opencv.global.opencv_core.CV_CN_SHIFT
-import org.bytedeco.opencv.global.opencv_core.CV_MAT_DEPTH_MASK
-import org.bytedeco.opencv.global.opencv_core.perspectiveTransform
-import org.bytedeco.opencv.global.opencv_imgcodecs.imread
-import org.bytedeco.opencv.global.opencv_imgcodecs.imwrite
-import org.bytedeco.opencv.global.opencv_imgproc.*
+import org.bytedeco.opencv.global.opencv_core
+import org.bytedeco.opencv.global.opencv_imgcodecs
+import org.bytedeco.opencv.global.opencv_imgproc
 import org.bytedeco.opencv.opencv_core.Mat
-import org.bytedeco.opencv.opencv_core.Point as CVPoint
 import org.bytedeco.opencv.opencv_core.Size
 
 object CV {
@@ -39,22 +32,22 @@ object CV {
 
         companion object {
             fun fromMatType(colorSpace: Int): ColourSpace {
-                val nDepth: Int = colorSpace and CV_MAT_DEPTH_MASK
-                val channels: Int = 1 + (colorSpace shr CV_CN_SHIFT)
+                val nDepth: Int = colorSpace and opencv_core.CV_MAT_DEPTH_MASK
+                val channels: Int = 1 + (colorSpace shr opencv_core.CV_CN_SHIFT)
                 val depth = DepthType.entries[nDepth]
                 return ColourSpace(depth, channels)
             }
         }
     }
 
-    typealias Point = CVPoint
+    typealias Point = org.bytedeco.opencv.opencv_core.Point
 
     var loaded = false
 
     // NOTE: this consumes _in I believe.
     fun clahe(_in: Mat, tilesGridSize: Pair<Int, Int>, clipLimit: Double): Mat {
         val _out = Mat()
-        val algorithm = createCLAHE()
+        val algorithm = opencv_imgproc.createCLAHE()
         algorithm.tilesGridSize = Size(tilesGridSize.first, tilesGridSize.second)
         algorithm.clipLimit = clipLimit
         algorithm.apply(_in, _out)
@@ -63,14 +56,20 @@ object CV {
 
     fun bgr2grayc1(_in: Mat): Mat {
         val _out = Mat()
-        cvtColor(_in, _out, COLOR_BGR2GRAY, 1, ALGO_HINT_DEFAULT)
+        opencv_imgproc.cvtColor(
+            _in,
+            _out,
+            opencv_imgproc.COLOR_BGR2GRAY,
+            1,
+            opencv_core.ALGO_HINT_DEFAULT,
+        )
         return _out
     }
 
     fun fillQuad(img: Mat, quad: Quad, colour: Colour) {
-        val pointPtr = CVPoint(IntPointer(*quad.toClockwise().vertices.flatten().toIntArray()))
+        val pointPtr = Point(IntPointer(*quad.toClockwise().vertices.flatten().toIntArray()))
 
-        fillConvexPoly(
+        opencv_imgproc.fillConvexPoly(
             img,
             pointPtr,
             4, // Quads already assert their size.
@@ -93,11 +92,11 @@ object CV {
 
                 val dstCorners = FloatPointer(*destinationBounds.floatArray)
 
-                val src = Mat(Size(2, 4), CV_32F, srcCorners)
-                val dst = Mat(Size(2, 4), CV_32F, dstCorners)
+                val src = Mat(Size(2, 4), opencv_core.CV_32F, srcCorners)
+                val dst = Mat(Size(2, 4), opencv_core.CV_32F, dstCorners)
 
                 return PerspectiveTransformMatrix(
-                        getPerspectiveTransform(src, dst),
+                        opencv_imgproc.getPerspectiveTransform(src, dst),
                         destinationBounds.getCVSize(),
                     )
                     .also {
@@ -112,7 +111,7 @@ object CV {
     fun perspectiveWarp(sourceImage: Mat, bounds: Quad, destinationBounds: Rectangle): Mat {
         val result = Mat()
         PerspectiveTransformMatrix.create(bounds, destinationBounds).use {
-            warpPerspective(sourceImage, result, it.mat, it.dSize)
+            opencv_imgproc.warpPerspective(sourceImage, result, it.mat, it.dSize)
         }
 
         return result
@@ -120,13 +119,13 @@ object CV {
 
     fun perspectiveWarp(sourceImage: Mat, m: PerspectiveTransformMatrix): Mat {
         val result = Mat()
-        warpPerspective(sourceImage, result, m.mat, m.dSize)
+        opencv_imgproc.warpPerspective(sourceImage, result, m.mat, m.dSize)
 
         return result
     }
 
     fun perspectiveTransformRel(m: PerspectiveTransformMatrix, vararg points: Point): List<Point> {
-        val src = Mat(points.size, 1, CV_64FC2)
+        val src = Mat(points.size, 1, opencv_core.CV_64FC2)
         val idxr = src.createIndexer<DoubleIndexer>()
         points.forEachIndexed { i, p ->
             idxr.put(i.toLong(), 0, 0, p.x().toDouble())
@@ -135,7 +134,7 @@ object CV {
 
         val result = Mat()
 
-        perspectiveTransform(src, result, m.mat)
+        opencv_core.perspectiveTransform(src, result, m.mat)
 
         val resultIdxr: DoubleIndexer = result.createIndexer()
         return (0 until points.size).map { i ->
@@ -146,20 +145,23 @@ object CV {
     }
 
     // Because varargs doesn't work, I need an overload.
-    fun perspectiveTransformRel(m: PerspectiveTransformMatrix, point: GeoPoint): List<GeoPoint> =
-        perspectiveTransformRel(m, point)
+    fun perspectiveTransformRel(
+        m: PerspectiveTransformMatrix,
+        point: au.edu.unimelb.archivetool.util.math.geometry.Point,
+    ): List<au.edu.unimelb.archivetool.util.math.geometry.Point> = perspectiveTransformRel(m, point)
 
     fun perspectiveTransformRel(
         m: PerspectiveTransformMatrix,
-        points: Array<out GeoPoint>,
-    ): List<GeoPoint> = perspectiveTransformRel(m, points.asIterable())
+        points: Array<out au.edu.unimelb.archivetool.util.math.geometry.Point>,
+    ): List<au.edu.unimelb.archivetool.util.math.geometry.Point> =
+        perspectiveTransformRel(m, points.asIterable())
 
-    fun <I : Iterable<GeoPoint>> perspectiveTransformRel(
+    fun <I : Iterable<au.edu.unimelb.archivetool.util.math.geometry.Point>> perspectiveTransformRel(
         m: PerspectiveTransformMatrix,
         points: I,
-    ): List<GeoPoint> {
+    ): List<au.edu.unimelb.archivetool.util.math.geometry.Point> {
         val n = points.count()
-        val src = Mat(n, 1, CV_64FC2)
+        val src = Mat(n, 1, opencv_core.CV_64FC2)
         val idxr = src.createIndexer<DoubleIndexer>()
         points.forEachIndexed { i, p ->
             idxr.put(i.toLong(), 0, 0, p.x.toDouble())
@@ -168,13 +170,16 @@ object CV {
 
         val result = Mat()
 
-        perspectiveTransform(src, result, m.mat)
+        opencv_core.perspectiveTransform(src, result, m.mat)
 
         val resultIdxr: DoubleIndexer = result.createIndexer()
         return (0 until n).map { i ->
             val x = resultIdxr.get(i.toLong(), 0, 0)
             val y = resultIdxr.get(i.toLong(), 0, 1)
-            GeoPoint.create(x.roundToInt(), y.roundToInt())
+            au.edu.unimelb.archivetool.util.math.geometry.Point.create(
+                x.roundToInt(),
+                y.roundToInt(),
+            )
         }
     }
 
@@ -186,10 +191,10 @@ object CV {
         return Polygon.create(vertices)
     }
 
-    fun readImage(path: Path): Mat = imread(path.pathString)
+    fun readImage(path: Path): Mat = opencv_imgcodecs.imread(path.pathString)
 
     fun Mat.writeImage(path: Path) {
         path.createParentDirectories()
-        imwrite(path.pathString, this)
+        opencv_imgcodecs.imwrite(path.pathString, this)
     }
 }

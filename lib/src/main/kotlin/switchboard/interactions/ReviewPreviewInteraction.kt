@@ -1,9 +1,9 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.isNotNull
+import au.edu.unimelb.archivetool.util.extension.isNotNull
+import au.edu.unimelb.archivetool.util.logging.Log
 
 class ReviewGUIInteraction : ReviewPreviewInteraction {
     override fun review(

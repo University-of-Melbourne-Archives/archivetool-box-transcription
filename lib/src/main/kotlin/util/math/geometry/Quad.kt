@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.util.geometry
+package au.edu.unimelb.archivetool.util.math.geometry
 
 import kotlin.math.atan2
 import kotlinx.serialization.Serializable

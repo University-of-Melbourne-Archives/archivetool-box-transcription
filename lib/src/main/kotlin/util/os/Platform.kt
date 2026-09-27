@@ -1,8 +1,8 @@
 package au.edu.unimelb.archivetool.util.os
 
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.util.takeIfNotNull
-import au.edu.unimelb.archivetool.util.tryOrIgnore
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.takeIfNotNull
+import au.edu.unimelb.archivetool.util.extension.tryOrIgnore
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory

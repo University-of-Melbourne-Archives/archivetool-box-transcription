@@ -2,8 +2,6 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.config.Config
 import au.edu.unimelb.archivetool.config.OpenAIAPIData
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
 import au.edu.unimelb.archivetool.pythoninterop.PythonModule
 import au.edu.unimelb.archivetool.pythoninterop.extensions.invoke
 import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
@@ -15,6 +13,8 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadataConverter
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
 import kotlin.collections.mapIndexed
 import kotlin.io.path.pathString
 

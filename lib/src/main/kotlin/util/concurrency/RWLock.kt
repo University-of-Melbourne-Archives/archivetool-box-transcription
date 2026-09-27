@@ -1,7 +1,7 @@
 package au.edu.unimelb.archivetool.util.concurrency
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.util.Ref
+import au.edu.unimelb.archivetool.util.logging.Log
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlinx.coroutines.runBlocking

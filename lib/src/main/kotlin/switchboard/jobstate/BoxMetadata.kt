@@ -4,7 +4,7 @@ import au.edu.unimelb.archivetool.pythoninterop.PythonToJvmConverter
 import au.edu.unimelb.archivetool.pythoninterop.converters.SetConverter
 import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.DateRange.Companion.tightestBounds
-import au.edu.unimelb.archivetool.util.counted
+import au.edu.unimelb.archivetool.util.extension.counted
 import kotlinx.serialization.Serializable
 import org.graalvm.polyglot.Value
 

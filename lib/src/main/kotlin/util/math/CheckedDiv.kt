@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.util
+package au.edu.unimelb.archivetool.util.math
 
 infix fun UInt.checkedDiv(denom: UInt): UInt? = denom.takeIf { it != 0u }?.let { this / it }
 

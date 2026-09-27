@@ -1,7 +1,7 @@
-package au.edu.unimelb.archivetool.util.geometry
+package au.edu.unimelb.archivetool.util.math.geometry
 
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.util.map
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.PairExt.map
 import kotlin.getValue
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -41,6 +41,7 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
         )
 
     open fun offsetBy(p: Point): Polygon = create(vertices.map { it + p })
+
     open fun offsetBy(x: Int, y: Int): Polygon = offsetBy(Point.create(x, y))
 
     open fun mapPoints(mapper: (Point) -> Point): Polygon = create(vertices.map(mapper))

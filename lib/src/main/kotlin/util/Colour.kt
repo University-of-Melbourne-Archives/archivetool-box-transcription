@@ -1,6 +1,12 @@
 package au.edu.unimelb.archivetool.util
 
-import au.edu.unimelb.archivetool.logging.Log.expect
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.TripleExt.map
+import au.edu.unimelb.archivetool.util.extension.shr
+import au.edu.unimelb.archivetool.util.extension.uBytesToUInt
+import au.edu.unimelb.archivetool.util.extension.uBytesToUShort
+import au.edu.unimelb.archivetool.util.math.checkedDiv
+import au.edu.unimelb.archivetool.util.wrap.Doodle
 import io.nacular.doodle.drawing.Color as DoodleColor
 import io.nacular.doodle.drawing.HslColor as DoodleHSLColor
 import io.nacular.doodle.drawing.HsvColor as DoodleHSVColor
@@ -11,18 +17,21 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import org.bytedeco.opencv.opencv_core.Scalar
 
-
 sealed interface Colour {
     fun hsl(): HSLColour
+
     fun hsla(): HSLAColour
 
     fun hsv(): HSVColour
+
     fun hsva(): HSVAColour
 
     fun mono(): MonoColour
+
     fun monoa(): MonoAColour
 
     fun rgb(): RGBColour
+
     fun rgba(): RGBAColour
 
     fun withAlpha(a: UByte): Colour
@@ -59,7 +68,7 @@ value class HSLColour(val inner: UInt) : Colour {
         s: UByte,
         l: UByte,
     ) : this(
-        @OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(hueDegToByte(h), s, l, 0.toUByte())
+        @OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(hueDegToByte(h), s, l, 0.toUByte()))
     )
 
     val h
@@ -127,6 +136,7 @@ value class HSLColour(val inner: UInt) : Colour {
                 byte0255ToFloat01(l).toFloat(),
             )
         )
+
     companion object {
         val BLUE = HSLColour(240.0, 255u, 127u)
     }
@@ -139,7 +149,7 @@ value class HSLAColour(val inner: UInt) : Colour {
         s: UByte,
         l: UByte,
         a: UByte,
-    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(hueDegToByte(h), s, l, a))
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(hueDegToByte(h), s, l, a)))
 
     val h
         get() = hueByteToDeg(((inner shr 24) and 0xffu).toUByte())
@@ -169,7 +179,8 @@ value class HSLAColour(val inner: UInt) : Colour {
 
     override fun rgba(): RGBAColour = hsl().rgb().withAlpha(a.toUByte())
 
-    override fun withAlpha(a: UByte): HSLAColour = HSLAColour((inner xor (inner and 0xffu)) and a.toUInt())
+    override fun withAlpha(a: UByte): HSLAColour =
+        HSLAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
     override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.HSL(
@@ -180,6 +191,7 @@ value class HSLAColour(val inner: UInt) : Colour {
                 byte0255ToFloat01(a).toFloat(),
             )
         )
+
     companion object {
         val BLUE = HSLAColour(240.0, 255u, 127u, 255u)
     }
@@ -191,7 +203,7 @@ value class HSVColour(val inner: UInt) : Colour {
         h: Double,
         s: UByte,
         v: UByte,
-    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(hueDegToByte(h), s, v))
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(hueDegToByte(h), s, v)))
 
     val h
         get() = hueByteToDeg(((inner shr 24) and 0xffu).toUByte())
@@ -218,6 +230,7 @@ value class HSVColour(val inner: UInt) : Colour {
     override fun hsv(): HSVColour = this
 
     override fun hsva(): HSVAColour = withAlpha(255.toUByte())
+
     override fun mono(): MonoColour = MonoColour(v.toUByte())
 
     override fun monoa(): MonoAColour = mono().monoa()
@@ -267,7 +280,7 @@ value class HSVAColour(val inner: UInt) : Colour {
         s: UByte,
         v: UByte,
         a: UByte,
-    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(hueDegToByte(h), s, v, a))
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(hueDegToByte(h), s, v, a)))
 
     val h
         get() = hueByteToDeg(((inner shr 24) and 0xffu).toUByte())
@@ -297,7 +310,8 @@ value class HSVAColour(val inner: UInt) : Colour {
 
     override fun rgba(): RGBAColour = rgb().withAlpha(a.toUByte())
 
-    override fun withAlpha(a: UByte): HSVAColour = HSVAColour((inner xor (inner and 0xffu)) and a.toUInt())
+    override fun withAlpha(a: UByte): HSVAColour =
+        HSVAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
     override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.HSV(
@@ -309,6 +323,7 @@ value class HSVAColour(val inner: UInt) : Colour {
             )
         )
 }
+
 @JvmInline
 value class MonoColour(val v: UByte) : Colour {
     override fun hsl(): HSLColour = hsv().hsl()
@@ -318,6 +333,7 @@ value class MonoColour(val v: UByte) : Colour {
     override fun hsv(): HSVColour = HSVColour(0.0, 0u, v)
 
     override fun hsva(): HSVAColour = hsv().hsva()
+
     override fun mono(): MonoColour = this
 
     override fun monoa(): MonoAColour = withAlpha(255u)
@@ -337,8 +353,8 @@ value class MonoColour(val v: UByte) : Colour {
 value class MonoAColour(val inner: UShort) : Colour {
     constructor(
         v: UByte,
-        a: UByte
-    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUShort(v, a))
+        a: UByte,
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUShort(v, a)))
 
     val v
         get() = (inner shr 8) and 0xffu
@@ -350,11 +366,9 @@ value class MonoAColour(val inner: UShort) : Colour {
 
     override fun hsla(): HSLAColour = hsva().hsla()
 
-    override fun hsv(): HSVColour =
-        HSVColour(0.0, 0u, v.toUByte())
+    override fun hsv(): HSVColour = HSVColour(0.0, 0u, v.toUByte())
 
-    override fun hsva(): HSVAColour =
-        HSVAColour(0.0, 0u, v.toUByte(), a.toUByte())
+    override fun hsva(): HSVAColour = HSVAColour(0.0, 0u, v.toUByte(), a.toUByte())
 
     override fun mono(): MonoColour = MonoColour(v.toUByte())
 
@@ -364,7 +378,8 @@ value class MonoAColour(val inner: UShort) : Colour {
 
     override fun rgba(): RGBAColour = RGBAColour(v.toUByte(), v.toUByte(), v.toUByte(), a.toUByte())
 
-    override fun withAlpha(a: UByte): Colour = MonoAColour(inner xor (inner and 0xffu) and a.toUShort())
+    override fun withAlpha(a: UByte): Colour =
+        MonoAColour(inner xor (inner and 0xffu) and a.toUShort())
 
     override fun toDoodle(): Doodle.AnyColor = rgba().toDoodle()
 }
@@ -375,7 +390,7 @@ value class RGBColour(val inner: UInt) : Colour {
         r: UByte,
         g: UByte,
         b: UByte,
-    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(r, g, b, 0.toUByte()))
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(r, g, b, 0.toUByte())))
 
     val r
         get() = (inner shr 24) and 0xffu
@@ -386,7 +401,8 @@ value class RGBColour(val inner: UInt) : Colour {
     val b
         get() = (inner shr 8) and 0xffu
 
-    override fun withAlpha(a: UByte): RGBAColour = RGBAColour((inner xor (inner and 0xffu)) and a.toUInt())
+    override fun withAlpha(a: UByte): RGBAColour =
+        RGBAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
     fun toCVBGRScalar(): Scalar = rgba().toCVBGRAScalar()
 
@@ -398,7 +414,7 @@ value class RGBColour(val inner: UInt) : Colour {
 
     override fun hsva(): HSVAColour = withAlpha(255u).hsva()
 
-    override fun mono(): MonoColour = MonoColour((r+g+b / 3u).toUByte())
+    override fun mono(): MonoColour = MonoColour((r + g + b / 3u).toUByte())
 
     override fun monoa(): MonoAColour = mono().monoa()
 
@@ -423,7 +439,7 @@ value class RGBAColour(val inner: UInt) : Colour {
         g: UByte,
         b: UByte,
         a: UByte,
-    ) : this(@OptIn(ExperimentalUnsignedTypes::class) uBytesToUInt(r, g, b, a))
+    ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(r, g, b, a)))
 
     val r
         get() = (inner shr 24) and 0xffu
@@ -469,15 +485,16 @@ value class RGBAColour(val inner: UInt) : Colour {
         return HSVAColour(h, s, float01ToByte0255(v), a.toUByte())
     }
 
-    override fun mono(): MonoColour = MonoColour((r+g+b / 3u).toUByte())
+    override fun mono(): MonoColour = MonoColour((r + g + b / 3u).toUByte())
 
-    override fun monoa(): MonoAColour = MonoAColour((r+g+b / 3u).toUByte(), a.toUByte())
+    override fun monoa(): MonoAColour = MonoAColour((r + g + b / 3u).toUByte(), a.toUByte())
 
     override fun rgb(): RGBColour = RGBColour(this.inner)
 
     override fun rgba(): RGBAColour = this
 
-    override fun withAlpha(a: UByte): RGBAColour = RGBAColour((inner xor (inner and 0xffu)) and a.toUInt())
+    override fun withAlpha(a: UByte): RGBAColour =
+        RGBAColour((inner xor (inner and 0xffu)) and a.toUInt())
 
     override fun toDoodle(): Doodle.AnyColor =
         Doodle.AnyColor.RGB(
