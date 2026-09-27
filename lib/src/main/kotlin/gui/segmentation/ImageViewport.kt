@@ -1,8 +1,10 @@
 package au.edu.unimelb.archivetool.gui.segmentation
 
+import au.edu.unimelb.archivetool.gui.segmentation.Coord.ViewportSpaceCoord
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.util.any
 import au.edu.unimelb.archivetool.util.geometry.Point
 import au.edu.unimelb.archivetool.util.geometry.Point.Companion.toPoint
 import au.edu.unimelb.archivetool.util.geometry.Polygon
@@ -24,6 +26,7 @@ import io.nacular.doodle.geometry.Point as DoodlePoint
 import io.nacular.doodle.geometry.Rectangle as DoodleRectangle
 import io.nacular.doodle.image.Image
 import io.nacular.doodle.image.ImageLoader
+import io.nacular.doodle.utils.observable
 import io.nacular.measured.units.Angle.Companion.degrees
 import io.nacular.measured.units.times
 import java.nio.file.Files
@@ -34,9 +37,36 @@ import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
-/** Represents a vertex in image-pixel space and only for proposed selection state. */
-data class VertexDouble(val x: Double, val y: Double)
+sealed interface Coord {
+    fun imageSpace(origin: ViewportSpaceCoord, zoom: Double): ImageSpaceCoord
+    fun viewportSpace(origin: ViewportSpaceCoord, zoom: Double): ViewportSpaceCoord
+
+    fun toDoodlePoint(origin: ViewportSpaceCoord, zoom: Double): DoodlePoint =
+        viewportSpace(origin, zoom).point.toDoodlePoint()
+
+    data class ImageSpaceCoord(val point: Point) : Coord {
+        constructor(pair: Pair<Int, Int>): this(Point.fromPair(pair))
+        constructor(x: Int, y: Int): this(Point.create(x, y))
+        val x by point::x
+        val y by point::y
+        override fun imageSpace(origin: ViewportSpaceCoord, zoom: Double) = this
+        override fun viewportSpace(origin: ViewportSpaceCoord, zoom: Double): ViewportSpaceCoord =
+            ViewportSpaceCoord(point + origin.point * zoom)
+    }
+
+    data class ViewportSpaceCoord(val point: Point) : Coord {
+        constructor(pair: Pair<Int, Int>): this(Point.fromPair(pair))
+        constructor(x: Int, y: Int): this(Point.create(x, y))
+        val x by point::x
+        val y by point::y
+        override fun imageSpace(origin: ViewportSpaceCoord, zoom: Double): ImageSpaceCoord =
+            ImageSpaceCoord(point - origin.point / zoom)
+
+        override fun viewportSpace(origin: ViewportSpaceCoord, zoom: Double): ViewportSpaceCoord = this
+    }
+}
 
 /**
  * The in-progress and unconfirmed edit state for the currently selected crop pair. "boxPoints" and
@@ -78,25 +108,32 @@ class ImageViewport(
     private val paths: List<Path> = jobs.keys.toList()
 
     var currentIndex: Int = 0
-        private set
+        private set(value) {
+            field = value
+            loadImage(paths[value])
+        }
 
-    val totalImages: Int
-        get() = paths.size
+    val totalImages: Int by paths::size
 
     private val currentJob: JobFile
         get() = jobs[paths[currentIndex]]!!
 
     // -- Image display -------------------------------------------------------
-    private var image: Image? = null
-    private var imageWidth = 0.0
-    private var imageHeight = 0.0
+    private var image: Image? by observable(null) { _, new ->
+        new?.let {
+            onImageChanged(currentIndex, totalImages)
+        }
+    }
+    private val imageWidth
+        get() = image?.size?.width ?: 0.0
+    private val imageHeight
+        get() = image?.size?.height ?: 0.0
 
     // Pixels on screen for each pixel of the image
     var zoom: Double = 1.0
 
     // Position of image pixel (0,0) relative to this viewport
-    private var originX = 0.0
-    private var originY = 0.0
+    private var origin = ViewportSpaceCoord(0, 0)
 
     // Marks if scaleToFit() should be called on startup
     private var didInitialFit = false
@@ -124,12 +161,11 @@ class ImageViewport(
     private var pendingDeselectOnClick = false
 
     // Original viewport position where mouse press started
-    private var previousViewportX = 0.0
-    private var previousViewportY = 0.0
+    private var previousViewport = ViewportSpaceCoord(0, 0)
 
     init {
         clipCanvasToBounds = true
-        loadImage(paths[currentIndex])
+        currentIndex = currentIndex
 
         pointerChanged +=
             object : PointerListener {
@@ -160,8 +196,7 @@ class ImageViewport(
                 }
             }
 
-        loadImage(paths[currentIndex])
-        onImageChanged(currentIndex, totalImages)
+        currentIndex = currentIndex
     }
 
     // -- Zoom ----------------------------------------------------------------
@@ -182,13 +217,15 @@ class ImageViewport(
         val centerY = height / 2
 
         // Retain image point at viewpoint's centre
-        val imagePointX = (centerX - originX) / zoom
-        val imagePointY = (centerY - originY) / zoom
+        val imagePointX = (centerX - origin.x) / zoom
+        val imagePointY = (centerY - origin.x) / zoom
 
         zoom = newZoom
 
-        originX = centerX - imagePointX * zoom
-        originY = centerY - imagePointY * zoom
+        origin = ViewportSpaceCoord(
+            (centerX - imagePointX * zoom).roundToInt(),
+            (centerY - imagePointY * zoom).roundToInt()
+        )
 
         rerender()
     }
@@ -206,8 +243,10 @@ class ImageViewport(
         val renderedWidth = imageWidth * zoom
         val renderedHeight = imageHeight * zoom
 
-        originX = (width - renderedWidth) / 2
-        originY = (height - renderedHeight) / 2
+        origin = ViewportSpaceCoord(
+            ((width - renderedWidth) / 2).roundToInt(),
+            ((height - renderedHeight) / 2).roundToInt()
+        )
 
         didInitialFit = true
 
@@ -223,19 +262,15 @@ class ImageViewport(
 
         discardUnconfirmedSelection()
         currentIndex--
-        loadImage(paths[currentIndex])
-        onImageChanged(currentIndex, totalImages)
     }
 
     fun next() {
-        if (currentIndex >= paths.size - 1) {
+        if (currentIndex >= totalImages - 1) {
             return
         }
 
         discardUnconfirmedSelection()
         currentIndex++
-        loadImage(paths[currentIndex])
-        onImageChanged(currentIndex, totalImages)
     }
 
     private fun loadImage(path: Path) {
@@ -244,9 +279,8 @@ class ImageViewport(
 
         appScope.launch {
             val loaded = imageLoader.load(path.toDataUri()) ?: return@launch
+
             image = loaded
-            imageWidth = loaded.size.width
-            imageHeight = loaded.size.height
 
             if (width > 0 && height > 0) {
                 scaleToFit()
@@ -278,7 +312,7 @@ class ImageViewport(
                         listOf(
                             oldLabel?.copy(points = Quad.upcast(selection.boxPoints))
                                 ?: Boundary(
-                                    points = Quad.upcast(selection.boxPoints),
+                                    points = Quad.upcast(selection.labelPoints),
                                     confidence = 1.0,
                                 )
                         ),
@@ -286,7 +320,7 @@ class ImageViewport(
                     ?: ArchiveBox(
                         Boundary(points = Quad.upcast(selection.boxPoints), confidence = 1.0),
                         listOf(
-                            Boundary(points = Quad.upcast(selection.boxPoints), confidence = 1.0)
+                            Boundary(points = Quad.upcast(selection.labelPoints), confidence = 1.0)
                         ),
                     )
 
@@ -314,15 +348,15 @@ class ImageViewport(
         val centreY = imageHeight / 2
         val boxWidth = 600
         val boxHeight = 1100
-        val boxTop = (centreY - boxHeight / 2).toInt()
-        val boxLeft = (centreX - boxWidth / 2).toInt()
+        val boxTop = (centreY - boxHeight / 2).roundToInt()
+        val boxLeft = (centreX - boxWidth / 2).roundToInt()
 
         val box = Rectangle.create(boxLeft, boxTop, boxWidth, boxHeight)
 
         val labelWidth = 500
         val labelHeight = 170
         val labelTop = boxTop + 35
-        val labelLeft = (centreX - labelWidth / 2).toInt()
+        val labelLeft = (centreX - labelWidth / 2).roundToInt()
         val label = Rectangle.create(labelLeft, labelTop, labelWidth, labelHeight)
 
         val key = Uuid.random().toHexDashString()
@@ -389,26 +423,25 @@ class ImageViewport(
         val selectionX = event.location.x
         val selectionY = event.location.y
 
-        previousViewportX = selectionX
-        previousViewportY = selectionY
+        previousViewport = ViewportSpaceCoord(selectionX.roundToInt(), selectionY.roundToInt())
 
         pendingDeselectOnClick = false
 
         // Convert mouse position to image coordinates
-        val imgPoint = DoodlePoint(selectionX, selectionY).toPoint()
+        val imgPoint = previousViewport.imageSpace(origin, zoom)
 
         selection?.let { selection ->
-            selectedVertex(selection, selectionX, selectionY)?.let { (isBox, index) ->
+            selectedVertex(selection, previousViewport)?.let { (isBox, index) ->
                 dragMode = DragMode.VertexDragging(isBox, index)
                 return
             }
 
-            if (selection.labelPoints.containsPoint(imgPoint)) {
+            if (selection.labelPoints.containsPoint(imgPoint.point)) {
                 dragMode = DragMode.LabelDragging
                 return
             }
 
-            if (selection.boxPoints.containsPoint(imgPoint)) {
+            if (selection.boxPoints.containsPoint(imgPoint.point)) {
                 dragMode = DragMode.AreaDragging
                 return
             }
@@ -430,27 +463,24 @@ class ImageViewport(
 
     // Defines logic for each dragging state
     private fun handleDragged(event: PointerEvent) {
-        val selectionX = event.location.x
-        val selectionY = event.location.y
+        val selectionPoint = ViewportSpaceCoord(event.location.x.roundToInt(), event.location.y.roundToInt())
 
         when (val mode = dragMode) {
             is DragMode.Panning -> {
-                val changeX = selectionX - previousViewportX
-                val changeY = selectionY - previousViewportY
+                val delta = selectionPoint.point - previousViewport.point
 
-                if (changeX != 0.0 || changeY != 0.0) {
+                if (delta.inner.any { it == 0 }) {
                     pendingDeselectOnClick = false
                 }
 
-                originX += changeX
-                originY += changeY
+                origin = ViewportSpaceCoord(origin.point + delta)
             }
 
             is DragMode.VertexDragging -> {
                 selection?.let { s ->
-                    val imgPoint = toImageSpace(selectionX, selectionY).toPoint()
+                    val imgPoint = selectionPoint.imageSpace(origin, zoom).point
                     val clampedToViewport =
-                        imgPoint.clamp(0 to 0, imageWidth.toInt() to imageHeight.toInt())
+                        imgPoint.clamp(0 to 0, imageWidth.roundToInt() to imageHeight.roundToInt())
 
                     selection =
                         if (mode.isBox) {
@@ -468,8 +498,7 @@ class ImageViewport(
 
             is DragMode.AreaDragging -> {
                 selection?.let { s ->
-                    val imageX = (selectionX - previousViewportX) / zoom
-                    val imageY = (selectionY - previousViewportY) / zoom
+                    val image = selectionPoint.imageSpace(previousViewport, zoom)
 
                     // Group the crop pair and restrict to viewport bounds
                     val all =
@@ -479,16 +508,13 @@ class ImageViewport(
                                 .toTypedArray()
                         )
 
-                    val clampedMovementX =
-                        imageX.coerceInBounds((-all.xMin).toDouble(), imageWidth - all.xMax)
-                    val clampedMovementY =
-                        imageY.coerceInBounds((-all.yMin).toDouble(), imageHeight - all.yMax)
+                    val clampedMovement = image.point.clamp(all.xMin to all.yMin, all.xMax to all.yMax)
 
                     // Move all vertexes
                     val box =
-                        s.boxPoints.offsetBy(clampedMovementX.toInt(), clampedMovementY.toInt())
+                        s.boxPoints.offsetBy(clampedMovement)
                     val label =
-                        s.labelPoints.offsetBy(clampedMovementX.toInt(), clampedMovementY.toInt())
+                        s.labelPoints.offsetBy(clampedMovement)
 
                     selection = s.copy(boxPoints = box, labelPoints = label)
                 }
@@ -496,27 +522,16 @@ class ImageViewport(
 
             is DragMode.LabelDragging -> {
                 selection?.let { s ->
-                    val imageX = (selectionX - previousViewportX) / zoom
-                    val imageY = (selectionY - previousViewportY) / zoom
+                    val image = selectionPoint.imageSpace(origin, zoom)
 
-                    val clampedMovementX =
-                        imageX
-                            .toInt()
-                            .coerceIn(
-                                s.boxPoints.xMin - s.labelPoints.xMin,
-                                s.boxPoints.xMax - s.labelPoints.xMax,
-                            )
-                    val clampedMovementY =
-                        imageY
-                            .toInt()
-                            .coerceIn(
-                                s.boxPoints.yMin - s.labelPoints.yMin,
-                                s.boxPoints.yMax - s.labelPoints.yMax,
-                            )
+                    val clampedMovement = image.point.clamp(
+                        s.boxPoints.xMin - s.labelPoints.xMin to s.boxPoints.yMin - s.labelPoints.yMin,
+                        s.boxPoints.xMax - s.labelPoints.xMax to s.boxPoints.yMax - s.labelPoints.yMax,
+                    )
 
                     selection =
                         s.copy(
-                            labelPoints = s.labelPoints.offsetBy(clampedMovementX, clampedMovementY)
+                            labelPoints = s.labelPoints.offsetBy(clampedMovement)
                         )
                 }
             }
@@ -525,12 +540,12 @@ class ImageViewport(
         }
 
         // On drag release
-        previousViewportX = selectionX
-        previousViewportY = selectionY
+        previousViewport = selectionPoint
+
         rerender()
     }
 
-    private fun findCropAtPoint(pt: Point): String? {
+    private fun findCropAtPoint(pt: Coord.ImageSpaceCoord): String? {
         val job = currentJob
         // checks all crop pairs that image contains
         val keys = job.vertexes!!.keys
@@ -541,10 +556,10 @@ class ImageViewport(
             // TODO: We need to handle multiple labels
             val label = container.labelBoundaries.firstOrNull()
 
-            if (box.points.containsPoint(pt)) {
+            if (box.points.containsPoint(pt.point)) {
                 return k
             }
-            if (label != null && label.points.containsPoint(pt)) {
+            if (label != null && label.points.containsPoint(pt.point)) {
                 return k
             }
         }
@@ -566,38 +581,27 @@ class ImageViewport(
     // returns exact vertex of a crop pair the user interacts with
     private fun selectedVertex(
         selection: SelectionProposal,
-        selectionX: Double,
-        selectionY: Double,
+        selectionPoint: ViewportSpaceCoord,
     ): Pair<Boolean, Int>? {
-        selection.boxPoints.vertices.forEachIndexed { i, vertex ->
+        selection.boxPoints.vertices.map { Coord.ImageSpaceCoord(it) }.forEachIndexed { i, vertex ->
             if (
-                toScreen(vertex.toDoodlePoint())
-                    .toPoint()
-                    .distanceTo(selectionX.toInt() to selectionY.toInt()) <= VERTEX_DETECTION_RADIUS
+                vertex.viewportSpace(origin, zoom).point
+                    .distanceTo(selectionPoint.point) <= VERTEX_DETECTION_RADIUS
             ) {
                 return true to i
             }
         }
 
-        selection.labelPoints.vertices.forEachIndexed { i, vertex ->
+        selection.labelPoints.vertices.map { Coord.ImageSpaceCoord(it) }.forEachIndexed { i, vertex ->
             if (
-                toScreen(vertex.toDoodlePoint())
-                    .toPoint()
-                    .distanceTo(selectionX.toInt() to selectionY.toInt()) <= VERTEX_DETECTION_RADIUS
+                vertex.viewportSpace(origin, zoom).point
+                    .distanceTo(selectionPoint.point) <= VERTEX_DETECTION_RADIUS
             ) {
                 return true to i
             }
         }
 
         return null
-    }
-
-    private fun Double.coerceInBounds(lowPoint: Double, highPoint: Double): Double {
-        return if (lowPoint <= highPoint) {
-            coerceIn(lowPoint, highPoint)
-        } else {
-            this
-        }
     }
 
     // -- Helper Converters ---------------------------------------------------
@@ -607,15 +611,6 @@ class ImageViewport(
         val mime = Files.probeContentType(this) ?: "image/jpeg"
         val encoded = Base64.getEncoder().encodeToString(bytes)
         return "data:$mime;base64,$encoded"
-    }
-
-    private fun toImageSpace(screenX: Double, screenY: Double): DoodlePoint {
-        return DoodlePoint((screenX - originX) / zoom, (screenY - originY) / zoom)
-    }
-
-    // Takes in singular point of crop and scales and returns it as Doodle Point object
-    private fun toScreen(vertexDouble: DoodlePoint): DoodlePoint {
-        return DoodlePoint(originX + vertexDouble.x * zoom, originY + vertexDouble.y * zoom)
     }
 
     private fun indexColour(index: String): HslColor {
@@ -636,12 +631,12 @@ class ImageViewport(
             canvas.image(
                 img,
                 destination =
-                    DoodleRectangle(
-                        x = originX,
-                        y = originY,
-                        width = imageWidth * zoom,
-                        height = imageHeight * zoom,
-                    ),
+                    Rectangle.create(
+                        x = origin.x,
+                        y = origin.y,
+                        w = (imageWidth * zoom).roundToInt(),
+                        h = (imageHeight * zoom).roundToInt(),
+                    ).toDoodleRectangle(),
             )
         }
 
@@ -649,11 +644,7 @@ class ImageViewport(
         val selectedKey = selection?.key
 
         // Draw outlines for every crop
-        job.vertexes!!.entries.forEach { (k, v) ->
-            if (k == selectedKey) {
-                return@forEach
-            }
-
+        job.vertexes!!.entries.filter { (k, v) -> k != selectedKey }.forEach { (k, v) ->
             val boxStrokeColour = indexColour(k)
             drawOutline(canvas, v.boxBoundary.points, boxStrokeColour)
             v.labelBoundaries.firstOrNull()?.let { drawOutline(canvas, it.points, HSL_BLUE) }
@@ -670,7 +661,7 @@ class ImageViewport(
     }
 
     private fun drawOutline(canvas: Canvas, poly: Polygon, colour: HslColor) {
-        val points = poly.vertices.map { toScreen(it.toDoodlePoint()) }
+        val points = poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
         val stroke = colour.toRgb().paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
             canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
@@ -678,7 +669,7 @@ class ImageViewport(
     }
 
     private fun drawFilledSelection(canvas: Canvas, poly: Quad, outlineColor: HslColor) {
-        val screenPoly = poly.vertices.map { toScreen(it.toDoodlePoint()) }
+        val screenPoly = poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
 
         val vertexIterator = screenPoly.take(3).iterator()
         val remaining = screenPoly.subList(3, poly.vertices.size).toTypedArray()
@@ -700,8 +691,8 @@ class ImageViewport(
     }
 
     private fun drawVertexes(canvas: Canvas, poly: Polygon) {
-        poly.vertices.forEach { v ->
-            val point = toScreen(v.toDoodlePoint())
+        poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }.forEach { v ->
+            val point = v
             canvas.rect(
                 DoodleRectangle(
                     x = point.x - VERTEX_SIZE / 2,

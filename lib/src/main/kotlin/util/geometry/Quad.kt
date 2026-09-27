@@ -48,7 +48,7 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
 
     override fun mapPoints(mapper: (Point) -> Point): Quad = create(vertices.map(mapper))
 
-    fun offsetBy(x: Int, y: Int): Quad = create(vertices.map { it + Point.create(x, y) })
+    override fun offsetBy(p: Point): Quad = create(vertices.map { it + p })
 
     fun confinedTo(outer: Rectangle): Quad =
         create(

@@ -1,6 +1,7 @@
 package au.edu.unimelb.archivetool.gui.segmentation
 
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.util.MonoColour
 import io.nacular.doodle.application.Application
 import io.nacular.doodle.controls.buttons.PushButton
 import io.nacular.doodle.controls.text.Label
@@ -116,7 +117,7 @@ class SegmentationInterface(
         }
 
         display += listOf(zoomOutButton, zoomInButton, fitButton, viewport, bottomBar)
-        display.fill(Color(0xECECECu).paint)
+        display.fill(MonoColour(0xECu).toDoodleColor().toRGB().paint)
 
         display.layout =
             constrain(zoomInButton, zoomOutButton, fitButton, viewport, bottomBar) {

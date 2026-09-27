@@ -1,6 +1,7 @@
 package au.edu.unimelb.archivetool.util.geometry
 
 import au.edu.unimelb.archivetool.util.CV
+import au.edu.unimelb.archivetool.util.map
 import io.nacular.doodle.geometry.Point as DoodlePoint
 import kotlin.math.sqrt
 import kotlinx.serialization.KSerializer
@@ -9,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.math.roundToInt
 
 @Serializable(PointSerializer::class)
 @JvmInline
@@ -24,6 +26,14 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
     operator fun unaryMinus(): Point = create(-x, -y)
 
     operator fun minus(other: Point): Point = this + -other
+
+    operator fun times(factor: Double): Point = fromPair(
+        inner.map { it * factor }.map(Double::roundToInt)
+    )
+
+    operator fun div(factor: Double): Point = fromPair(
+        inner.map { it / factor }.map(Double::roundToInt)
+    )
 
     operator fun component1(): Int = inner.component1()
 
@@ -75,7 +85,7 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
                 }
             }
 
-        fun DoodlePoint.toPoint(): Point = create(x.toInt(), y.toInt())
+        fun DoodlePoint.toPoint(): Point = create(x.roundToInt(), y.roundToInt())
     }
 }
 

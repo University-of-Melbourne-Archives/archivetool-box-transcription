@@ -12,3 +12,11 @@ fun UByteArray.toUInt(): UInt {
 }
 
 fun uBytesToUInt(vararg bytes: UByte): UInt = bytes.toUInt()
+
+fun UByteArray.toUShort(): UShort {
+    assert(size == 2)
+    return ((this[0].toUShort() and 0xFFu) shl 8) or
+            (this[1].toUShort() and 0xFFu)
+}
+
+fun uBytesToUShort(vararg bytes: UByte): UShort = bytes.toUShort()

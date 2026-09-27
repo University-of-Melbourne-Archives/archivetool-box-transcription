@@ -40,6 +40,9 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
                 }
         )
 
+    open fun offsetBy(p: Point): Polygon = create(vertices.map { it + p })
+    open fun offsetBy(x: Int, y: Int): Polygon = offsetBy(Point.create(x, y))
+
     open fun mapPoints(mapper: (Point) -> Point): Polygon = create(vertices.map(mapper))
 
     fun bestBoundingBox(): Rectangle =
