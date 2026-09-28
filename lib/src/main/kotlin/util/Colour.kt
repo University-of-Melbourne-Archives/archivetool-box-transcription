@@ -39,8 +39,8 @@ sealed interface Colour {
     fun toDoodle(): Doodle.AnyColor
 
     companion object {
-        val WHITE = RGBAColour.WHITE
-        val LIGHT_GREY = RGBAColour.LIGHT_GREY
+        val WHITE = MonoColour.WHITE
+        val LIGHT_GREY = MonoColour.LIGHT_GREY
         val BLUE = HSLAColour.BLUE
         val CYAN = RGBAColour.CYAN
     }
@@ -344,8 +344,11 @@ value class MonoColour(val v: UByte) : Colour {
 
     override fun withAlpha(a: UByte): MonoAColour = MonoAColour(v, a)
 
-    override fun toDoodle(): Doodle.AnyColor {
-        TODO("Not yet implemented")
+    override fun toDoodle(): Doodle.AnyColor = rgb().toDoodle()
+
+    companion object {
+        val WHITE = MonoColour(0xffu)
+        val LIGHT_GREY = MonoColour(0xd3u)
     }
 }
 
@@ -382,6 +385,11 @@ value class MonoAColour(val inner: UShort) : Colour {
         MonoAColour(inner xor (inner and 0xffu) and a.toUShort())
 
     override fun toDoodle(): Doodle.AnyColor = rgba().toDoodle()
+
+    companion object {
+        val WHITE = MonoAColour(0xffffu)
+        val LIGHT_GREY = MonoAColour(0xd3ffu)
+    }
 }
 
 @JvmInline
