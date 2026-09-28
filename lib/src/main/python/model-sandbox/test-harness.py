@@ -10,7 +10,10 @@ def orderCorners(quad):
     Returns an ordered set of points per quadralateral. Starts from the Top-Left and moves clockwise.
 
     Args:
-        - quad (polygon): 
+        quad (list[np.array]): list of 4 coordinate points corresponding to drawn segmentation-boxes
+
+    Returns:
+        (list[np.array]): ordered Top Left and clockwise
     """
     centre = quad.mean(axis=0)
     angles = np.arctan2(quad[:, 1] - centre[1], quad[:, 0] - centre[0])
@@ -22,8 +25,11 @@ def getCornerPoints(polygon):
     """
     Gets corners of polygons (not-axis aligned) by smoothing contours to 4 points.
 
-    @Params:
-        - polygon :  
+    Args:
+        polygon (list): List of numpy coordinates containing the predicted outline of the segmented object.
+
+    Returns:
+        (list[np.array]): size 4 quadrilateral
     """
     # find the smallest bounding polygon containing all the points of the shaded polygon
     hull = cv2.convexHull(polygon.astype(np.float32))
@@ -36,14 +42,15 @@ def getCornerPoints(polygon):
         # use Douglas-Pecker for vertex reduction
         approx = cv2.approxPolyDP(hull, epsilon * perimeter, closed= True)
 
+        # filter for quadrilaterals
         if len(approx) == 4:
             return orderCorners(approx.reshape(4, 2))
-        
-        # filter for quadrilaterals and above
+
+        # fail on triangular approximations (implies DP-approximation failure)
         if len(approx) < 4:
             break
 
-    # return ordered for continuity
+    # return minimum-bounding box in case of failed DP-approximation
     return orderCorners(cv2.boxPoints(cv2.minAreaRect(hull)))
 
 
