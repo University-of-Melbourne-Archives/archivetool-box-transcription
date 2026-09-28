@@ -1,7 +1,9 @@
 package au.edu.unimelb.archivetool.gui.segmentation
 
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.MonoColour
+import au.edu.unimelb.archivetool.util.MutableWaitFlow
 import io.nacular.doodle.application.Application
 import io.nacular.doodle.controls.buttons.PushButton
 import io.nacular.doodle.controls.text.Label
@@ -15,13 +17,15 @@ import io.nacular.doodle.layout.constraints.Strength.Companion.Medium
 import io.nacular.doodle.layout.constraints.constrain
 import io.nacular.doodle.theme.Theme
 import io.nacular.doodle.theme.ThemeManager
-import java.nio.file.Path
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class SegmentationInterface(
-    jobs: Map<Path, JobFile?>,
+    jobs: Map<JobRelativePath, JobFile?>,
+    returnFlow: MutableWaitFlow<Map<JobRelativePath, JobFile>>?,
     display: Display,
     windows: WindowGroup,
     themeManager: ThemeManager,
@@ -34,6 +38,7 @@ class SegmentationInterface(
     private val viewport =
         ImageViewport(
             jobs,
+            returnFlow,
             imageLoader,
             appScope,
             onImageChanged = { index, total ->
@@ -62,6 +67,7 @@ class SegmentationInterface(
                 PushButton("Confirm").apply { fired += { viewport.confirm() } },
                 PushButton("Create").apply { fired += { viewport.create() } },
                 PushButton("Delete").apply { fired += { viewport.delete() } },
+                PushButton("Finish").apply { fired += { CoroutineScope(Dispatchers.Default).launch { viewport.close() } } },
             )
 
         val buttonWidth = 90.0
@@ -155,5 +161,9 @@ class SegmentationInterface(
             }
     }
 
-    override fun shutdown() {}
+    override fun shutdown() {
+        runBlocking {
+            viewport.close()
+        }
+    }
 }

@@ -4,8 +4,11 @@ import au.edu.unimelb.archivetool.gui.segmentation.Coord.ViewportSpaceCoord
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.HSLColour
+import au.edu.unimelb.archivetool.util.MutableWaitFlow
+import au.edu.unimelb.archivetool.util.WaitFlow
 import au.edu.unimelb.archivetool.util.extension.PairExt.any
 import au.edu.unimelb.archivetool.util.math.geometry.Point
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
@@ -24,6 +27,7 @@ import io.nacular.doodle.image.ImageLoader
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.encoding.Base64.Default as Base64
+import kotlin.io.path.absolute
 import kotlin.io.path.readBytes
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -31,7 +35,9 @@ import kotlin.properties.Delegates.observable
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.swing.Swing
 
 sealed interface Coord {
     fun imageSpace(origin: ViewportSpaceCoord, zoom: Double): ImageSpaceCoord
@@ -90,7 +96,8 @@ private data class SelectionProposal(
 )
 
 class ImageViewport(
-    private val jobsIn: Map<Path, JobFile?>,
+    private val jobsIn: Map<JobRelativePath, JobFile?>,
+    private val returnFlow: MutableWaitFlow<Map<JobRelativePath, JobFile>>?,
     private val imageLoader: ImageLoader,
     private val appScope: CoroutineScope,
     private val onImageChanged: (index: Int, total: Int) -> Unit = { _, _ -> },
@@ -107,11 +114,11 @@ class ImageViewport(
 
     // -- Job data ------------------------------------------------------------
     // need to maintain insertion order for create()
-    private val jobs: LinkedHashMap<Path, JobFile> =
-        LinkedHashMap<Path, JobFile>().apply {
+    private val jobs: LinkedHashMap<JobRelativePath, JobFile> =
+        LinkedHashMap<JobRelativePath, JobFile>().apply {
             jobsIn.forEach { (path, job) -> put(path, job ?: JobFile()) }
         }
-    private val paths: List<Path> = jobs.keys.toList()
+    private val paths: List<JobRelativePath> = jobs.keys.toList()
 
     var currentIndex: Int = 0
         private set(value) {
@@ -123,6 +130,8 @@ class ImageViewport(
 
     private val currentJob: JobFile
         get() = jobs[paths[currentIndex]]!!
+
+    private val changed: MutableMap<JobRelativePath, JobFile> = mutableMapOf()
 
     // -- Image display -------------------------------------------------------
     private var image: Image? by
@@ -169,7 +178,7 @@ class ImageViewport(
 
     init {
         clipCanvasToBounds = true
-        currentIndex = currentIndex
+        currentIndex = 0
 
         pointerChanged +=
             object : PointerListener {
@@ -268,6 +277,11 @@ class ImageViewport(
 
         discardUnconfirmedSelection()
         currentIndex--
+
+        changed[paths[currentIndex]] = JobFile(
+            vertexes = currentJob.vertexes,
+            approved = false
+        )
     }
 
     fun next() {
@@ -276,15 +290,21 @@ class ImageViewport(
         }
 
         discardUnconfirmedSelection()
+
+        changed[paths[currentIndex]] = JobFile(
+            vertexes = currentJob.vertexes,
+            approved = true
+        )
+
         currentIndex++
     }
 
-    private fun loadImage(path: Path) {
+    private fun loadImage(path: JobRelativePath) {
         image = null
         didInitialFit = false
 
         appScope.launch {
-            val loaded = imageLoader.load(path.toDataUri()) ?: return@launch
+            val loaded = imageLoader.load(path.absolute.toDataUri()) ?: return@launch
 
             image = loaded
 
@@ -331,10 +351,13 @@ class ImageViewport(
                     )
 
             selection.isUnconfirmedCreation = false
+
+            changed[paths[currentIndex]] = currentJob
         }
 
-        // Output for testing
-        printCrops()
+        CoroutineScope(Dispatchers.Default).launch {
+            outputCrops()
+        }
 
         selection = null
         dragMode = null
@@ -376,6 +399,8 @@ class ImageViewport(
 
         selection = SelectionProposal(key, box, label, isUnconfirmedCreation = true)
 
+        changed[paths[currentIndex]] = currentJob
+
         rerender()
     }
 
@@ -389,6 +414,24 @@ class ImageViewport(
             }
 
         rerender()
+    }
+
+    suspend fun close() {
+        changed[paths[currentIndex]] = JobFile(
+            vertexes = currentJob.vertexes,
+            approved = true
+        )
+        outputCrops()
+    }
+
+    private suspend fun outputCrops() {
+        if (returnFlow == null) {
+            return printCrops()
+        } else {
+            returnFlow.emit(
+                changed
+            )
+        }
     }
 
     // This function is for testing
@@ -420,12 +463,14 @@ class ImageViewport(
                     }
                 }
             }
+
+        changed[paths[currentIndex]] = currentJob
     }
 
     // -- Selection -----------------------------------------------------------
 
     private fun handlePressed(event: PointerEvent) {
-        // Current mouse position in viewport coordinates
+        // Current mouse position in viewport cooMutableWaitFlow<Map<JobRelativePath, JobFile?>>?rdinates
         val selectionX = event.location.x
         val selectionY = event.location.y
 

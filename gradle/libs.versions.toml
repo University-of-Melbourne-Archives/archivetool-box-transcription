@@ -28,7 +28,7 @@ csv = { module = "com.jsoizo:kotlin-csv", version = "2.0.0" }
 
 # Libraries can be bundled together for easier import
 [bundles]
-kotlinEcosystem = ["kotlinReflect", "kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
+kotlinEcosystem = ["kotlinReflect", "kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines", "kotlinxCoroutinesSwing"]
 polyglot = ["polyglot", "polyglot-python"]
 
 [plugins]
