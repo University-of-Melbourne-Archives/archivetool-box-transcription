@@ -85,18 +85,20 @@ class SegmentationInterface(
                     bottomButtons[2],
                     bottomButtons[3],
                     bottomButtons[4],
-                ) { b1, b2, b3, b4, b5 ->
-                    listOf(b1, b2, b3, b4, b5).forEach {
+                    bottomButtons[5]
+                ) { buttons ->
+                    buttons.forEach {
                         it.top eq 0
                         it.width eq buttonWidth
                         it.height eq buttonHeight
                     }
 
-                    b1.left eq 0
-                    b2.left eq b1.right + buttonGap
-                    b3.left eq b2.right + buttonGap
-                    b4.left eq b3.right + buttonGap
-                    b5.left eq b4.right + buttonGap
+                    var prev = buttons.first()
+                    prev.left eq 0
+                    buttons.listIterator(1).forEachRemaining {
+                        it.left eq prev.right + buttonGap
+                        prev = it
+                    }
                 }
         }
 

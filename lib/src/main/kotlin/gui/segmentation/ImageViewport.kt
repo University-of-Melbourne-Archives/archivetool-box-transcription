@@ -8,8 +8,8 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.HSLColour
 import au.edu.unimelb.archivetool.util.MutableWaitFlow
-import au.edu.unimelb.archivetool.util.WaitFlow
 import au.edu.unimelb.archivetool.util.extension.PairExt.any
+import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.math.geometry.Point
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
@@ -27,7 +27,6 @@ import io.nacular.doodle.image.ImageLoader
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.encoding.Base64.Default as Base64
-import kotlin.io.path.absolute
 import kotlin.io.path.readBytes
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -37,7 +36,6 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.swing.Swing
 
 sealed interface Coord {
     fun imageSpace(origin: ViewportSpaceCoord, zoom: Double): ImageSpaceCoord
@@ -56,7 +54,7 @@ sealed interface Coord {
         override fun imageSpace(origin: ViewportSpaceCoord, zoom: Double) = this
 
         override fun viewportSpace(origin: ViewportSpaceCoord, zoom: Double): ViewportSpaceCoord =
-            ViewportSpaceCoord(point + origin.point * zoom)
+            ViewportSpaceCoord(origin.point + (point * zoom))
 
         companion object {
             fun construct(pair: Pair<Int, Int>) = ImageSpaceCoord(Point.fromPair(pair))
@@ -70,7 +68,7 @@ sealed interface Coord {
         val y by point::y
 
         override fun imageSpace(origin: ViewportSpaceCoord, zoom: Double): ImageSpaceCoord =
-            ImageSpaceCoord(point - origin.point / zoom)
+            ImageSpaceCoord((point - origin.point) / zoom)
 
         override fun viewportSpace(origin: ViewportSpaceCoord, zoom: Double): ViewportSpaceCoord =
             this
@@ -178,7 +176,6 @@ class ImageViewport(
 
     init {
         clipCanvasToBounds = true
-        currentIndex = 0
 
         pointerChanged +=
             object : PointerListener {
@@ -226,26 +223,25 @@ class ImageViewport(
         if (image == null) return
 
         val newZoom = (zoom * factor).coerceIn(MIN_ZOOM, MAX_ZOOM)
-        val centerX = width / 2
-        val centerY = height / 2
+        val center = ViewportSpaceCoord (
+            (width / 2).roundToInt(),
+            (height / 2).roundToInt()
+        )
 
         // Retain image point at viewpoint's centre
-        val imagePointX = (centerX - origin.x) / zoom
-        val imagePointY = (centerY - origin.x) / zoom
+        val imagePoint = center.imageSpace(origin, zoom)
 
         zoom = newZoom
 
-        origin =
-            ViewportSpaceCoord(
-                (centerX - imagePointX * zoom).roundToInt(),
-                (centerY - imagePointY * zoom).roundToInt(),
+        origin = ViewportSpaceCoord(
+                (center.point - imagePoint.point * zoom)
             )
 
         rerender()
     }
 
     fun scaleToFit() {
-        if (image == null || imageWidth <= 0 || imageHeight <= 0 || width <= 0 || height <= 0) {
+        if (image == null || minOf(imageWidth, imageHeight, width, height) <= 0) {
             return
         }
 
@@ -336,7 +332,7 @@ class ImageViewport(
                             ),
                     labelBoundaries =
                         listOf(
-                            oldLabel?.copy(points = Quad.upcast(selection.boxPoints))
+                            oldLabel?.copy(points = Quad.upcast(selection.labelPoints))
                                 ?: Boundary(
                                     points = Quad.upcast(selection.labelPoints),
                                     confidence = 1.0,
@@ -373,19 +369,21 @@ class ImageViewport(
             }
         }
 
-        val centreX = imageWidth / 2
-        val centreY = imageHeight / 2
+        val centre = Coord.ImageSpaceCoord(
+            (imageWidth / 2).roundToInt(),
+            (imageHeight / 2).roundToInt()
+        )
         val boxWidth = 600
         val boxHeight = 1100
-        val boxTop = (centreY - boxHeight / 2).roundToInt()
-        val boxLeft = (centreX - boxWidth / 2).roundToInt()
+        val boxTop = (centre.y - boxHeight / 2)
+        val boxLeft = (centre.x - boxWidth / 2)
 
         val box = Rectangle.create(boxLeft, boxTop, boxWidth, boxHeight)
 
         val labelWidth = 500
         val labelHeight = 170
         val labelTop = boxTop + 35
-        val labelLeft = (centreX - labelWidth / 2).roundToInt()
+        val labelLeft = (centre.x - labelWidth / 2)
         val label = Rectangle.create(labelLeft, labelTop, labelWidth, labelHeight)
 
         val key = Uuid.random().toHexDashString()
@@ -422,6 +420,7 @@ class ImageViewport(
             approved = true
         )
         outputCrops()
+        returnFlow?.close()
     }
 
     private suspend fun outputCrops() {
@@ -470,19 +469,18 @@ class ImageViewport(
     // -- Selection -----------------------------------------------------------
 
     private fun handlePressed(event: PointerEvent) {
-        // Current mouse position in viewport cooMutableWaitFlow<Map<JobRelativePath, JobFile?>>?rdinates
-        val selectionX = event.location.x
-        val selectionY = event.location.y
+        // Current mouse position in viewport coordinates
+        val selectionPoint = ViewportSpaceCoord(event.location.x.roundToInt(), event.location.y.roundToInt())
 
-        previousViewport = ViewportSpaceCoord(selectionX.roundToInt(), selectionY.roundToInt())
+        previousViewport = selectionPoint
 
         pendingDeselectOnClick = false
 
         // Convert mouse position to image coordinates
-        val imgPoint = previousViewport.imageSpace(origin, zoom)
+        val imgPoint = selectionPoint.imageSpace(origin, zoom)
 
         selection?.let { selection ->
-            selectedVertex(selection, previousViewport)?.let { (isBox, index) ->
+            selectedVertex(selection, selectionPoint)?.let { (isBox, index) ->
                 dragMode = DragMode.VertexDragging(isBox, index)
                 return
             }
@@ -573,7 +571,7 @@ class ImageViewport(
 
             is DragMode.LabelDragging -> {
                 selection?.let { s ->
-                    val image = selectionPoint.imageSpace(origin, zoom)
+                    val image = selectionPoint.imageSpace(previousViewport, zoom)
 
                     val clampedMovement =
                         image.point.clamp(
@@ -633,31 +631,21 @@ class ImageViewport(
     private fun selectedVertex(
         selection: SelectionProposal,
         selectionPoint: ViewportSpaceCoord,
-    ): Pair<Boolean, Int>? {
+    ): Pair<Boolean, Int>? =
         selection.boxPoints.vertices
-            .map { Coord.ImageSpaceCoord(it) }
-            .forEachIndexed { i, vertex ->
-                if (
-                    vertex.viewportSpace(origin, zoom).point.distanceTo(selectionPoint.point) <=
-                        VERTEX_DETECTION_RADIUS
-                ) {
-                    return true to i
-                }
-            }
-
-        selection.labelPoints.vertices
-            .map { Coord.ImageSpaceCoord(it) }
-            .forEachIndexed { i, vertex ->
-                if (
-                    vertex.viewportSpace(origin, zoom).point.distanceTo(selectionPoint.point) <=
-                        VERTEX_DETECTION_RADIUS
-                ) {
-                    return true to i
-                }
-            }
-
-        return null
-    }
+            .map { Coord.ImageSpaceCoord(it).viewportSpace(origin, zoom) }
+            .mapIndexed { i, c -> i to c }
+            .firstOrNull { (_, vertex) ->
+                vertex.point.distanceTo(selectionPoint.point) <=
+                    VERTEX_DETECTION_RADIUS
+            }?.let { true to it.first}
+            ?: selection.labelPoints.vertices
+                .map { Coord.ImageSpaceCoord(it).viewportSpace(origin, zoom) }
+                .mapIndexed { i, c -> i to c }
+                .firstOrNull { (_, vertex) ->
+                        vertex.point.distanceTo(selectionPoint.point) <=
+                            VERTEX_DETECTION_RADIUS
+                }?.let { false to it.first}
 
     // -- Helper Converters ---------------------------------------------------
 
@@ -704,35 +692,35 @@ class ImageViewport(
             .filter { (k, v) -> k != selectedKey }
             .forEach { (k, v) ->
                 val boxStrokeColour = indexColour(k)
-                drawOutline(canvas, v.boxBoundary.points, boxStrokeColour)
-                v.labelBoundaries.firstOrNull()?.let { drawOutline(canvas, it.points, Colour.BLUE) }
+                canvas.drawOutline(v.boxBoundary.points, boxStrokeColour)
+                v.labelBoundaries.firstOrNull()?.let { canvas.drawOutline(it.points, Colour.BLUE) }
             }
 
         // Draw vertexes for crop pair if selected
         selection?.let { sel ->
             val boxStrokeColour = indexColour(sel.key)
-            drawFilledSelection(canvas, sel.boxPoints, boxStrokeColour)
-            drawFilledSelection(canvas, sel.labelPoints, Colour.BLUE)
-            drawVertexes(canvas, sel.boxPoints)
-            drawVertexes(canvas, sel.labelPoints)
+            canvas.drawFilledSelection(sel.boxPoints, boxStrokeColour)
+            canvas.drawFilledSelection(sel.labelPoints, Colour.BLUE)
+            canvas.drawVertexes(sel.boxPoints)
+            canvas.drawVertexes(sel.labelPoints)
         }
     }
 
-    private fun drawOutline(canvas: Canvas, poly: Polygon, colour: Colour) {
-        val points = poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
+    private fun Canvas.drawOutline(poly: Quad, colour: Colour) {
+        val points = poly.toClockwise().vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
         val stroke = colour.toDoodle().paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
-            canvas.line(points[i], points[(i + 1) % points.size], stroke = stroke)
+            line(points[i], points[(i + 1) % points.size], stroke = stroke)
         }
     }
 
-    private fun drawFilledSelection(canvas: Canvas, poly: Quad, outlineColor: Colour) {
-        val screenPoly = poly.vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
+    private fun Canvas.drawFilledSelection(poly: Quad, outlineColor: Colour) {
+        val screenPoly = poly.toClockwise().vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
 
         val vertexIterator = screenPoly.take(3).iterator()
         val remaining = screenPoly.subList(3, poly.vertices.size).toTypedArray()
 
-        canvas.poly(
+        poly(
             ConvexPolygon.Companion(
                 vertexIterator.next(),
                 vertexIterator.next(),
@@ -744,19 +732,18 @@ class ImageViewport(
 
         val stroke = outlineColor.toDoodle().paint.stroke(thickness = LINE_THICKNESS)
         for (i in screenPoly.indices) {
-            canvas.line(screenPoly[i], screenPoly[(i + 1) % screenPoly.size], stroke = stroke)
+            line(screenPoly[i], screenPoly[(i + 1) % screenPoly.size], stroke = stroke)
         }
     }
 
-    private fun drawVertexes(canvas: Canvas, poly: Polygon) {
+    private fun Canvas.drawVertexes(poly: Polygon) {
         poly.vertices
             .map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
             .forEach { v ->
-                val point = v
-                canvas.rect(
+                rect(
                     Doodle.Rectangle(
-                        x = point.x - VERTEX_SIZE / 2,
-                        y = point.y - VERTEX_SIZE / 2,
+                        x = v.x - VERTEX_SIZE / 2,
+                        y = v.y - VERTEX_SIZE / 2,
                         width = VERTEX_SIZE,
                         height = VERTEX_SIZE,
                     ),

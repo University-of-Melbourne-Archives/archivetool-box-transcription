@@ -13,7 +13,10 @@ import io.nacular.doodle.application.Modules.Companion.PointerModule
 import io.nacular.doodle.application.application
 import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicButtonBehavior
 import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicLabelBehavior
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.kodein.di.instance
 
@@ -22,14 +25,12 @@ class ReviewGUIInteraction : ReviewPreviewInteraction {
         files: Map<JobRelativePath, JobFile?>,
         autoApproveThreshold: Double,
     ): Map<JobRelativePath, JobFile> {
-        lateinit var resultFlow: WaitFlow<Map<JobRelativePath, JobFile>>
+        val resultFlow: WaitFlow<Map<JobRelativePath, JobFile>> = MutableWaitFlow<Map<JobRelativePath, JobFile>>(mapOf())
         lateinit var result: Map<JobRelativePath, JobFile>
         val app = application(
             modules =
                 listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule)
         ) {
-            val returnFlow = MutableWaitFlow<Map<JobRelativePath, JobFile>>(mapOf())
-            resultFlow = returnFlow
             SegmentationInterface(
                 jobs = files,
                 display = instance(),
@@ -37,13 +38,14 @@ class ReviewGUIInteraction : ReviewPreviewInteraction {
                 themeManager = instance(),
                 theme = instance(),
                 imageLoader = instance(),
-                returnFlow = returnFlow
+                returnFlow = resultFlow as MutableWaitFlow
             )
         }
-        runBlocking {
+        val job = CoroutineScope(Dispatchers.Default).launch {
             result = resultFlow.collect()
-            app.shutdown()
+            Log.debug("GUI result recieved.")
         }
+        runBlocking {job.join()}
         return result
     }
 }
