@@ -4,8 +4,8 @@ import cv2 # OK as part of the ultralytics import anyway
 import numpy as np
 from ultralytics import YOLO
 
-BOX_CLASS = "box"
-STICKER_CLASS = "sticker"
+BOX_CLASS = "Box"
+STICKER_CLASS = "Sticker"
 
 
 def orderCorners(quad):
@@ -32,7 +32,7 @@ def getCornerPoints(polygon):
         polygon (list): List of numpy coordinates containing the predicted outline of the segmented object.
 
     Returns:
-        (list[np.array]): size 4 quadrilateral
+        (list[np.array]): size 4 quadrilateral after reducing mask
     """
     # find the smallest bounding polygon containing all the points of the shaded polygon
     hull = cv2.convexHull(polygon.astype(np.float32))
@@ -116,27 +116,31 @@ def segArchiveImage(model: YOLO, imageDir: str, conf: float =0.5, includeMask: b
         polygons = result.masks.xy
 
         # Ignore non-quadrilaterals and above
-        boxIdx = [i for i, label in enumerate(labels) if label == BOX_CLASS and len(polygons[i]) >= 3]
+        valid = [i for i in range(len(labels)) if len(polygons[i]) >= 3]
+        boxIdx = sorted((i for i in valid if labels[i] == BOX_CLASS), key=lambda i: scores[i], reverse=True)
 
-        if boxIdx:
-            # One box per image is assumed, so keep only the most confident
-            best = max(boxIdx, key=lambda i: scores[i])
-            box, boxQuad = toSegment(polygons[best], scores[best], includeMask)
+        # Key every box as box-N in confidence order
+        boxQuads = []
+        for n, i in enumerate(boxIdx, start=1):
+            box, quad = toSegment(polygons[i], scores[i], includeMask)
+            vertexes[f"box-{n}"] = {"box": box, "sticker": []}
+            boxQuads.append((f"box-{n}", quad))
 
-            stickers = []
-            for i, label in enumerate(labels):
-                if label != STICKER_CLASS or len(polygons[i]) < 3:
-                    continue
-                sticker, quad = toSegment(polygons[i], scores[i], includeMask)
-                # Neighbouring boxes on the shelf often creep into frame; drop their stickers
-                if insideQuad(quad.mean(axis=0), boxQuad):
-                    stickers.append(sticker)
+        for i in valid:
+            if labels[i] != STICKER_CLASS:
+                continue
+            sticker, quad = toSegment(polygons[i], scores[i], includeMask)
+            centre = quad.mean(axis=0)
 
-            vertexes["box-1"] = {"box": box, "sticker": stickers}
+            # Boxes are in confidence order, so a sticker overlapping two boxes goes to the more confident one
+            for boxId, boxQuad in boxQuads:
+                if insideQuad(centre, boxQuad):
+                    vertexes[boxId]["sticker"].append(sticker)
+                    break
 
     detections = {Path(imageDir).name: {"vertexes": vertexes}}
     return detections
-
+    
 def drawDetections(imageDir, detections, outDir):
     # DEBUG ONLY -- used for corner drawing validation
     outDir = Path(outDir)
@@ -181,7 +185,7 @@ model = YOLO(r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-1
 # segArchiveImage now takes one image, so collect results across the folder here
 detections = {}
 for imagePath in sorted(Path(test_path).glob("*.jpg")):
-    detections.update(segArchiveImage(model, str(imagePath), includeMask=True))
+    detections.update(segArchiveImage(model, str(imagePath), includeMask=False))
 
 print(detections)
-# drawDetections(test_path, detections, test_out_path)
+drawDetections(test_path, detections, test_out_path)
