@@ -528,22 +528,39 @@ class ImageViewport(
 
             is DragMode.AreaDragging -> {
                 selection?.let { s ->
-                    val image = selectionPoint.imageSpace(previousViewport, zoom)
+                    val imgPoint = selectionPoint.imageSpace(origin, zoom).point
+                    val clampedToViewport =
+                        imgPoint.clamp(0 to 0, imageWidth.roundToInt() to imageHeight.roundToInt())
+                    val prevClampedToViewport =
+                        previousViewport.imageSpace(origin, zoom).point.clamp(0 to 0, imageWidth.roundToInt() to imageHeight.roundToInt())
+
+
+                    val delta =
+                        (clampedToViewport - prevClampedToViewport)
 
                     // Group the crop pair and restrict to viewport bounds
-                    val all =
+                    val allRaw =
                         Polygon.create(
                             *(s.boxPoints.vertices.toList() + s.labelPoints.vertices)
                                 .map { it.inner }
                                 .toTypedArray()
-                        )
+                        ).offsetBy(delta)
 
-                    val clampedMovement =
-                        image.point.clamp(all.xMin to all.yMin, all.xMax to all.yMax)
+                    val minOffset = Point.fromPair(
+                            minOf(allRaw.xMin, 0) to minOf(allRaw.yMin, 0)
+                    )
+
+                    val maxOffset = Point.fromPair(
+                        maxOf(
+                            imageWidth.roundToInt(), allRaw.xMax) to maxOf(imageHeight.roundToInt(), allRaw.yMax)
+                        ) - (Point.fromPair(imageWidth.roundToInt() to imageHeight.roundToInt())
+                    )
+
+                    val offset = delta - (minOffset + maxOffset)
 
                     // Move all vertexes
-                    val box = s.boxPoints.offsetBy(clampedMovement)
-                    val label = s.labelPoints.offsetBy(clampedMovement)
+                    val box = s.boxPoints.offsetBy(offset)
+                    val label = s.labelPoints.offsetBy(offset)
 
                     selection = s.copy(boxPoints = box, labelPoints = label)
                 }

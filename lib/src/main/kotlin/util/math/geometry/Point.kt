@@ -39,19 +39,18 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
 
     fun toCV(): CV.Point = CV.Point(x, y)
 
-    fun clamp(min: Pair<Int, Int>, max: Pair<Int, Int>): Point =
-        fromPair(
-            min.let { (minX, minY) ->
-                max.let { (maxX, maxY) -> x.coerceIn(minX, maxX) to y.coerceIn(minY, maxY) }
-            }
-        )
+    fun clamp(min: Pair<Int, Int>, max: Pair<Int, Int>): Point = clamp(fromPair(min), fromPair(max))
 
-    fun clamp(min: Point, max: Point): Point =
-        fromPair(
+    fun clamp(min: Point, max: Point): Point {
+        fun Int.maybeCoerce(min: Int, max: Int): Int =
+            this.takeIf { min < max }?.coerceIn(min, max) ?: this
+
+        return fromPair(
             min.let { (minX, minY) ->
-                max.let { (maxX, maxY) -> x.coerceIn(minX, maxX) to y.coerceIn(minY, maxY) }
+                max.let { (maxX, maxY) -> x.maybeCoerce(minX, maxX) to y.maybeCoerce(minY, maxY) }
             }
         )
+    }
 
     fun distanceTo(other: Point): Double {
         val d = this - other
