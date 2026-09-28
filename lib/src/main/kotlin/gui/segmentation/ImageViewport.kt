@@ -9,7 +9,6 @@ import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.HSLColour
 import au.edu.unimelb.archivetool.util.MutableWaitFlow
 import au.edu.unimelb.archivetool.util.extension.PairExt.any
-import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.math.geometry.Point
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
@@ -223,19 +222,14 @@ class ImageViewport(
         if (image == null) return
 
         val newZoom = (zoom * factor).coerceIn(MIN_ZOOM, MAX_ZOOM)
-        val center = ViewportSpaceCoord (
-            (width / 2).roundToInt(),
-            (height / 2).roundToInt()
-        )
+        val center = ViewportSpaceCoord((width / 2).roundToInt(), (height / 2).roundToInt())
 
         // Retain image point at viewpoint's centre
         val imagePoint = center.imageSpace(origin, zoom)
 
         zoom = newZoom
 
-        origin = ViewportSpaceCoord(
-                (center.point - imagePoint.point * zoom)
-            )
+        origin = ViewportSpaceCoord((center.point - imagePoint.point * zoom))
 
         rerender()
     }
@@ -274,10 +268,7 @@ class ImageViewport(
         discardUnconfirmedSelection()
         currentIndex--
 
-        changed[paths[currentIndex]] = JobFile(
-            vertexes = currentJob.vertexes,
-            approved = false
-        )
+        changed[paths[currentIndex]] = JobFile(vertexes = currentJob.vertexes, approved = false)
     }
 
     fun next() {
@@ -287,10 +278,7 @@ class ImageViewport(
 
         discardUnconfirmedSelection()
 
-        changed[paths[currentIndex]] = JobFile(
-            vertexes = currentJob.vertexes,
-            approved = true
-        )
+        changed[paths[currentIndex]] = JobFile(vertexes = currentJob.vertexes, approved = true)
 
         currentIndex++
     }
@@ -351,9 +339,7 @@ class ImageViewport(
             changed[paths[currentIndex]] = currentJob
         }
 
-        CoroutineScope(Dispatchers.Default).launch {
-            outputCrops()
-        }
+        CoroutineScope(Dispatchers.Default).launch { outputCrops() }
 
         selection = null
         dragMode = null
@@ -369,10 +355,8 @@ class ImageViewport(
             }
         }
 
-        val centre = Coord.ImageSpaceCoord(
-            (imageWidth / 2).roundToInt(),
-            (imageHeight / 2).roundToInt()
-        )
+        val centre =
+            Coord.ImageSpaceCoord((imageWidth / 2).roundToInt(), (imageHeight / 2).roundToInt())
         val boxWidth = 600
         val boxHeight = 1100
         val boxTop = (centre.y - boxHeight / 2)
@@ -415,10 +399,7 @@ class ImageViewport(
     }
 
     suspend fun close() {
-        changed[paths[currentIndex]] = JobFile(
-            vertexes = currentJob.vertexes,
-            approved = true
-        )
+        changed[paths[currentIndex]] = JobFile(vertexes = currentJob.vertexes, approved = true)
         outputCrops()
         returnFlow?.close()
     }
@@ -427,9 +408,7 @@ class ImageViewport(
         if (returnFlow == null) {
             return printCrops()
         } else {
-            returnFlow.emit(
-                changed
-            )
+            returnFlow.emit(changed)
         }
     }
 
@@ -470,7 +449,8 @@ class ImageViewport(
 
     private fun handlePressed(event: PointerEvent) {
         // Current mouse position in viewport coordinates
-        val selectionPoint = ViewportSpaceCoord(event.location.x.roundToInt(), event.location.y.roundToInt())
+        val selectionPoint =
+            ViewportSpaceCoord(event.location.x.roundToInt(), event.location.y.roundToInt())
 
         previousViewport = selectionPoint
 
@@ -636,16 +616,16 @@ class ImageViewport(
             .map { Coord.ImageSpaceCoord(it).viewportSpace(origin, zoom) }
             .mapIndexed { i, c -> i to c }
             .firstOrNull { (_, vertex) ->
-                vertex.point.distanceTo(selectionPoint.point) <=
-                    VERTEX_DETECTION_RADIUS
-            }?.let { true to it.first}
+                vertex.point.distanceTo(selectionPoint.point) <= VERTEX_DETECTION_RADIUS
+            }
+            ?.let { true to it.first }
             ?: selection.labelPoints.vertices
                 .map { Coord.ImageSpaceCoord(it).viewportSpace(origin, zoom) }
                 .mapIndexed { i, c -> i to c }
                 .firstOrNull { (_, vertex) ->
-                        vertex.point.distanceTo(selectionPoint.point) <=
-                            VERTEX_DETECTION_RADIUS
-                }?.let { false to it.first}
+                    vertex.point.distanceTo(selectionPoint.point) <= VERTEX_DETECTION_RADIUS
+                }
+                ?.let { false to it.first }
 
     // -- Helper Converters ---------------------------------------------------
 
@@ -707,7 +687,10 @@ class ImageViewport(
     }
 
     private fun Canvas.drawOutline(poly: Quad, colour: Colour) {
-        val points = poly.toClockwise().vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
+        val points =
+            poly.toClockwise().vertices.map {
+                Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom)
+            }
         val stroke = colour.toDoodle().paint.stroke(thickness = LINE_THICKNESS)
         for (i in points.indices) {
             line(points[i], points[(i + 1) % points.size], stroke = stroke)
@@ -715,7 +698,10 @@ class ImageViewport(
     }
 
     private fun Canvas.drawFilledSelection(poly: Quad, outlineColor: Colour) {
-        val screenPoly = poly.toClockwise().vertices.map { Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom) }
+        val screenPoly =
+            poly.toClockwise().vertices.map {
+                Coord.ImageSpaceCoord(it).toDoodlePoint(origin, zoom)
+            }
 
         val vertexIterator = screenPoly.take(3).iterator()
         val remaining = screenPoly.subList(3, poly.vertices.size).toTypedArray()

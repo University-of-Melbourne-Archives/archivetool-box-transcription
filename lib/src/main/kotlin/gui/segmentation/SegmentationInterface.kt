@@ -67,7 +67,9 @@ class SegmentationInterface(
                 PushButton("Confirm").apply { fired += { viewport.confirm() } },
                 PushButton("Create").apply { fired += { viewport.create() } },
                 PushButton("Delete").apply { fired += { viewport.delete() } },
-                PushButton("Finish").apply { fired += { CoroutineScope(Dispatchers.Default).launch { viewport.close() } } },
+                PushButton("Finish").apply {
+                    fired += { CoroutineScope(Dispatchers.Default).launch { viewport.close() } }
+                },
             )
 
         val buttonWidth = 90.0
@@ -85,7 +87,7 @@ class SegmentationInterface(
                     bottomButtons[2],
                     bottomButtons[3],
                     bottomButtons[4],
-                    bottomButtons[5]
+                    bottomButtons[5],
                 ) { buttons ->
                     buttons.forEach {
                         it.top eq 0
@@ -164,8 +166,6 @@ class SegmentationInterface(
     }
 
     override fun shutdown() {
-        runBlocking {
-            viewport.close()
-        }
+        runBlocking { viewport.close() }
     }
 }

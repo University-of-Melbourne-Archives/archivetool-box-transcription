@@ -20,8 +20,10 @@ class ReviewGUIInteraction : ReviewPreviewInteraction {
     ): Map<JobRelativePath, JobFile> {
         Log.info("Running ReviewGUIInteraction")
         return runBlocking {
-            applicationWithResult<SegmentationInterface, Map<JobRelativePath, JobFile>>(mapOf(),
-                listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule)) {
+            applicationWithResult<SegmentationInterface, Map<JobRelativePath, JobFile>>(
+                mapOf(),
+                listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule),
+            ) {
                 SegmentationInterface(
                     jobs = files,
                     display = instance(),
@@ -29,7 +31,7 @@ class ReviewGUIInteraction : ReviewPreviewInteraction {
                     themeManager = instance(),
                     theme = instance(),
                     imageLoader = instance(),
-                    returnFlow = it
+                    returnFlow = it,
                 )
             }
         }

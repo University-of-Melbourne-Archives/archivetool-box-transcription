@@ -12,27 +12,23 @@ import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.bindings.NoArgBindingDI
 
-
-suspend inline fun <reified T: Application, R: Any> applicationWithResult(
+suspend inline fun <reified T : Application, R : Any> applicationWithResult(
     defaultResult: R,
     modules: List<DI.Module> = listOf(),
     coroutineDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    crossinline creator: NoArgBindingDI<*>.(MutableWaitFlow<R>) -> T
+    crossinline creator: NoArgBindingDI<*>.(MutableWaitFlow<R>) -> T,
 ): R {
     val resultFlow: WaitFlow<R> = MutableWaitFlow<R>(defaultResult)
     lateinit var result: R
     Log.debug("Running GUI Application with Flow")
-    application(
-        modules
-    ) {
-        this.creator(resultFlow as MutableWaitFlow)
-    }
-    val job = CoroutineScope(coroutineDispatcher).launch {
-        result = resultFlow.collect {
-            Log.trace("Recieved intermediate value from GUI Result Flow $it")
+    application(modules) { this.creator(resultFlow as MutableWaitFlow) }
+    val job =
+        CoroutineScope(coroutineDispatcher).launch {
+            result = resultFlow.collect {
+                Log.trace("Recieved intermediate value from GUI Result Flow $it")
+            }
+            Log.debug("GUI Flow Closed.")
         }
-        Log.debug("GUI Flow Closed.")
-    }
     job.join()
     return result
 }
