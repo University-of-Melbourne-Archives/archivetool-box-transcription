@@ -58,6 +58,15 @@ def getCornerPoints(polygon):
 
 
 def toPoints(quad):
+    """
+    Formats a quadrilateral list of vertices to list of "x", "y" dict items.
+
+    Args:
+        quad (list[np.array]): ordered list of 4 numpy coordinates for the bounding box
+    
+    Return:
+        (list[dict]): returns a list of {"x": _, "y": _} dicts containing coordinates from quad
+    """
     return [{"x": float(x), "y": float(y)} for x, y in quad]
 
 
@@ -80,6 +89,17 @@ def insideQuad(point, quad):
 
 
 def toSegment(polygon, score, includeMask):
+    """
+    Formats polygon and score to a segment, quad tuple.
+
+    Args:
+        polygon (list[np.array]): list of 4 points corresponding to bounding box edges
+        score (float): confidence score for the given polygon
+    
+    Returns:
+        segment (dict): formatted dictionary with segment points and confidence score
+        quad (list[np.array]): ordered list of 4 segment points from the polygon
+    """
     quad = getCornerPoints(polygon)
 
     # set box details
