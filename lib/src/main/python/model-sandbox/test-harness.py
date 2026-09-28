@@ -9,8 +9,8 @@ def orderCorners(quad):
     """
     Returns an ordered set of points per quadralateral. Starts from the Top-Left and moves clockwise.
 
-    @Params:
-        - quad : 
+    Args:
+        - quad (polygon): 
     """
     centre = quad.mean(axis=0)
     angles = np.arctan2(quad[:, 1] - centre[1], quad[:, 0] - centre[0])
@@ -25,14 +25,21 @@ def getCornerPoints(polygon):
     @Params:
         - polygon :  
     """
+    # find the smallest bounding polygon containing all the points of the shaded polygon
     hull = cv2.convexHull(polygon.astype(np.float32))
+
+    # return perimeter of bounding polygon
     perimeter = cv2.arcLength(hull, True)
 
-    # 
-    for eps in np.linspace(0.01, 0.1, 10):
-        approx = cv2.approxPolyDP(hull, eps * perimeter, True)
+    # iterating on error values (epsilon) to find simplest polygon approximation s.t. corners = 4
+    for epsilon in np.linspace(0.01, 0.1, 10):
+        # use Douglas-Pecker for vertex reduction
+        approx = cv2.approxPolyDP(hull, epsilon * perimeter, closed= True)
+
         if len(approx) == 4:
             return orderCorners(approx.reshape(4, 2))
+        
+        # filter for quadrilaterals and above
         if len(approx) < 4:
             break
 
@@ -48,7 +55,10 @@ def segArchiveImage(model: YOLO, imageDir: str, conf: float =0.5, includeMask: b
         model (YOLO): Initialised YOLO model as used in training
         imageDir (str) : Path to image for segmentation
         conf (float): Floor confidence for returned segments
-        includeMask(bool): Enables MaskImage output  
+        includeMask(bool): Includes raw mask points in the output
+
+    Returns:
+        detections (dict): Values for image data and all detected objects within
     """
     detections = {}
 
@@ -72,7 +82,7 @@ def segArchiveImage(model: YOLO, imageDir: str, conf: float =0.5, includeMask: b
                     "confidence": float(score),
                 }
 
-                if includeMask:  # performance enhanving only; used if polygons are large and not needed exactly downstream
+                if includeMask:  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
                     box["mask"] = polygon.round(1).tolist()
                 
                 boxes.append(box)
@@ -117,4 +127,5 @@ test_out_path = r"lib\src\main\python\model-sandbox\debug-output"
 model = YOLO(r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.pt")
 
 detections = segArchiveImage(model, test_path, includeMask=True)
-drawDetections(test_path, detections, test_out_path)
+print(detections)
+# drawDetections(test_path, detections, test_out_path)
