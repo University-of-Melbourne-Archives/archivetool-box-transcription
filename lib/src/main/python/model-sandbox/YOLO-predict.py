@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 # 1. Load trained segmentation-model weights 
-model = YOLO(r"weights\yolo26n-storeboxes-seg-31-08.pt")
+model = YOLO(r"C:\Users\ulida\OneDrive\Documents\_Uni\RECS\Github\comp30022-uom-archives\lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.pt")
 
 # 2. Run inference on test images
 results = model.predict(
