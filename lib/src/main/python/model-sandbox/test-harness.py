@@ -4,6 +4,9 @@ import cv2 # OK as part of the ultralytics import anyway
 import numpy as np
 from ultralytics import YOLO
 
+BOX_CLASS = "box"
+STICKER_CLASS = "sticker"
+
 
 def orderCorners(quad):
     """
@@ -54,6 +57,40 @@ def getCornerPoints(polygon):
     return orderCorners(cv2.boxPoints(cv2.minAreaRect(hull)))
 
 
+def toPoints(quad):
+    return [{"x": float(x), "y": float(y)} for x, y in quad]
+
+
+def insideQuad(point, quad):
+    """
+    Checks whether a point lies inside a convex quadrilateral.
+
+    Args:
+        point (np.ndarray): (x, y) point to test
+        quad (np.ndarray): 4x2 array of ordered corners
+
+    Returns:
+        (bool): True if the point is inside the quadrilateral
+    """
+    # Inside a convex polygon means the point is on the same side of every edge
+    edges = np.roll(quad, -1, axis=0) - quad
+    rel = point - quad
+    crosses = edges[:, 0] * rel[:, 1] - edges[:, 1] * rel[:, 0]
+    return bool(np.all(crosses >= 0) or np.all(crosses <= 0))
+
+
+def toSegment(polygon, score, includeMask):
+    quad = getCornerPoints(polygon)
+
+    # set box details
+    segment = {"points": toPoints(quad.round(1)), "confidence": float(score)}
+
+    if includeMask:  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
+        segment["mask"] = toPoints(polygon.round(1))
+
+    return segment, quad
+
+
 def segArchiveImage(model: YOLO, imageDir: str, conf: float =0.5, includeMask: bool =False):
     """
     Segments an Image into Box & Sticker polygons and returns detections as quadrilaterals.
@@ -67,34 +104,37 @@ def segArchiveImage(model: YOLO, imageDir: str, conf: float =0.5, includeMask: b
     Returns:
         detections (dict): Values for image data and all detected objects within
     """
-    detections = {}
-
     # Segment Image using box confidence
-    results = model(imageDir, stream=True, conf=conf, retina_masks=True)
+    result = model(imageDir, conf=conf, retina_masks=True, verbose=False)[0]
+    vertexes = {}
 
-    for result in results:
-        boxes = []
-        if result.masks is not None:
+    if result.masks is not None:
 
-            # access scores from process results
-            scores = result.boxes.conf.cpu().numpy()
-            for polygon, score in zip(result.masks.xy, scores):
-                # Ignore non-quadrilaterals and above
-                if len(polygon) < 3:
+        # access scores from process results
+        scores = result.boxes.conf.cpu().numpy()
+        labels = [result.names[int(c)] for c in result.boxes.cls.cpu().numpy()]
+        polygons = result.masks.xy
+
+        # Ignore non-quadrilaterals and above
+        boxIdx = [i for i, label in enumerate(labels) if label == BOX_CLASS and len(polygons[i]) >= 3]
+
+        if boxIdx:
+            # One box per image is assumed, so keep only the most confident
+            best = max(boxIdx, key=lambda i: scores[i])
+            box, boxQuad = toSegment(polygons[best], scores[best], includeMask)
+
+            stickers = []
+            for i, label in enumerate(labels):
+                if label != STICKER_CLASS or len(polygons[i]) < 3:
                     continue
+                sticker, quad = toSegment(polygons[i], scores[i], includeMask)
+                # Neighbouring boxes on the shelf often creep into frame; drop their stickers
+                if insideQuad(quad.mean(axis=0), boxQuad):
+                    stickers.append(sticker)
 
-                # set box details
-                box = {
-                    "corners": getCornerPoints(polygon).round(1).tolist(),
-                    "confidence": float(score),
-                }
+            vertexes["box-1"] = {"box": box, "sticker": stickers}
 
-                if includeMask:  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
-                    box["mask"] = polygon.round(1).tolist()
-                
-                boxes.append(box)
-        
-        detections[Path(result.path).name] = boxes
+    detections = {Path(imageDir).name: {"vertexes": vertexes}}
     return detections
 
 def drawDetections(imageDir, detections, outDir):
@@ -103,26 +143,31 @@ def drawDetections(imageDir, detections, outDir):
     outDir.mkdir(parents=True, exist_ok=True)
 
 
-    for name, boxes in detections.items():
+    for name, entry in detections.items():
         image = cv2.imread(str(Path(imageDir) / name))
 
         # Scale line width with resolution, otherwise 1px lines vanish on phone photos
         thickness = max(2, image.shape[1] // 600)
 
-        for i, box in enumerate(boxes):
-            if "mask" in box:
-                cv2.polylines(image, [np.array(box["mask"], np.int32)], True, (255, 200, 0), thickness)
+        for group in entry["vertexes"].values():
+            # Box in green, stickers in orange
+            segments = [((0, 255, 0), group["box"])] + [((0, 165, 255), s) for s in group["sticker"]]
 
-            corners = np.array(box["corners"], np.int32)
-            cv2.polylines(image, [corners], True, (0, 255, 0), thickness)
+            for i, (lineColour, seg) in enumerate(segments):
+                if "mask" in seg:
+                    mask = np.array([[p["x"], p["y"]] for p in seg["mask"]], np.int32)
+                    cv2.polylines(image, [mask], True, (255, 200, 0), thickness)
 
-            for j, (x, y) in enumerate(corners):
-                # TL in magenta so corner ordering is visible at a glance
-                colour = (255, 0, 255) if j == 0 else (0, 0, 255)
-                cv2.circle(image, (int(x), int(y)), thickness * 3, colour, -1)
-            
-            cv2.putText(image, f"{i} {box['confidence']:.2f}", (int(corners[0][0]) + 5, int(corners[0][1]) + 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, thickness * 0.5, (0, 0, 255), thickness)
+                corners = np.array([[p["x"], p["y"]] for p in seg["points"]], np.int32)
+                cv2.polylines(image, [corners], True, lineColour, thickness)
+
+                for j, (x, y) in enumerate(corners):
+                    # TL in magenta so corner ordering is visible at a glance
+                    colour = (255, 0, 255) if j == 0 else (0, 0, 255)
+                    cv2.circle(image, (int(x), int(y)), thickness * 3, colour, -1)
+                
+                cv2.putText(image, f"{i} {seg['confidence']:.2f}", (int(corners[0][0]) + 5, int(corners[0][1]) + 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, thickness * 0.5, (0, 0, 255), thickness)
             
         cv2.imwrite(str(outDir / name), image)
 
@@ -133,6 +178,10 @@ test_out_path = r"lib\src\main\python\model-sandbox\debug-output"
 
 model = YOLO(r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.pt")
 
-detections = segArchiveImage(model, test_path, includeMask=True)
+# segArchiveImage now takes one image, so collect results across the folder here
+detections = {}
+for imagePath in sorted(Path(test_path).glob("*.jpg")):
+    detections.update(segArchiveImage(model, str(imagePath), includeMask=True))
+
 print(detections)
 # drawDetections(test_path, detections, test_out_path)

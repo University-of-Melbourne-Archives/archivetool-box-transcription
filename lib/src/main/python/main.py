@@ -1,4 +1,2 @@
 from boxseg import *
 
-getCornerPoints()
-
