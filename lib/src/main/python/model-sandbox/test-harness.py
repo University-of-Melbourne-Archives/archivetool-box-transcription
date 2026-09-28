@@ -122,7 +122,7 @@ def segArchiveImage(model: YOLO, imageDir: str, conf: float =0.5, includeMask: b
         includeMask(bool): Includes raw mask points in the output
 
     Returns:
-        detections (dict): Values for image data and all detected objects within
+        detections (dict): JSON style dictionary with formatted image data and all detected objects within
     """
     # Segment Image using box confidence
     result = model(imageDir, conf=conf, retina_masks=True, verbose=False)[0]
