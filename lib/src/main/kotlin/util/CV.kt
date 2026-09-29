@@ -1,10 +1,10 @@
 package au.edu.unimelb.archivetool.util
 
-import au.edu.unimelb.archivetool.util.geometry.Point as GeoPoint
-import au.edu.unimelb.archivetool.util.geometry.Point.Companion.flatten
-import au.edu.unimelb.archivetool.util.geometry.Polygon
-import au.edu.unimelb.archivetool.util.geometry.Quad
-import au.edu.unimelb.archivetool.util.geometry.Rectangle
+import au.edu.unimelb.archivetool.util.math.geometry.Point as GeoPoint
+import au.edu.unimelb.archivetool.util.math.geometry.Point.Companion.flatten
+import au.edu.unimelb.archivetool.util.math.geometry.Polygon
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import java.nio.file.Path
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.pathString
