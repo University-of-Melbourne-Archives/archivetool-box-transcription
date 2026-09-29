@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
-import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.lang.ref.WeakReference
 import kotlin.getValue
 import org.graalvm.polyglot.Context

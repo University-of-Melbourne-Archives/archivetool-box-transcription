@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.util.concurrency
 
-import au.edu.unimelb.archivetool.logging.Log.expect
+import au.edu.unimelb.archivetool.util.error.expect
 import kotlinx.coroutines.sync.Mutex
 
 const val MAX_UNLOCK_ATTEMPTS = 1000

@@ -1,8 +1,8 @@
 package au.edu.unimelb.archivetool.pythoninterop.injectables
 
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.LogLevel
 import au.edu.unimelb.archivetool.pythoninterop.Injectable
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
 import java.util.function.Consumer
 import org.graalvm.polyglot.Context
 

@@ -1,11 +1,11 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
-import au.edu.unimelb.archivetool.util.map
-import au.edu.unimelb.archivetool.util.noop
+import au.edu.unimelb.archivetool.util.extension.PairExt.map
+import au.edu.unimelb.archivetool.util.extension.noop
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.extension

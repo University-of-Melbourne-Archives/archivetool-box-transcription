@@ -1,6 +1,6 @@
-package au.edu.unimelb.archivetool.util
+package au.edu.unimelb.archivetool.util.extension
 
-import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.util.logging.Log
 
 fun <T, R> T.tryOrNull(couldThrow: T.() -> R): R? =
     this.let {

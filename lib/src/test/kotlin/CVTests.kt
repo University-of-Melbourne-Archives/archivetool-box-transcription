@@ -1,6 +1,4 @@
 import au.edu.unimelb.archivetool.util.CV
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import org.bytedeco.opencv.global.opencv_core.CV_16S
 import org.bytedeco.opencv.global.opencv_core.CV_16U
 import org.bytedeco.opencv.global.opencv_core.CV_32F
@@ -8,6 +6,8 @@ import org.bytedeco.opencv.global.opencv_core.CV_32S
 import org.bytedeco.opencv.global.opencv_core.CV_64F
 import org.bytedeco.opencv.global.opencv_core.CV_8S
 import org.bytedeco.opencv.global.opencv_core.CV_8U
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class CVTests {
     @Test

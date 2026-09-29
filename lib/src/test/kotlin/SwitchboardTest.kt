@@ -1,8 +1,3 @@
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogLevel
-import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
-import au.edu.unimelb.archivetool.logging.consumers.StringConsumer
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
@@ -13,7 +8,12 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
 import au.edu.unimelb.archivetool.util.DateRange
-import au.edu.unimelb.archivetool.util.geometry.Quad
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
+import au.edu.unimelb.archivetool.util.logging.consumers.StringConsumer
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.collections.mutableMapOf
 import kotlin.io.path.Path
 import kotlin.test.AfterTest

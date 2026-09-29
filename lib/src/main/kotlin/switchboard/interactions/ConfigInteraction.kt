@@ -3,9 +3,9 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 import au.edu.unimelb.archivetool.config.API_KEY_ENV_VAR
 import au.edu.unimelb.archivetool.config.Config
 import au.edu.unimelb.archivetool.config.OpenAIAPIData
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.os.Platform
 import kotlin.io.path.inputStream
 import kotlin.io.path.notExists

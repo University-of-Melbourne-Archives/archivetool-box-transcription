@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
-import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.io.BufferedReader
 import org.graalvm.polyglot.Value
 

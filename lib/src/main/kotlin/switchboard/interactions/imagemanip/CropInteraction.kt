@@ -6,8 +6,9 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox.Companion.BOX_
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
-import au.edu.unimelb.archivetool.util.CV
-import au.edu.unimelb.archivetool.util.CV.writeImage
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import au.edu.unimelb.archivetool.util.wrap.CV
+import au.edu.unimelb.archivetool.util.wrap.CV.writeImage
 import org.bytedeco.opencv.opencv_core.Mat
 
 class CropInteraction : ImageManipulationInteraction {
@@ -21,7 +22,7 @@ class CropInteraction : ImageManipulationInteraction {
                     ArchiveBox.keyedLabel(i, b).let { (cropId, boundary) ->
                         var cropped = Mat()
                         _in.copyTo(cropped)
-                        cropped = cropped.apply(boundary.points.bestBoundingBox().intoCVRect())
+                        cropped = cropped.apply(boundary.points.bestBoundingBox().toCVRect())
 
                         val outPath = JobState.cropPath(jpath, id, cropId)
                         cropped.writeImage(outPath.absolute)
@@ -33,13 +34,13 @@ class CropInteraction : ImageManipulationInteraction {
                     (BOX_CROP_NAME to b).let { (cropId, boundary) ->
                         val bbox = boundary.points.bestBoundingBox()
 
-                        val cropped = _in.apply(bbox.intoCVRect())
+                        val cropped = _in.apply(bbox.toCVRect())
 
                         val blanked =
                             LabelBlanker.blankLabels(cropped, box.labelBoundaries) {
                                 confinedTo(bbox)
                                 val i = offsetBy(-bbox.xMin, -bbox.yMin)
-                                i
+                                i as Quad
                             }
 
                         val outPath = JobState.cropPath(jpath, id, cropId)
