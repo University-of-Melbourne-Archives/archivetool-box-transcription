@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
+import au.edu.unimelb.archivetool.switchboard.Switchboard
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -47,6 +49,17 @@ class RunCommand : Command(name = "run") {
             .restrictTo(0, 100)
 
     override fun run() {
-        CliSwitchboard.runWorkflow(inputDirectory, outputPath, resume, autoApproveThreshold)
+        val jobRoot = inputDirectory.toAbsolutePath().normalize()
+        val threshold = autoApproveThreshold?.toDouble()?.div(100.0) ?: 1.0
+        val switchboard =
+            Switchboard.with(
+                CSVFileExportInteraction(outputPath.toAbsolutePath().normalize())
+            )
+
+        switchboard.createPreview(jobRoot, permitExisting = resume)
+        switchboard.reviewPreview(jobRoot, threshold)
+        switchboard.manipulateImages(jobRoot)
+        switchboard.createOCR(jobRoot)
+        switchboard.generateExport(jobRoot)
     }
 }

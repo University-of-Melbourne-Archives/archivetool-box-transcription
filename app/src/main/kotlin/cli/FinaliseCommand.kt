@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
+import au.edu.unimelb.archivetool.switchboard.Switchboard
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -23,6 +25,8 @@ class FinaliseCommand : Command(name = "finalise") {
             .required()
 
     override fun run() {
-        CliSwitchboard.finalise(Path("."), outputPath)
+        val jobRoot = Path(".").toAbsolutePath().normalize()
+        Switchboard.with(CSVFileExportInteraction(outputPath.toAbsolutePath().normalize()))
+            .generateExport(jobRoot)
     }
 }

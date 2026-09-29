@@ -1,7 +1,7 @@
 package au.edu.unimelb.archivetool.app.cli.preview
 
-import au.edu.unimelb.archivetool.app.cli.CliSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
+import au.edu.unimelb.archivetool.switchboard.Switchboard
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
@@ -24,6 +24,8 @@ class PreviewReviewCommand : Command(name = "review") {
             .restrictTo(0, 100)
 
     override fun run() {
-        CliSwitchboard.reviewPreview(Path("."), autoApproveThreshold)
+        val jobRoot = Path(".").toAbsolutePath().normalize()
+        val threshold = autoApproveThreshold?.toDouble()?.div(100.0) ?: 1.0
+        Switchboard.reviewPreview(jobRoot, threshold)
     }
 }
