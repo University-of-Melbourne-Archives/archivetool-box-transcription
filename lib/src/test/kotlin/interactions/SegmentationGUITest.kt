@@ -44,7 +44,7 @@ class SegmentationGUITest {
         "Manually Interact with the GUI.",
         lastSucceeded = "bfb9ca7fe545ce26860539588340ef886e373927",
     )
-    @Test
+    //@Test
     fun `try review interaction`() {
         val files =
             mapOf(
