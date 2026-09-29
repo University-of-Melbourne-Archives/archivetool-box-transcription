@@ -146,9 +146,18 @@ object CV {
     }
 
     // Because varargs doesn't work, I need an overload.
-    fun perspectiveTransformRel(m: PerspectiveTransformMatrix, point: GeoPoint): List<GeoPoint> = perspectiveTransformRel(m, point)
-    fun perspectiveTransformRel(m: PerspectiveTransformMatrix, points: Array<out GeoPoint>): List<GeoPoint> = perspectiveTransformRel(m, points.asIterable())
-    fun <I: Iterable<GeoPoint>> perspectiveTransformRel(m: PerspectiveTransformMatrix, points: I): List<GeoPoint> {
+    fun perspectiveTransformRel(m: PerspectiveTransformMatrix, point: GeoPoint): List<GeoPoint> =
+        perspectiveTransformRel(m, point)
+
+    fun perspectiveTransformRel(
+        m: PerspectiveTransformMatrix,
+        points: Array<out GeoPoint>,
+    ): List<GeoPoint> = perspectiveTransformRel(m, points.asIterable())
+
+    fun <I : Iterable<GeoPoint>> perspectiveTransformRel(
+        m: PerspectiveTransformMatrix,
+        points: I,
+    ): List<GeoPoint> {
         val n = points.count()
         val src = Mat(n, 1, CV_64FC2)
         val idxr = src.createIndexer<DoubleIndexer>()

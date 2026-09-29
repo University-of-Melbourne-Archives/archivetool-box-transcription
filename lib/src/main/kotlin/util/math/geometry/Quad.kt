@@ -30,7 +30,10 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
             val pi = quad[i]
             val pj = quad[j]
             if ((pi.y > p.y) != (pj.y > p.y)) {
-                val xIntersect = pj.x.toDouble() + (p.y - pj.y).toDouble() / (pi.y - pj.y).toDouble() * (pi.x - pj.x).toDouble()
+                val xIntersect =
+                    pj.x.toDouble() +
+                        (p.y - pj.y).toDouble() / (pi.y - pj.y).toDouble() *
+                            (pi.x - pj.x).toDouble()
                 if (p.x.toDouble() < xIntersect) {
                     isInside = !isInside
                 }

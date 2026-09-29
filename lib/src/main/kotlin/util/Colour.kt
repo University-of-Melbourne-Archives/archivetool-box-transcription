@@ -80,7 +80,8 @@ value class HSLColour(val inner: UInt) : Colour {
     val l
         get() = (inner shr 8) and 0xffu
 
-    override fun withAlpha(a: UByte): HSLAColour = HSLAColour((inner - (inner and 0xffu)) + a.toUInt())
+    override fun withAlpha(a: UByte): HSLAColour =
+        HSLAColour((inner - (inner and 0xffu)) + a.toUInt())
 
     override fun hsl(): HSLColour = this
 
@@ -214,7 +215,8 @@ value class HSVColour(val inner: UInt) : Colour {
     val v
         get() = (inner shr 8) and 0xffu
 
-    override fun withAlpha(a: UByte): HSVAColour = HSVAColour((inner - (inner and 0xffu)) + a.toUInt())
+    override fun withAlpha(a: UByte): HSVAColour =
+        HSVAColour((inner - (inner and 0xffu)) + a.toUInt())
 
     override fun hsl(): HSLColour {
         val v = byte0255ToFloat01(v)
@@ -370,7 +372,9 @@ value class MonoAColour(val inner: UShort) : Colour {
         get() = 0xffu
 
     override fun toString(): String {
-        return "MonoA(${inner.toHexString(HexFormat {number.prefix="#";number.minLength = 4;upperCase = false})}): $v, alpha: $a"
+        return "MonoA(${inner.toHexString(HexFormat {number.prefix="#"
+number.minLength = 4
+upperCase = false})}): $v, alpha: $a"
     }
 
     override fun hsl(): HSLColour = hsv().hsl()
@@ -418,7 +422,9 @@ value class RGBColour(val inner: UInt) : Colour {
         get() = (inner shr 8) and 0xffu
 
     override fun toString(): String {
-        return "RGB(${(inner shr 8).toHexString(HexFormat {number.prefix="#";number.minLength = 6;upperCase = false})}): $r, $g, $b"
+        return "RGB(${(inner shr 8).toHexString(HexFormat {number.prefix="#"
+number.minLength = 6
+upperCase = false})}): $r, $g, $b"
     }
 
     override fun withAlpha(a: UByte): RGBAColour =
@@ -462,7 +468,9 @@ value class RGBAColour(val inner: UInt) : Colour {
     ) : this(@OptIn(ExperimentalUnsignedTypes::class) (uBytesToUInt(r, g, b, a)))
 
     override fun toString(): String {
-        return "RGBA(${inner.toHexString(HexFormat {number.prefix="#";number.minLength = 8;upperCase = false})}): $r, $g, $b, $a"
+        return "RGBA(${inner.toHexString(HexFormat {number.prefix="#"
+number.minLength = 8
+upperCase = false})}): $r, $g, $b, $a"
     }
 
     val r

@@ -532,29 +532,29 @@ class ImageViewport(
                     val clampedToViewport =
                         imgPoint.clamp(0 to 0, imageWidth.roundToInt() to imageHeight.roundToInt())
                     val prevClampedToViewport =
-                        previousViewport.imageSpace(origin, zoom).point.clamp(0 to 0, imageWidth.roundToInt() to imageHeight.roundToInt())
+                        previousViewport
+                            .imageSpace(origin, zoom)
+                            .point
+                            .clamp(0 to 0, imageWidth.roundToInt() to imageHeight.roundToInt())
 
-
-                    val delta =
-                        (clampedToViewport - prevClampedToViewport)
+                    val delta = (clampedToViewport - prevClampedToViewport)
 
                     // Group the crop pair and restrict to viewport bounds
                     val allRaw =
                         Polygon.create(
-                            *(s.boxPoints.vertices.toList() + s.labelPoints.vertices)
-                                .map { it.inner }
-                                .toTypedArray()
-                        ).offsetBy(delta)
+                                *(s.boxPoints.vertices.toList() + s.labelPoints.vertices)
+                                    .map { it.inner }
+                                    .toTypedArray()
+                            )
+                            .offsetBy(delta)
 
-                    val minOffset = Point.fromPair(
-                            minOf(allRaw.xMin, 0) to minOf(allRaw.yMin, 0)
-                    )
+                    val minOffset = Point.fromPair(minOf(allRaw.xMin, 0) to minOf(allRaw.yMin, 0))
 
-                    val maxOffset = Point.fromPair(
-                        maxOf(
-                            imageWidth.roundToInt(), allRaw.xMax) to maxOf(imageHeight.roundToInt(), allRaw.yMax)
-                        ) - (Point.fromPair(imageWidth.roundToInt() to imageHeight.roundToInt())
-                    )
+                    val maxOffset =
+                        Point.fromPair(
+                            maxOf(imageWidth.roundToInt(), allRaw.xMax) to
+                                maxOf(imageHeight.roundToInt(), allRaw.yMax)
+                        ) - (Point.fromPair(imageWidth.roundToInt() to imageHeight.roundToInt()))
 
                     val offset = delta - (minOffset + maxOffset)
 

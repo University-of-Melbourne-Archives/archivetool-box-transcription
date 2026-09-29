@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard.interactions.imagemanip
 
-import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox.Companion.BOX_CROP_NAME
