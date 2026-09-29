@@ -40,7 +40,8 @@ class FlattenInteractionTest {
 
     @SemiManual(
         "Check that the flattened images are generated for the correct bounds.",
-        lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5")
+        lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5",
+    )
     @Test
     fun `try flatten interaction`() {
         val files =
@@ -67,7 +68,16 @@ class FlattenInteractionTest {
                                                     1271 to 2384,
                                                 ),
                                                 confidence = 1.0,
-                                            )
+                                            ),
+                                            listOf(Boundary(
+                                                Quad.create(
+                                                    1390 to 1680,
+                                                    1815 to 1680,
+                                                    1815 to 1850,
+                                                    1390 to 1850,
+                                                ),
+                                                confidence = 1.0,
+                                            ))
                                         )
                                 ),
                         )

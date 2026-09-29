@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.bytedeco.opencv.opencv_core.Point as CVPoint
 
 @Serializable(PointSerializer::class)
 @JvmInline
@@ -22,10 +23,39 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
 
     operator fun minus(other: Point): Point = this + -other
 
+    operator fun component1(): Int = inner.component1()
+
+    operator fun component2(): Int = inner.component2()
+
+    fun toCVPoint(): CVPoint = CVPoint(x, y)
+
+    fun clamp(min: Point, max: Point): Point =
+        fromPair(
+            min.let { (minX, minY) ->
+                max.let { (maxX, maxY) -> x.coerceIn(minX, maxX) to y.coerceIn(minY, maxY) }
+            }
+        )
+
     companion object {
         fun create(x: Int, y: Int): Point = Point(Pair(x, y))
 
         fun fromPair(value: Pair<Int, Int>): Point = Point(value)
+
+        fun Array<out Point>.flatten(): List<Int> =
+            this.fold(mutableListOf()) { acc, (x, y) ->
+                acc.apply {
+                    add(x)
+                    add(y)
+                }
+            }
+
+        fun List<Point>.flatten(): List<Int> =
+            this.fold(mutableListOf()) { acc, (x, y) ->
+                acc.apply {
+                    add(x)
+                    add(y)
+                }
+            }
     }
 }
 

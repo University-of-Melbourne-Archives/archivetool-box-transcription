@@ -26,10 +26,7 @@ class PythonModule(filePaths: Set<String>, inject: Set<Injectable> = setOf()) :
     constructor(
         folder: String,
         inject: Set<Injectable> = setOf(),
-    ) : this(
-        resolveModuleFolder(folder),
-        inject,
-    )
+    ) : this(resolveModuleFolder(folder), inject)
 
     init {
         Log.debug("Initialising Python Module")

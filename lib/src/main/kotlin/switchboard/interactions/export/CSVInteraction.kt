@@ -7,7 +7,6 @@ import au.edu.unimelb.archivetool.switchboard.interactions.export.CSV.toCSV
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.with4IgnoredParameters
 import com.jsoizo.kotlincsv.writer.CsvWriter
 import com.jsoizo.kotlincsv.writer.writeToFile
@@ -59,18 +58,14 @@ object CSV {
             "Node Type" to { "Item" }.with4IgnoredParameters(),
             "Node Title" to
                 { _, _, _, box ->
-                    box.metadata?.id
-                        ?.CSVString(box.metadata.unitNumber ?: 0)
+                    box.metadata?.id?.CSVString(box.metadata.unitNumber ?: 0)
                 },
             "Description" to
                 { _, _, _, box ->
                     // TODO: Also transcribe any non-primary labels.
                     box.metadata?.description ?: ""
                 },
-            "Date Range" to
-                { _, _, _, box ->
-                    box.metadata?.dateRange?.CSVString ?: ""
-                },
+            "Date Range" to { _, _, _, box -> box.metadata?.dateRange?.CSVString ?: "" },
         )
     // Additional Fields, anything not required for the CMS, but useful for manual review.
     val additionalFields = Field.builder()
@@ -88,6 +83,7 @@ object CSV {
         }
         return sequence {
             yield(fields.headRow)
+            // TODO: Disambiguate and deduplicate on ID
             paramSets.forEach {
                 val row = fields.computedRow(it)
                 if (row != null) yield(row)
@@ -125,7 +121,7 @@ object CSV {
                             value.second.second,
                         )
                     }
-                    .takeIf { l -> l.any { it == null } }
+                    .takeUnless { l -> l.any { it == null } }
                     ?.map { it!!.CSVSafe() }
         }
     }

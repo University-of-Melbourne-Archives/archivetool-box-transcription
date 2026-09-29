@@ -264,11 +264,9 @@ class SwitchboardTest {
 
         assert(log.contains("Running Mock OCR, nothing will be done."))
         assertNotNull(
-            (
-                    "(?:.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
+            ("(?:.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
                 .toRegex(RegexOption.MULTILINE)
-                .find(log)
-                    )
+                .find(log))
         )
     }
 
@@ -298,12 +296,13 @@ class SwitchboardTest {
                                                     Boundary(
                                                         Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
                                                         confidence = 1.0,
-                                                        rawMetadata = BoxMetadata(
-                                                            null,
-                                                            null,
-                                                            null,
-                                                            description = "test1"
-                                                        ),
+                                                        rawMetadata =
+                                                            BoxMetadata(
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                description = "test1",
+                                                            ),
                                                     ),
                                                     listOf(
                                                         Boundary(
@@ -314,26 +313,36 @@ class SwitchboardTest {
                                                                 0 to 1,
                                                             ),
                                                             confidence = 0.5,
-                                                            rawMetadata = BoxMetadata(
-                                                                RecordSetID.OldID("1976.0276"),
-                                                                1,
-                                                                DateRange(
-                                                                    LocalDate(year = 1971, month = 1, day = 1),
-                                                                    null
+                                                            rawMetadata =
+                                                                BoxMetadata(
+                                                                    RecordSetID.OldID("1976.0276"),
+                                                                    1,
+                                                                    DateRange(
+                                                                        LocalDate(
+                                                                            year = 1971,
+                                                                            month = 1,
+                                                                            day = 1,
+                                                                        ),
+                                                                        null,
+                                                                    ),
+                                                                    description = "test2",
                                                                 ),
-                                                                description = "test2"
-                                                            ),
                                                         )
                                                     ),
-                                                    metadata = BoxMetadata(
-                                                        RecordSetID.OldID("1976.0276"),
-                                                        1,
-                                                        DateRange(
-                                                            LocalDate(year = 1971, month = 1, day = 1),
-                                                            null
+                                                    metadata =
+                                                        BoxMetadata(
+                                                            RecordSetID.OldID("1976.0276"),
+                                                            1,
+                                                            DateRange(
+                                                                LocalDate(
+                                                                    year = 1971,
+                                                                    month = 1,
+                                                                    day = 1,
+                                                                ),
+                                                                null,
+                                                            ),
+                                                            description = "test1;test2",
                                                         ),
-                                                        description = "test1;test2"
-                                                    ),
                                                 )
                                         ),
                                 )

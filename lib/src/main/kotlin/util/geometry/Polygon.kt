@@ -25,6 +25,8 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
             .toFloatArray()
     }
 
+    open fun mapPoints(mapper: (Point) -> Point): Polygon = create(vertices.map(mapper))
+
     fun bestBoundingBox(): Rectangle =
         Rectangle.create(
             listOf(
