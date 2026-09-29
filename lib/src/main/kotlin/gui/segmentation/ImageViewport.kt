@@ -733,10 +733,7 @@ class ImageViewport(
             fill = SELECTION_FILL.toDoodle().paint,
         )
 
-        val stroke = outlineColor.toDoodle().paint.stroke(thickness = LINE_THICKNESS)
-        for (i in screenPoly.indices) {
-            line(screenPoly[i], screenPoly[(i + 1) % screenPoly.size], stroke = stroke)
-        }
+        drawOutline(poly, outlineColor)
     }
 
     private fun Canvas.drawVertexes(poly: Polygon) {
