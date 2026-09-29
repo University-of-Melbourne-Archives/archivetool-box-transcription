@@ -30,8 +30,8 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
             val pi = quad[i]
             val pj = quad[j]
             if ((pi.y > p.y) != (pj.y > p.y)) {
-                val xIntersect = pj.x + (p.y - pj.y) / (pi.y - pj.y) * (pi.x - pj.x)
-                if (p.x < xIntersect) {
+                val xIntersect = pj.x.toDouble() + (p.y - pj.y).toDouble() / (pi.y - pj.y).toDouble() * (pi.x - pj.x).toDouble()
+                if (p.x.toDouble() < xIntersect) {
                     isInside = !isInside
                 }
             }
@@ -42,9 +42,7 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
         return isInside
     }
 
-    override fun replaceIndex(i: Int, p: Point): Quad {
-        return upcast(super.replaceIndex(i, p))
-    }
+    override fun replaceIndex(i: Int, p: Point): Quad = upcast(super.replaceIndex(i, p))
 
     override fun mapPoints(mapper: (Point) -> Point): Quad = create(vertices.map(mapper))
 
