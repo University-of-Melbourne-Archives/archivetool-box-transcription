@@ -5,11 +5,15 @@ import io.nacular.doodle.controls.text.TextField
 import io.nacular.doodle.core.View
 import io.nacular.doodle.core.container
 import io.nacular.doodle.layout.constraints.constrain
+import io.nacular.doodle.controls.panels.ScrollPanel
 
 class ReviewTable() : View() {
     companion object {
         val HEADERS = listOf("Node Title", "Description", "Date Range")
         private const val COLUMN_GAP = 20.0
+        private const val HEADER_HEIGHT = 40.0
+        private const val CELL_HEIGHT = 60.0
+        private const val HEADER_CELL_GAP = 2.0
     }
 
     private fun createCell(): TextField {
@@ -28,12 +32,12 @@ class ReviewTable() : View() {
                 hdr.top eq 0
                 hdr.left eq 0
                 hdr.width eq parent.width
-                hdr.height eq 40
+                hdr.height eq HEADER_HEIGHT
 
-                cel.top eq hdr.bottom + 2
+                cel.top eq hdr.bottom + HEADER_CELL_GAP
                 cel.left eq 0
                 cel.width eq parent.width
-                cel.height eq 60
+                cel.height eq CELL_HEIGHT
             }
     }
 
