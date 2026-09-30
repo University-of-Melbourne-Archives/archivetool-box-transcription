@@ -1,19 +1,21 @@
 package au.edu.unimelb.archivetool.gui.ocr
 
+import io.nacular.doodle.controls.panels.ScrollPanel
 import io.nacular.doodle.controls.text.Label
 import io.nacular.doodle.controls.text.TextField
 import io.nacular.doodle.core.View
 import io.nacular.doodle.core.container
 import io.nacular.doodle.layout.constraints.constrain
-import io.nacular.doodle.controls.panels.ScrollPanel
 
 class ReviewTable {
     companion object {
         val HEADERS = listOf("Node Title", "Description", "Date Range")
-        private const val COLUMN_GAP = 20.0
-        private const val HEADER_HEIGHT = 40.0
-        private const val CELL_HEIGHT = 60.0
-        private const val HEADER_CELL_GAP = 2.0
+
+        private const val COLUMN_GAP = 10.0
+        private const val HEADER_HEIGHT = 36.0
+        private const val CELL_HEIGHT = 40.0
+        private const val HEADER_CELL_GAP = 4.0
+
         private const val TABLE_HEIGHT = HEADER_HEIGHT + HEADER_CELL_GAP + CELL_HEIGHT
     }
 
@@ -23,6 +25,13 @@ class ReviewTable {
 
     private val headerLabels = HEADERS.map { Label(it) }
     private val cells = HEADERS.map { createCell() }
+
+    // For access and modification from OCRInterface
+    var cellTexts: List<String>
+        get() = cells.map { it.text }
+        set(value) {
+            cells.zip(value).forEach { (cell, text) -> cell.text = text }
+        }
 
     private fun column(header: Label, cell: TextField) = container {
         this += header

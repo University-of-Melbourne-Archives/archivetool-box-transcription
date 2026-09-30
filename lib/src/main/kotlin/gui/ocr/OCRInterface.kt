@@ -2,8 +2,10 @@ package au.edu.unimelb.archivetool.gui.ocr
 
 import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.MonoColour
 import io.nacular.doodle.application.Application
+import io.nacular.doodle.controls.PopupManager
 import io.nacular.doodle.controls.buttons.PushButton
 import io.nacular.doodle.controls.text.Label
 import io.nacular.doodle.core.Display
@@ -27,6 +29,7 @@ class OCRInterface(
     themeManager: ThemeManager,
     theme: Theme,
     imageLoader: ImageLoader,
+    private val popups: PopupManager,
 ) : Application {
     // -- Job data ------------------------------------------------------------
     private val jobs: MutableMap<JobRelativePath, BoxMetadata?> = jobsIn.toMutableMap()
@@ -222,6 +225,7 @@ class OCRInterface(
     private fun displayJobText() {
         val job = currentJob
 
+        table.cellTexts = listOf("test", job?.description ?: "", "test2")
     }
 
     // -- Saving --------------------------------------------------------------
@@ -231,8 +235,79 @@ class OCRInterface(
             return
         }
 
+        val errors = mutableListOf<String>()
+        errors.add(0, "test")
+
+        if (errors.isNotEmpty()) {
+            showErrors(errors)
+            return
+        }
+
         // Update text displayed to consistent format
         displayJobText()
+    }
+
+    private fun showErrors(errors: List<String>) {
+        val title = Label("Cannot Save Changes - Please Fix the Following:")
+        // • Header: error message
+        val messageLines = errors.map { Label("\u2022 $it") }
+        val okButton = PushButton("OK")
+
+        val allElements = listOf(title) + messageLines + okButton
+
+        val padding = 20.0
+        val rowHeight = 24.0
+        val rowGap = 6.0
+        val okButtonHeight = 36.0
+
+        val messageWidth = 460.0
+        val messageHeight =
+            padding +
+                (allElements.size - 1) * rowHeight +
+                (allElements.size - 2) * rowGap +
+                16.0 +
+                okButtonHeight +
+                padding
+
+        val dialog = container {
+            render = {
+                rect(bounds.atOrigin, 10.0, fill = Colour.PALE_GREY.toDoodle().toRGB().paint)
+            }
+
+            allElements.forEach { this += it }
+
+            layout =
+                constrain(allElements[0], allElements[1], *allElements.drop(2).toTypedArray()) { b
+                    ->
+                    val messageRows = b.dropLast(1)
+                    val okButtonBounds = b.last()
+
+                    messageRows.forEach {
+                        it.left eq padding
+                        it.right eq parent.right - padding
+                        it.height eq rowHeight
+                    }
+
+                    // Vertically spaces all messages
+                    messageRows.first().top eq padding
+                    messageRows.zipWithNext().forEach { (above, below) ->
+                        below.top eq above.bottom + rowGap
+                    }
+
+                    okButtonBounds.top eq messageRows.last().bottom + 16.0
+                    okButtonBounds.centerX eq parent.centerX
+                    okButtonBounds.width eq 80.0
+                    okButtonBounds.height eq okButtonHeight
+                }
+        }
+
+        okButton.fired += { popups.hide(dialog) }
+
+        popups.show(dialog) {
+            it.width eq messageWidth
+            it.height eq messageHeight
+            it.center eq parent.center
+        }
     }
 
     override fun shutdown() {}
