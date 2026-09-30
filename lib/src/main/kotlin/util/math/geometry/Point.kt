@@ -1,12 +1,16 @@
-package au.edu.unimelb.archivetool.util.geometry
+package au.edu.unimelb.archivetool.util.math.geometry
 
+import au.edu.unimelb.archivetool.util.extension.PairExt.map
+import au.edu.unimelb.archivetool.util.wrap.CV
+import au.edu.unimelb.archivetool.util.wrap.Doodle
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import org.bytedeco.opencv.opencv_core.Point as CVPoint
 
 @Serializable(PointSerializer::class)
 @JvmInline
@@ -23,18 +27,39 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
 
     operator fun minus(other: Point): Point = this + -other
 
+    operator fun times(factor: Double): Point =
+        fromPair(inner.map { it * factor }.map(Double::roundToInt))
+
+    operator fun div(factor: Double): Point =
+        fromPair(inner.map { it / factor }.map(Double::roundToInt))
+
     operator fun component1(): Int = inner.component1()
 
     operator fun component2(): Int = inner.component2()
 
-    fun toCVPoint(): CVPoint = CVPoint(x, y)
+    fun toCV(): CV.Point = CV.Point(x, y)
 
-    fun clamp(min: Point, max: Point): Point =
-        fromPair(
+    fun clamp(min: Pair<Int, Int>, max: Pair<Int, Int>): Point = clamp(fromPair(min), fromPair(max))
+
+    fun clamp(min: Point, max: Point): Point {
+        fun Int.maybeCoerce(min: Int, max: Int): Int =
+            this.takeIf { min < max }?.coerceIn(min, max) ?: this
+
+        return fromPair(
             min.let { (minX, minY) ->
-                max.let { (maxX, maxY) -> x.coerceIn(minX, maxX) to y.coerceIn(minY, maxY) }
+                max.let { (maxX, maxY) -> x.maybeCoerce(minX, maxX) to y.maybeCoerce(minY, maxY) }
             }
         )
+    }
+
+    fun distanceTo(other: Point): Double {
+        val d = this - other
+        return sqrt((d.x * d.x + d.y * d.y).toDouble())
+    }
+
+    fun distanceTo(pair: Pair<Int, Int>): Double = distanceTo(fromPair(pair))
+
+    fun toDoodle(): Doodle.Point = Doodle.Point(x.toDouble(), y.toDouble())
 
     companion object {
         fun create(x: Int, y: Int): Point = Point(Pair(x, y))
@@ -56,6 +81,8 @@ value class Point private constructor(val inner: Pair<Int, Int>) {
                     add(y)
                 }
             }
+
+        fun Doodle.Point.toPoint(): Point = create(x.roundToInt(), y.roundToInt())
     }
 }
 

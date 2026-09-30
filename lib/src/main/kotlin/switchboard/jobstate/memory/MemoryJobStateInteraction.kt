@@ -1,11 +1,11 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate.memory
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteractionCompanion
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
 

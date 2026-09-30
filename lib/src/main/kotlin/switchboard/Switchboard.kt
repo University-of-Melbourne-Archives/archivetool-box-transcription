@@ -1,7 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard
 
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
@@ -9,7 +7,9 @@ import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInt
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
-import au.edu.unimelb.archivetool.util.nullify
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.nullify
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
 import kotlin.io.path.Path
 

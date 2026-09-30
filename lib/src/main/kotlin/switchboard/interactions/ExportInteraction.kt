@@ -1,8 +1,8 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.logging.Log
 
 class StdOutExportInteraction : ExportInteraction {
     override fun export(files: Map<JobRelativePath, JobFile>) {

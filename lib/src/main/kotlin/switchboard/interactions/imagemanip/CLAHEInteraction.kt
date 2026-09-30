@@ -4,8 +4,8 @@ import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInte
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
-import au.edu.unimelb.archivetool.util.CV
-import au.edu.unimelb.archivetool.util.CV.writeImage
+import au.edu.unimelb.archivetool.util.wrap.CV
+import au.edu.unimelb.archivetool.util.wrap.CV.writeImage
 import kotlin.io.path.extension
 import kotlin.io.path.isReadable
 import kotlin.io.path.isWritable

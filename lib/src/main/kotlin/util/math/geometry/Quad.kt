@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.util.geometry
+package au.edu.unimelb.archivetool.util.math.geometry
 
 import kotlin.math.atan2
 import kotlinx.serialization.Serializable
@@ -19,9 +19,37 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
         )
     }
 
+    fun containsPoint(p: Point): Boolean {
+        var isInside = false
+
+        val quad = vertices
+
+        var j = quad.size - 1
+
+        for (i in quad.indices) {
+            val pi = quad[i]
+            val pj = quad[j]
+            if ((pi.y > p.y) != (pj.y > p.y)) {
+                val xIntersect =
+                    pj.x.toDouble() +
+                        (p.y - pj.y).toDouble() / (pi.y - pj.y).toDouble() *
+                            (pi.x - pj.x).toDouble()
+                if (p.x.toDouble() < xIntersect) {
+                    isInside = !isInside
+                }
+            }
+
+            j = i
+        }
+
+        return isInside
+    }
+
+    override fun replaceIndex(i: Int, p: Point): Quad = upcast(super.replaceIndex(i, p))
+
     override fun mapPoints(mapper: (Point) -> Point): Quad = create(vertices.map(mapper))
 
-    fun offsetBy(x: Int, y: Int): Quad = create(vertices.map { it + Point.create(x, y) })
+    override fun offsetBy(p: Point): Quad = create(vertices.map { it + p })
 
     fun confinedTo(outer: Rectangle): Quad =
         create(
@@ -39,6 +67,8 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
         fun create(points: Array<out Point>): Quad = Quad(points)
 
         fun create(points: List<Point>): Quad = Quad(points.toTypedArray())
+
+        fun upcast(poly: Polygon): Quad = Quad(poly.vertices)
     }
 }
 

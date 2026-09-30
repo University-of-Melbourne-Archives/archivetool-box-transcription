@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.util
+package au.edu.unimelb.archivetool.util.extension
 
 fun <T> noop(it: T): T = it
 

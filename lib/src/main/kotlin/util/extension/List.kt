@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.util
+package au.edu.unimelb.archivetool.util.extension
 
 fun <T> List<T>.counted(): List<Pair<Int, T>> {
     val l = this
