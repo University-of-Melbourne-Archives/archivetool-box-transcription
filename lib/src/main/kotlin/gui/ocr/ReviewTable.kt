@@ -7,13 +7,14 @@ import io.nacular.doodle.core.container
 import io.nacular.doodle.layout.constraints.constrain
 import io.nacular.doodle.controls.panels.ScrollPanel
 
-class ReviewTable() : View() {
+class ReviewTable {
     companion object {
         val HEADERS = listOf("Node Title", "Description", "Date Range")
         private const val COLUMN_GAP = 20.0
         private const val HEADER_HEIGHT = 40.0
         private const val CELL_HEIGHT = 60.0
         private const val HEADER_CELL_GAP = 2.0
+        private const val TABLE_HEIGHT = HEADER_HEIGHT + HEADER_CELL_GAP + CELL_HEIGHT
     }
 
     private fun createCell(): TextField {
@@ -65,4 +66,10 @@ class ReviewTable() : View() {
                 dtr.width eq ndr.width
             }
     }
+
+    val view: View =
+        ScrollPanel(tableContents).apply {
+            contentWidthConstraints = { it eq parent.width }
+            contentHeightConstraints = { it eq TABLE_HEIGHT }
+        }
 }

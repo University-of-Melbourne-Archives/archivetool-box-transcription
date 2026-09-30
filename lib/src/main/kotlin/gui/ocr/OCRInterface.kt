@@ -166,11 +166,11 @@ class OCRInterface(
                 }
         }
 
-        display += listOf(bottomBarViewport, viewport, bottomBarTable, table)
+        display += listOf(bottomBarViewport, viewport, bottomBarTable, table.view)
         display.fill(MonoColour(0xECu).toDoodle().toRGB().paint)
 
         display.layout =
-            constrain(bottomBarViewport, viewport, bottomBarTable, table) { bbv, vp, bbt, tb ->
+            constrain(bottomBarViewport, viewport, bottomBarTable, table.view) { bbv, vp, bbt, tb ->
                 vp.top eq 35
                 vp.bottom eq parent.height - 80
                 vp.centerX eq vp.width / 1.75
@@ -219,7 +219,10 @@ class OCRInterface(
 
     // -- Review Table --------------------------------------------------------
 
-    private fun displayJobText() {}
+    private fun displayJobText() {
+        val job = currentJob
+
+    }
 
     // -- Saving --------------------------------------------------------------
 
