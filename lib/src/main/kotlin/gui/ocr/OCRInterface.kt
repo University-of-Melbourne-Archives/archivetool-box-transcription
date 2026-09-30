@@ -21,7 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 class OCRInterface(
-    private val jobs: Map<JobRelativePath, BoxMetadata?>,
+    jobsIn: Map<JobRelativePath, BoxMetadata?>,
     display: Display,
     windows: WindowGroup,
     themeManager: ThemeManager,
@@ -29,6 +29,8 @@ class OCRInterface(
     imageLoader: ImageLoader,
 ) : Application {
     // -- Job data ------------------------------------------------------------
+    private val jobs: MutableMap<JobRelativePath, BoxMetadata?> = jobsIn.toMutableMap()
+
     private val paths: List<JobRelativePath> = jobs.keys.toList()
 
     private var currentIndex = 0
@@ -44,7 +46,7 @@ class OCRInterface(
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val fileCounter = Label("")
     private val viewport = ImageViewport(imageLoader, appScope)
-    private val table = PushButton()
+    private val table = ReviewTable()
 
     init {
         windows.main.apply {
@@ -104,7 +106,7 @@ class OCRInterface(
             listOf(
                 PushButton("Previous").apply { fired += { moveIndex(currentIndex - 1) } },
                 PushButton("Next").apply { fired += { moveIndex(currentIndex + 1) } },
-                PushButton("Save").apply { fired += {} },
+                PushButton("Save").apply { fired += { save() } },
                 PushButton("Finish").apply { fired += {} },
             )
 
@@ -166,7 +168,7 @@ class OCRInterface(
                 vp.height lessEq parent.height - vp.top - 30
                 vp.width lessEq parent.width / 3
                 vp.width eq vp.height * (3.0 / 4.0)
-                vp.width eq 5000 strength Medium 
+                vp.width eq 5000 strength Medium
 
                 tb.top eq vp.top
                 tb.bottom eq vp.bottom
@@ -203,8 +205,22 @@ class OCRInterface(
     private fun displayCurrent() {
         viewport.loadImage(currentPath)
         fileCounter.text = "%03d/%03d".format(currentIndex + 1, paths.size)
+        displayJobText()
+    }
 
-        // table stuff here
+    // -- Review Table --------------------------------------------------------
+
+    private fun displayJobText() {}
+
+    // -- Saving --------------------------------------------------------------
+
+    private fun save() {
+        if (paths.isEmpty()) {
+            return
+        }
+
+        // Update text displayed to consistent format
+        displayJobText()
     }
 
     override fun shutdown() {}
