@@ -67,13 +67,19 @@ class OCRInterface(
         val buttonWidthViewport = 40.0
         val buttonHeightViewport = 40.0
         val buttonGapViewport = 15.0
-        val bottomRowWidthViewport = bottomButtonsViewport.size * buttonWidthViewport + (bottomButtonsViewport.size - 1) * buttonGapViewport
+        val bottomRowWidthViewport =
+            bottomButtonsViewport.size * buttonWidthViewport +
+                (bottomButtonsViewport.size - 1) * buttonGapViewport
 
         val buttonRowViewport = container {
             bottomButtonsViewport.forEach { this += it }
 
             layout =
-                constrain(bottomButtonsViewport[0], bottomButtonsViewport[1], bottomButtonsViewport[2]) { buttons ->
+                constrain(
+                    bottomButtonsViewport[0],
+                    bottomButtonsViewport[1],
+                    bottomButtonsViewport[2],
+                ) { buttons ->
                     buttons.forEach {
                         it.top eq 0
                         it.width eq buttonWidthViewport
@@ -113,13 +119,20 @@ class OCRInterface(
         val buttonWidthTable = 108.0
         val buttonHeightTable = 40.0
         val buttonGapTable = 20.0
-        val bottomRowWidthTable = bottomButtonsTable.size * buttonWidthTable + (bottomButtonsTable.size - 1) * buttonGapTable
+        val bottomRowWidthTable =
+            bottomButtonsTable.size * buttonWidthTable +
+                (bottomButtonsTable.size - 1) * buttonGapTable
 
         val buttonRowTable = container {
             bottomButtonsTable.forEach { this += it }
 
             layout =
-                constrain(bottomButtonsTable[0], bottomButtonsTable[1], bottomButtonsTable[2], bottomButtonsTable[3]) { buttons ->
+                constrain(
+                    bottomButtonsTable[0],
+                    bottomButtonsTable[1],
+                    bottomButtonsTable[2],
+                    bottomButtonsTable[3],
+                ) { buttons ->
                     buttons.forEach {
                         it.top eq 0
                         it.width eq buttonWidthTable
@@ -157,11 +170,7 @@ class OCRInterface(
         display.fill(MonoColour(0xECu).toDoodle().toRGB().paint)
 
         display.layout =
-            constrain(bottomBarViewport, viewport, bottomBarTable, table) {
-                bbv,
-                vp,
-                bbt,
-                tb ->
+            constrain(bottomBarViewport, viewport, bottomBarTable, table) { bbv, vp, bbt, tb ->
                 vp.top eq 35
                 vp.bottom eq parent.height - 80
                 vp.centerX eq vp.width / 1.75
