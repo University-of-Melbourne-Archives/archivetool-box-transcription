@@ -11,6 +11,8 @@ import io.nacular.doodle.controls.text.Label
 import io.nacular.doodle.core.Display
 import io.nacular.doodle.core.WindowGroup
 import io.nacular.doodle.core.container
+import io.nacular.doodle.drawing.FontLoader
+import io.nacular.doodle.drawing.TextMetrics
 import io.nacular.doodle.drawing.paint
 import io.nacular.doodle.geometry.Size
 import io.nacular.doodle.image.ImageLoader
@@ -29,7 +31,9 @@ class OCRInterface(
     themeManager: ThemeManager,
     theme: Theme,
     imageLoader: ImageLoader,
+    textMetrics: TextMetrics,
     private val popups: PopupManager,
+    fonts: FontLoader,
 ) : Application {
     // -- Job data ------------------------------------------------------------
     private val jobs: MutableMap<JobRelativePath, BoxMetadata?> = jobsIn.toMutableMap()
@@ -41,7 +45,6 @@ class OCRInterface(
     private val currentPath: JobRelativePath
         get() = paths[currentIndex]
 
-    // To pass later for the table!!!!!!!!!!!
     private val currentJob: BoxMetadata?
         get() = jobs.getValue(currentPath)
 
@@ -49,7 +52,7 @@ class OCRInterface(
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val fileCounter = Label("")
     private val viewport = ImageViewport(imageLoader, appScope)
-    private val table = ReviewTable()
+    private val table = ReviewTable(textMetrics, fonts, appScope)
 
     init {
         windows.main.apply {
@@ -225,7 +228,7 @@ class OCRInterface(
     private fun displayJobText() {
         val job = currentJob
 
-        table.cellTexts = listOf("test", job?.description ?: "", "test2")
+        table.cellTexts = listOf("TO IMPLEMENT", job?.description ?: "", "TO IMPLEMENT")
     }
 
     // -- Saving --------------------------------------------------------------
@@ -242,6 +245,11 @@ class OCRInterface(
             showErrors(errors)
             return
         }
+
+        val updatedJob =
+            BoxMetadata(id = null, unitNumber = null, dateRange = null, description = "")
+
+        jobs[currentPath] = updatedJob
 
         // Update text displayed to consistent format
         displayJobText()
