@@ -10,14 +10,14 @@ from ultralytics import YOLO
 
 BOX_CLASS = "Box"
 STICKER_CLASS = "Sticker"
-
-def getBoxes(model: YOLO, imageDir: list[str], conf: float =0.5, includeMask: bool =False):
+DEFAULT_MODEL_PATH = r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.pt"
+def getBoxes(imageDir: list[str], modelPath: str = DEFAULT_MODEL_PATH, conf: float =0.5, includeMask: bool =False):
     """
     Segments an Image into Box & Sticker polygons and returns detections as quadrilaterals.
 
     Args:
-        model (YOLO): Initialised YOLO model as used in training
         imageDir (str) : Path to image for segmentation
+        model (str): Initialised YOLO model as used in training
         conf (float): Floor confidence for returned segments
         includeMask(bool): Includes raw mask points in the output
 
@@ -25,6 +25,7 @@ def getBoxes(model: YOLO, imageDir: list[str], conf: float =0.5, includeMask: bo
         detections (dict): JSON style dictionary with formatted image data and all detected objects within
     """
     # Segment Image using box confidence
+    model = YOLO(modelPath)
     result = model(imageDir, conf=conf, retina_masks=True, verbose=False)[0]
     vertexes = {}
 
