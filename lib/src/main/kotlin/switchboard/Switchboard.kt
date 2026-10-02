@@ -8,7 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
 import au.edu.unimelb.archivetool.util.error.expect
-import au.edu.unimelb.archivetool.util.extension.nullify
+import au.edu.unimelb.archivetool.util.extension.orNull
 import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -145,7 +145,7 @@ open class AbstractSwitchboard(
 
     fun getStatus(directory: Path) {
         val state: JobState? =
-            job.companion.present(directory).nullify()?.let { job.read(directory) }
+            job.companion.present(directory).orNull()?.let { job.read(directory) }
 
         val inFiles =
             state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }
