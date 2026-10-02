@@ -49,9 +49,13 @@ object AutoFormat: AutoFormatter() {
                         .withPropertyName("formattedPythonSources$index")
                 }
 
-                commandLine(
-                    listOf("black") + files.files.map { it.absolutePath }
-                )
+                try {
+                    commandLine(
+                        listOf("black") + files.files.map { it.absolutePath }
+                    )
+                } catch (e: Exception) {
+                    error("Cannot autoformat Python files! You likely need to install Black.")
+                }
             }
             formatTask(project).configure {
                 dependsOn(formatTask)
