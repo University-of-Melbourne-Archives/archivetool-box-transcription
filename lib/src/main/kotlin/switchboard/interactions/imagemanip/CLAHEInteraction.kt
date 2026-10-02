@@ -40,7 +40,10 @@ class CLAHEInteraction : ImageManipulationInteraction {
         val src = CV.readImage(path)
         val gray = CV.bgr2grayc1(src)
 
-        val clahe = CV.clahe(gray, tileGridSize, clipLimit)
+        val blurred = CV.gaussian(gray, 0 to 0, 20.0)
+        val norm = CV.divide(gray, blurred, 255.0)
+
+        val clahe = CV.clahe(norm, tileGridSize, clipLimit)
 
         clahe.writeImage(
             path.parent.resolve(
@@ -55,6 +58,8 @@ class CLAHEInteraction : ImageManipulationInteraction {
         )
 
         clahe.release()
+        norm.release()
+        blurred.release()
         gray.release()
         src.release()
     }

@@ -13,8 +13,11 @@ import org.bytedeco.javacpp.FloatPointer
 import org.bytedeco.javacpp.IntPointer
 import org.bytedeco.javacpp.indexer.DoubleIndexer
 import org.bytedeco.opencv.global.opencv_core
+import org.bytedeco.opencv.global.opencv_core.ALGO_HINT_DEFAULT
+import org.bytedeco.opencv.global.opencv_core.BORDER_DEFAULT
 import org.bytedeco.opencv.global.opencv_imgcodecs
 import org.bytedeco.opencv.global.opencv_imgproc
+import org.bytedeco.opencv.global.opencv_imgproc.GaussianBlur
 import org.bytedeco.opencv.opencv_core.Mat
 import org.bytedeco.opencv.opencv_core.Size
 
@@ -75,6 +78,26 @@ object CV {
             4, // Quads already assert their size.
             colour.rgb().toCVBGRScalar(),
         )
+    }
+
+    fun gaussian(
+        _in: Mat,
+        kernelSize: Pair<Int, Int>,
+        sigmaX: Double,
+        sigmaY: Double = 0.0,
+        borderStrategy: Int = BORDER_DEFAULT,
+        hint: Int = ALGO_HINT_DEFAULT,
+    ): Mat {
+        val _out = Mat()
+        val kernelSize = Size(kernelSize.first, kernelSize.second)
+        GaussianBlur(_in, _out, kernelSize, sigmaX, sigmaY, borderStrategy, hint)
+        return _out
+    }
+
+    fun divide(numerator: Mat, denominator: Mat, scale: Double, depthType: Int = -1): Mat {
+        val out = Mat()
+        opencv_core.divide(numerator, denominator, out, scale, depthType)
+        return out
     }
 
     data class PerspectiveTransformMatrix(val mat: Mat, val dSize: Size) : AutoCloseable {
