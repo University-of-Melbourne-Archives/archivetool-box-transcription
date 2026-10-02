@@ -17,7 +17,7 @@ def getBoxes(imageDir: list[str], modelPath: str = DEFAULT_MODEL_PATH, conf: flo
 
     Args:
         imageDir (str) : Path to image for segmentation
-        model (str): Initialised YOLO model as used in training
+        model (str): Path to initialised YOLO model as used in training
         conf (float): Floor confidence for returned segments
         includeMask(bool): Includes raw mask points in the output
 
