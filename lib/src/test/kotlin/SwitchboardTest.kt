@@ -38,7 +38,7 @@ class SwitchboardTest {
     }
 
     val cache by lazy {
-        JobStateCache.getCache<JobStateVariant.Memory, ConcreteJobState>(JobStateVariant.Memory)
+        JobStateCache.getCacheOld<JobStateVariant.Memory, ConcreteJobState>(JobStateVariant.Memory)
     }
 
     val cacheLock = Mutex()

@@ -30,5 +30,18 @@ class JobStateCache<S : JobState> {
                     v as C
                 }))
         }
+
+        @Deprecated(
+            "Not strictly-typed reliably.",
+            ReplaceWith(
+                "getCache<T, RWLock<JobStateCache<S>>, S>()",
+                "au.edu.unimelb.archivetool.util.concurrency.RWLock",
+                "import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCacheOld",
+            ),
+            DeprecationLevel.WARNING,
+        )
+        inline fun <reified T : JobStateVariant<S>, S : JobState> getCacheOld(
+            variant: T
+        ): RWLock<JobStateCache<S>> = getCache<T, RWLock<JobStateCache<S>>, S>(variant)
     }
 }

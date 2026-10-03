@@ -4,7 +4,7 @@ import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteractionCompanion
 import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
-import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCacheOld
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
 import au.edu.unimelb.archivetool.util.error.expect
@@ -88,7 +88,7 @@ class JSONJobStateInteraction : JobStateInteraction {
             .createFile(asFileAttribute(fromString("rw-rw-r--")))
 
         return runBlocking {
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).withWriteLock {
+            getCacheOld<JobStateVariant.JSON, JSONJobState>(variant).withWriteLock {
                 it.put(folder, JSONJobState(folder))
             }
         }
@@ -98,7 +98,7 @@ class JSONJobStateInteraction : JobStateInteraction {
     // cache.
     override fun read(folder: Path): JobState? = runBlocking {
         val state =
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).withReadLock { it.get(folder) }
+            getCacheOld<JobStateVariant.JSON, JSONJobState>(variant).withReadLock { it.get(folder) }
 
         if (state != null) return@runBlocking state
 
@@ -115,7 +115,7 @@ class JSONJobStateInteraction : JobStateInteraction {
             }
 
         return@runBlocking _try?.also { try_ ->
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).withWriteLock {
+            getCacheOld<JobStateVariant.JSON, JSONJobState>(variant).withWriteLock {
                 it.put(folder, try_)
             }
         }
@@ -123,7 +123,7 @@ class JSONJobStateInteraction : JobStateInteraction {
 
     override fun write(folder: Path) {
         runBlocking {
-            getCache<JobStateVariant.JSON, JSONJobState>(variant).readLock().use { lock ->
+            getCacheOld<JobStateVariant.JSON, JSONJobState>(variant).readLock().use { lock ->
                 val s =
                     lock.value
                         .get(folder)
