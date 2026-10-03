@@ -50,7 +50,9 @@ sealed class RecordSetID {
         fun scanForAll(transcription: String): RecordSetID? {
             val ids =
                 RecordSetID::class.sealedSubclasses.mapNotNull {
-                    (it.companionObject as RecordSetIDCompanion).scanFor(transcription)
+                    (it.companionObject!!.objectInstance as RecordSetIDCompanion).scanFor(
+                        transcription
+                    )
                 }
             return searchInOrder(ids)
         }
