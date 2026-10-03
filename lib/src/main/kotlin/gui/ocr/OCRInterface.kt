@@ -246,7 +246,8 @@ class OCRInterface(
         }
     }
 
-    // Returns null for an empty cell and throws an IllegalArgumentException if the string is invalid
+    // Returns null for an empty cell and throws an IllegalArgumentException if the string is
+    // invalid
     private fun parseNameCell(text: String): Pair<RecordSetID, Int>? {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) {
@@ -265,7 +266,6 @@ class OCRInterface(
 
         return (RecordSetID.fromUserInput(idText) to boxNumberText.toInt())
     }
-
 
     // -- Saving --------------------------------------------------------------
 

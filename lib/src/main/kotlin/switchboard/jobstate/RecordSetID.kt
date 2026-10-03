@@ -2,7 +2,7 @@ package au.edu.unimelb.archivetool.switchboard.jobstate
 
 import au.edu.unimelb.archivetool.util.extension.counted
 import au.edu.unimelb.archivetool.util.logging.Log
-import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -50,7 +50,7 @@ sealed class RecordSetID {
         fun scanForAll(transcription: String): RecordSetID? {
             val ids =
                 RecordSetID::class.sealedSubclasses.mapNotNull {
-                    (it.companionObject as RecordSetIDCompanion).scanFor(transcription)
+                    (it.companionObjectInstance as RecordSetIDCompanion).scanFor(transcription)
                 }
             return searchInOrder(ids)
         }
@@ -101,12 +101,12 @@ sealed class RecordSetID {
                 scanForAll(trimmedID)
                     ?: throw IllegalArgumentException(
                         "\"$trimmedID\" is not a valid Node Title " +
-                                "(expected e.g. 1976.0029, 76/29 or UMA-AC-000000330)."
+                            "(expected e.g. 1976.0029, 76/29 or UMA-AC-000000330)."
                     )
 
             require(scannedID.id == trimmedID) {
                 "\"$trimmedID\" contains text that is not part of a valid Node Title " +
-                        "(found \"${scannedID.id}\")."
+                    "(found \"${scannedID.id}\")."
             }
 
             return scannedID
