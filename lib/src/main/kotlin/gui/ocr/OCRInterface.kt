@@ -21,6 +21,7 @@ import io.nacular.doodle.layout.constraints.Strength.Companion.Medium
 import io.nacular.doodle.layout.constraints.constrain
 import io.nacular.doodle.theme.Theme
 import io.nacular.doodle.theme.ThemeManager
+import io.nacular.doodle.utils.TextAlignment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,7 +33,7 @@ class OCRInterface(
     themeManager: ThemeManager,
     theme: Theme,
     imageLoader: ImageLoader,
-    textMetrics: TextMetrics,
+    private val textMetrics: TextMetrics,
     private val popups: PopupManager,
     fonts: FontLoader,
 ) : Application {
@@ -307,24 +308,66 @@ class OCRInterface(
         displayJobText()
     }
 
+    // Wraps based on text metrics text width
+    private fun wrapText(text: String, maxWidth: Double): List<String> {
+        val lines = mutableListOf<String>()
+        var currentWord = ""
+
+        for (word in text.split(" ")) {
+            val candidateWord: String
+
+            if (currentWord.isEmpty()) {
+                candidateWord = word
+            } else {
+                candidateWord = "$currentWord $word"
+            }
+
+            if (currentWord.isNotEmpty() && textMetrics.width(candidateWord) > maxWidth) {
+                lines += currentWord
+                currentWord = word
+            } else {
+                currentWord = candidateWord
+            }
+        }
+
+        if (currentWord.isNotEmpty()) {
+            lines += currentWord
+        }
+
+        return lines
+    }
+
     private fun showErrors(errors: List<String>) {
-        val title = Label("Cannot Save Changes - Please Fix the Following:")
-        // • Header: error message
-        val messageLines = errors.map { Label("\u2022 $it") }
-        val okButton = PushButton("OK")
-
-        val allElements = listOf(title) + messageLines + okButton
-
         val padding = 20.0
-        val rowHeight = 24.0
-        val rowGap = 6.0
+        val rowHeight = 22.0
+        val rowGap = 4.0
         val okButtonHeight = 36.0
 
-        val messageWidth = 460.0
+        val messageWidth = 560.0
+        val textWidth = messageWidth - 2 * padding
+
+        // Firstly displays title and then each error (which are wrapped)
+        // Wrapped lines are indented
+        val lineTexts = buildList {
+            add("Cannot Save Changes - Please Fix the Following:")
+            errors.forEach { error ->
+                wrapText("\u2022 $error", textWidth).forEachIndexed { i, line ->
+                    add(if (i == 0) line else "    $line")
+                }
+            }
+        }
+
+        val textRows = lineTexts.map { line ->
+            Label(line).apply { textAlignment = TextAlignment.Start }
+        }
+
+        val okButton = PushButton("OK")
+        val allElements = textRows + okButton
+
         val messageHeight =
             padding +
-                (allElements.size - 1) * rowHeight +
-                (allElements.size - 2) * rowGap +
+                textRows.size * rowHeight +
+                (textRows.size - 1) * rowGap +
                 16.0 +
                 okButtonHeight +
                 padding
@@ -348,8 +391,9 @@ class OCRInterface(
                         it.height eq rowHeight
                     }
 
-                    // Vertically spaces all messages
                     messageRows.first().top eq padding
+
+                    // Fit all rows in view successively
                     messageRows.zipWithNext().forEach { (above, below) ->
                         below.top eq above.bottom + rowGap
                     }
