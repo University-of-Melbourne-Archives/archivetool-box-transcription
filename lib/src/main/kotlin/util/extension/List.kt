@@ -13,14 +13,8 @@ fun <T> List<T>.dedup(): List<T> {
 fun <T : Any> Iterable<T?>.propagateNulls(): List<T>? =
     takeUnless { l -> l.any { it.isNull() } }?.map { it!! }
 
-
-fun <T: Any> Iterable<T?>.propagateNullsRecursive(): Iterable<T>? =
+fun <T : Any> Iterable<T?>.propagateNullsRecursive(): Iterable<T>? =
     // If we have a non-null in our list and our list is of iterables.
-    propagateNulls()
-        .applyIf({
-            it.isNotNull() && it!!.first() is Iterable<Any?>
-        }){
-            map {
-                ((it as Iterable<Any?>).propagateNullsRecursive()) as? T?
-            }.propagateNulls()
-        }
+    propagateNulls().applyIf({ it.isNotNull() && it!!.first() is Iterable<Any?> }) {
+        map { ((it as Iterable<Any?>).propagateNullsRecursive()) as? T? }.propagateNulls()
+    }

@@ -5,6 +5,7 @@ import au.edu.unimelb.archivetool.gui.segmentation.SegmentationInterface
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.extension.isNotNull
+import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
 import io.nacular.doodle.application.Modules.Companion.ImageModule
 import io.nacular.doodle.application.Modules.Companion.PointerModule
@@ -13,7 +14,11 @@ import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicLabelBehavior
 import kotlinx.coroutines.runBlocking
 import org.kodein.di.instance
 
-class ReviewGUIInteraction : ReviewPreviewInteraction {
+class ReviewGUIInteraction : ReviewPreviewInteraction, GUIInteraction {
+    override fun mayRequireConversion(): Boolean = true
+
+    override fun supported(): Image.FileType.Supported = super<GUIInteraction>.supported()
+
     override fun review(
         files: Map<JobRelativePath, JobFile?>,
         autoApproveThreshold: Double,

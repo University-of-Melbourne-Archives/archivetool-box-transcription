@@ -4,6 +4,8 @@ import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.HSLAColour
 import au.edu.unimelb.archivetool.util.HSVAColour
 import au.edu.unimelb.archivetool.util.RGBAColour
+import au.edu.unimelb.archivetool.util.file.Image
+import au.edu.unimelb.archivetool.util.file.Image.FileType
 import au.edu.unimelb.archivetool.util.float01ToByte0255
 import io.nacular.doodle.drawing.Color
 import io.nacular.doodle.drawing.HslColor
@@ -87,4 +89,29 @@ object Doodle {
     typealias Point = io.nacular.doodle.geometry.Point
 
     typealias Rectangle = io.nacular.doodle.geometry.Rectangle
+
+    // Doodle uses Skia internally. If we ever depend on Skia directly, this should be deferred to
+    // that.
+    val formatRequirements by lazy {
+        object : Image.FileType.Supported {
+            override val supportedFormats by lazy {
+                mapOf(
+                    FileType.WindowsBitmap to null,
+                    FileType.GIF to null,
+                    FileType.AVIF to null,
+                    FileType.HEIC to null,
+                    FileType.HEIF to null,
+                    FileType.ICO to null,
+                    FileType.JPEG to null,
+                    FileType.PNG to null,
+                    // SVG. Not loaded here.
+                    FileType.WAPBitmap to null,
+                    FileType.WebP to null,
+                    // Even though not listed, the following also has support according to
+                    // https://github.com/google/skia/tree/main/include/codec
+                    FileType.JPEGXL to null,
+                )
+            }
+        }
+    }
 }

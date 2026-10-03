@@ -12,14 +12,10 @@ fun <A, B, C, D, R> (() -> R).with4IgnoredParameters(): ((A, B, C, D) -> R) = { 
     this()
 }
 
-fun <T: Any, R> receiverAsParam(func: T.() -> R): (T) -> R = func.asParam()
+fun <T : Any, R> receiverAsParam(func: T.() -> R): (T) -> R = func.asParam()
 
-fun <T: Any, R> (T.() -> R).asParam(): (T) -> R = {
-    it.this()
-}
+fun <T : Any, R> (T.() -> R).asParam(): (T) -> R = { it.this() }
 
-fun <T: Any, R> paramAsReceiver(func: (T?) -> R): T.() -> R = {
-    func(this)
-}
+fun <T : Any, R> paramAsReceiver(func: (T?) -> R): T.() -> R = { func(this) }
 
-fun <T: Any, R> ((T?) -> R).asReceiver(): T.() -> R = paramAsReceiver(this)
+fun <T : Any, R> ((T?) -> R).asReceiver(): T.() -> R = paramAsReceiver(this)

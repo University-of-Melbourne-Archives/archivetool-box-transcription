@@ -4,13 +4,19 @@ import au.edu.unimelb.archivetool.pythoninterop.PythonModule
 import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.wrap.YOLO
 import java.nio.file.Path
 
 class PythonCreatePreviewInteraction : CreatePreviewInteraction {
     val module by lazy {
         PythonModule(folder = TODO("Put Module Path Here"), setOf(LoggerInjectable()))
     }
+
+    override fun mayRequireConversion(): Boolean = true
+
+    override fun supported(): Image.FileType.Supported = YOLO.formatRequirements
 
     override fun createPreview(
         files: Set<JobRelativePath>,

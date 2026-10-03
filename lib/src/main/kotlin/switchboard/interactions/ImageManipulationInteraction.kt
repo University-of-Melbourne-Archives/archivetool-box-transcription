@@ -4,7 +4,9 @@ import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CropIntera
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.wrap.CV
 
 class MockImageManipulationInteraction : ImageManipulationInteraction {
     override fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
@@ -12,6 +14,12 @@ class MockImageManipulationInteraction : ImageManipulationInteraction {
         files.keys.forEach { Log.debug("Manipulating Image ${it.relative}") }
         return mapOf()
     }
+}
+
+interface CVImageManipulationInteraction : ImageManipulationInteraction {
+    override fun mayRequireConversion(): Boolean = true
+
+    override fun supported(): Image.FileType.Supported = CV.formatRequirements
 }
 
 // TODO should have a thing that converts image to an API supported format

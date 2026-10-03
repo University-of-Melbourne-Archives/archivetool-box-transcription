@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.util.wrap
 
 import au.edu.unimelb.archivetool.util.Colour
+import au.edu.unimelb.archivetool.util.file.Image
+import au.edu.unimelb.archivetool.util.file.Image.FileType
 import au.edu.unimelb.archivetool.util.math.geometry.Point.Companion.flatten
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
@@ -47,7 +49,6 @@ object CV {
 
     var loaded = false
 
-    // NOTE: this consumes _in I believe.
     fun clahe(_in: Mat, tilesGridSize: Pair<Int, Int>, clipLimit: Double): Mat {
         val _out = Mat()
         val algorithm = opencv_imgproc.createCLAHE()
@@ -55,6 +56,29 @@ object CV {
         algorithm.clipLimit = clipLimit
         algorithm.apply(_in, _out)
         return _out
+    }
+
+    val formatRequirements by lazy {
+        object : Image.FileType.Supported {
+            override val supportedFormats by lazy {
+                mapOf(
+                    FileType.WindowsBitmap to null,
+                    FileType.GIF to null,
+                    FileType.JPEG to null,
+                    FileType.JPEG2K to null,
+                    FileType.PNG to null,
+                    FileType.WebP to null,
+                    // This might support other HEIF variants but it is difficult to tell.
+                    FileType.AVIF to null,
+                    FileType.PNM to null,
+                    FileType.SunRaster to null,
+                    FileType.TIFF to null,
+                    FileType.OpenEXR to null,
+                    FileType.RadianceHDR to null,
+                    FileType.GeospatialDAL to null,
+                )
+            }
+        }
     }
 
     fun bgr2grayc1(_in: Mat): Mat {
@@ -215,6 +239,8 @@ object CV {
     }
 
     fun readImage(path: Path): Mat = opencv_imgcodecs.imread(path.pathString)
+
+    fun canReadImage(path: Path): Boolean = opencv_imgcodecs.haveImageReader(path.pathString)
 
     fun Mat.writeImage(path: Path) {
         path.createParentDirectories()

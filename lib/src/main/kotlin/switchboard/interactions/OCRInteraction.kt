@@ -14,11 +14,17 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.wrap.OpenAI
 import kotlin.collections.mapIndexed
 import kotlin.io.path.pathString
 
 class PythonOCRInteraction : OCRInteraction {
+    override fun mayRequireConversion(): Boolean = true
+
+    override fun supported(): Image.FileType.Supported = OpenAI.formatRequirements
+
     val module by lazy { PythonModule(setOf("ocr.py"), setOf(LoggerInjectable())) }
 
     private val method_executeOCR by lazy {
