@@ -19,4 +19,6 @@ class PythonScript(val fileName: String, inject: Set<Injectable> = setOf()) :
         Log.debug("Executing python script $fileName")
         return _context.eval("python", scriptContents)
     }
+
+    operator fun invoke(): Value = eval()
 }

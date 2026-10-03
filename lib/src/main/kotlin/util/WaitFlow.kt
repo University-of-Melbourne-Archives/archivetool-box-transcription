@@ -15,8 +15,6 @@ class MutableWaitFlow<T : Any>(initialValue: T) : WaitFlow<T>() {
     suspend fun close() = innerFlow.emit(null)
 }
 
-// NOTE: The Flow API may not be stable, but this is fine for us.
-@OptIn(ExperimentalForInheritanceCoroutinesApi::class, ExperimentalCoroutinesApi::class)
 sealed class WaitFlow<T : Any> {
     protected abstract var innerFlow: MutableStateFlow<T?>
 

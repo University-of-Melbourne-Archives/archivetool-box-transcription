@@ -18,7 +18,7 @@ suspend inline fun <reified T : Application, R : Any> applicationWithResult(
     coroutineDispatcher: CoroutineDispatcher = Dispatchers.Default,
     crossinline creator: NoArgBindingDI<*>.(MutableWaitFlow<R>) -> T,
 ): R {
-    val resultFlow: WaitFlow<R> = MutableWaitFlow<R>(defaultResult)
+    val resultFlow: WaitFlow<R> = MutableWaitFlow(defaultResult)
     lateinit var result: R
     Log.debug("Running GUI Application with Flow")
     application(modules) { this.creator(resultFlow as MutableWaitFlow) }

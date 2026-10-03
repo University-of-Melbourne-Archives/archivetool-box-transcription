@@ -61,44 +61,32 @@ open class AbstractSwitchboard(
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction
+    var init: InitInteraction = _init
         private set
 
-    var config: ConfigInteraction
+    var config: ConfigInteraction = _config
         private set
 
-    var job: JobStateInteraction
+    var job: JobStateInteraction = _job
         private set
 
-    var status: StatusInteraction
+    var status: StatusInteraction = _status
         private set
 
-    var createPreview: CreatePreviewInteraction
+    var createPreview: CreatePreviewInteraction = _createPreview
         private set
 
-    var reviewPreview: ReviewPreviewInteraction
+    var reviewPreview: ReviewPreviewInteraction = _reviewPreview
         private set
 
-    var manip: ImageManipulationInteraction
+    var manip: ImageManipulationInteraction = _manip
         private set
 
-    var ocr: OCRInteraction
+    var ocr: OCRInteraction = _ocr
         private set
 
-    var export: ExportInteraction
+    var export: ExportInteraction = _export
         private set
-
-    init {
-        init = _init
-        config = _config
-        job = _job
-        status = _status
-        createPreview = _createPreview
-        reviewPreview = _reviewPreview
-        manip = _manip
-        ocr = _ocr
-        export = _export
-    }
 
     // Copy Constructor
     constructor(
