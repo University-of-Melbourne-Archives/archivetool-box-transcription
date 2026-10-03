@@ -93,7 +93,7 @@ sealed class RecordSetID {
         }
 
         // Validates a single string, where the entire string must be a valid ID
-        // Throws IllegalArgumentException with a user message on fail
+        // Throws IllegalArgumentException with a corresponding user message on fail
         fun fromUserInput(input: String): RecordSetID {
             val trimmedID = input.trim()
 

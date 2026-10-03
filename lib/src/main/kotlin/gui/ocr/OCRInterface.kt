@@ -4,6 +4,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.util.Colour
+import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.MonoColour
 import io.nacular.doodle.application.Application
 import io.nacular.doodle.controls.PopupManager
@@ -230,7 +231,8 @@ class OCRInterface(
     private fun displayJobText() {
         val job = currentJob
 
-        table.cellTexts = listOf(formatTitleCell(job), job?.description ?: "", "TO IMPLEMENT")
+        table.cellTexts =
+            listOf(formatTitleCell(job), job?.description ?: "", job?.dateRange?.CSVString ?: "")
     }
 
     // Column - Node Title: "<Record Set ID> Unit <%04d Unit Number>"
@@ -268,6 +270,15 @@ class OCRInterface(
         return (RecordSetID.fromUserInput(idText) to boxNumberText.toInt())
     }
 
+    // Returns null for a blank cell and throws an IllegalArgumentException if the text is invalid
+    private fun parseDateCell(text: String): DateRange? {
+        if (text.isBlank()) {
+            return null
+        }
+
+        return DateRange.fromUserInput(text)
+    }
+
     // -- Saving --------------------------------------------------------------
 
     private fun save() {
@@ -288,7 +299,12 @@ class OCRInterface(
         }
 
         // Date Range column output
-        // to-do
+        var dateRange: DateRange? = null
+        try {
+            dateRange = parseDateCell(dateRangeText)
+        } catch (e: IllegalArgumentException) {
+            errors += "${ReviewTable.HEADERS[2]}: ${e.message}"
+        }
 
         if (errors.isNotEmpty()) {
             showErrors(errors)
@@ -299,7 +315,7 @@ class OCRInterface(
             BoxMetadata(
                 id = idAndUnit?.first,
                 unitNumber = idAndUnit?.second,
-                dateRange = null,
+                dateRange = dateRange,
                 description = descriptionText,
             )
 
