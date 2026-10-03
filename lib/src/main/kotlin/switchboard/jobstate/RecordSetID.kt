@@ -91,6 +91,26 @@ sealed class RecordSetID {
             // TODO: Better tie-breaking if counts match.
             return ofBestType.counted().maxBy { it.first }.second
         }
+
+        // Validates a single string, where the entire string must be a valid ID
+        // Throws IllegalArgumentException with a user message on fail
+        fun fromUserInput(input: String): RecordSetID {
+            val trimmedID = input.trim()
+
+            val scannedID =
+                scanForAll(trimmedID)
+                    ?: throw IllegalArgumentException(
+                        "\"$trimmedID\" is not a valid Node Title " +
+                                "(expected e.g. 1976.0029, 76/29 or UMA-AC-000000330)."
+                    )
+
+            require(scannedID.id == trimmedID) {
+                "\"$trimmedID\" contains text that is not part of a valid Node Title " +
+                        "(found \"${scannedID.id}\")."
+            }
+
+            return scannedID
+        }
     }
 
     protected interface RecordSetIDCompanion {

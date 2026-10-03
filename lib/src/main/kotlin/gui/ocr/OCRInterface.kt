@@ -2,6 +2,7 @@ package au.edu.unimelb.archivetool.gui.ocr
 
 import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.MonoColour
 import io.nacular.doodle.application.Application
@@ -228,8 +229,43 @@ class OCRInterface(
     private fun displayJobText() {
         val job = currentJob
 
-        table.cellTexts = listOf("TO IMPLEMENT", job?.description ?: "", "TO IMPLEMENT")
+        table.cellTexts = listOf(formatTitleCell(job), job?.description ?: "", "TO IMPLEMENT")
     }
+
+    // Column - Node Title: "<Record Set ID> Unit <%04d Unit Number>"
+    private fun formatTitleCell(job: BoxMetadata?): String {
+        val id = job?.id
+        val unit = job?.unitNumber
+        return when {
+            id != null && unit != null -> id.CSVString(unit)
+
+            // For incomplete input data to make partial string
+            id != null -> "${id.id} Unit "
+            unit != null -> "Unit ${"%04d".format(unit)}"
+            else -> ""
+        }
+    }
+
+    // Returns null for an empty cell and throws an IllegalArgumentException if the string is invalid
+    private fun parseNameCell(text: String): Pair<RecordSetID, Int>? {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) {
+            return null
+        }
+
+        // Checks if string matches
+        val match =
+            Regex("^(.+?)\\s+Unit\\s+(\\d{1,4})$").matchEntire(trimmed)
+                ?: throw IllegalArgumentException(
+                    "Expected \"<Record Set ID> Unit <number>\", e.g. \"1974.0029 Unit 0319\"."
+                )
+
+        // Extract the record set id and box number
+        val (idText, boxNumberText) = match.destructured
+
+        return (RecordSetID.fromUserInput(idText) to boxNumberText.toInt())
+    }
+
 
     // -- Saving --------------------------------------------------------------
 
@@ -238,8 +274,20 @@ class OCRInterface(
             return
         }
 
+        val (nodeTitleText, descriptionText, dateRangeText) = table.cellTexts
+
         val errors = mutableListOf<String>()
-        errors.add(0, "test")
+
+        // Node Title column output
+        var idAndUnit: Pair<RecordSetID, Int>? = null
+        try {
+            idAndUnit = parseNameCell(nodeTitleText)
+        } catch (e: IllegalArgumentException) {
+            errors += "${ReviewTable.HEADERS[0]}: ${e.message}"
+        }
+
+        // Date Range column output
+        // to-do
 
         if (errors.isNotEmpty()) {
             showErrors(errors)
@@ -247,11 +295,15 @@ class OCRInterface(
         }
 
         val updatedJob =
-            BoxMetadata(id = null, unitNumber = null, dateRange = null, description = "")
+            BoxMetadata(
+                id = idAndUnit?.first,
+                unitNumber = idAndUnit?.second,
+                dateRange = null,
+                description = descriptionText,
+            )
 
         jobs[currentPath] = updatedJob
 
-        // Update text displayed to consistent format
         displayJobText()
     }
 
