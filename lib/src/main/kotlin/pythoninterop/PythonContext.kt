@@ -11,7 +11,8 @@ sealed class PythonContext(inject: Set<Injectable> = setOf()) {
     private val vfs by lazy {
         VirtualFileSystem.newBuilder()
             .resourceDirectory(GRAALPY_VFS_PATH)
-            .allowHostIO(VirtualFileSystem.HostIO.READ).build()
+            .allowHostIO(VirtualFileSystem.HostIO.READ)
+            .build()
     }
 
     protected val _context: Context by lazy {

@@ -4,19 +4,28 @@ from ultralytics import YOLO
 
 from pathlib import Path
 
-import cv2 # OK as part of the ultralytics import anyway
+import cv2  # OK as part of the ultralytics import anyway
 import numpy as np
 from ultralytics import YOLO
 
 BOX_CLASS = "Box"
 STICKER_CLASS = "Sticker"
-DEFAULT_MODEL_PATH = r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.pt"
-def getBoxes(imageDir: list[str], modelPath: str = DEFAULT_MODEL_PATH, conf: float =0.5, includeMask: bool =False):
+DEFAULT_MODEL_PATH = (
+    r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.pt"
+)
+
+
+def getBoxes(
+    imagePaths: list[str],
+    modelPath: str = DEFAULT_MODEL_PATH,
+    conf: float = 0.5,
+    includeMask: bool = False,
+):
     """
     Segments an Image into Box & Sticker polygons and returns detections as quadrilaterals.
 
     Args:
-        imageDir (str) : Path to image for segmentation
+        imagePaths (str) : Path to image for segmentation
         model (str): Initialised YOLO model as used in training
         conf (float): Floor confidence for returned segments
         includeMask(bool): Includes raw mask points in the output
@@ -26,41 +35,49 @@ def getBoxes(imageDir: list[str], modelPath: str = DEFAULT_MODEL_PATH, conf: flo
     """
     # Segment Image using box confidence
     model = YOLO(modelPath)
-    result = model(imageDir, conf=conf, retina_masks=True, verbose=False)[0]
+    results = model(imagePaths, conf=conf, retina_masks=True, verbose=False)[0]
     vertexes = {}
 
-    if result.masks is not None:
+    detections = {}
 
-        # access scores from process results
-        scores = result.boxes.conf.cpu().numpy()
-        labels = [result.names[int(c)] for c in result.boxes.cls.cpu().numpy()]
-        polygons = result.masks.xy
+    for result in results:
+        if result.masks is not None:
 
-        # Ignore non-quadrilaterals and above
-        valid = [i for i in range(len(labels)) if len(polygons[i]) >= 3]
-        boxIdx = sorted((i for i in valid if labels[i] == BOX_CLASS), key=lambda i: scores[i], reverse=True)
+            # access scores from process results
+            scores = result.boxes.conf.cpu().numpy()
+            labels = [result.names[int(c)] for c in result.boxes.cls.cpu().numpy()]
+            polygons = result.masks.xy
 
-        # Key every box as box-N in confidence order
-        boxQuads = []
-        for n, i in enumerate(boxIdx, start=1):
-            box, quad = toSegment(polygons[i], scores[i], includeMask)
-            vertexes[f"box-{n}"] = {"box": box, "sticker": []}
-            boxQuads.append((f"box-{n}", quad))
+            # Ignore non-quadrilaterals and above
+            valid = [i for i in range(len(labels)) if len(polygons[i]) >= 3]
+            boxIdx = sorted(
+                (i for i in valid if labels[i] == BOX_CLASS),
+                key=lambda i: scores[i],
+                reverse=True,
+            )
 
-        for i in valid:
-            if labels[i] != STICKER_CLASS:
-                continue
-            sticker, quad = toSegment(polygons[i], scores[i], includeMask)
-            centre = quad.mean(axis=0)
+            # Key every box as box-N in confidence order
+            boxQuads = []
+            for n, i in enumerate(boxIdx, start=1):
+                box, quad = toSegment(polygons[i], scores[i], includeMask)
+                vertexes[f"box-{n}"] = {"box": box, "sticker": []}
+                boxQuads.append((f"box-{n}", quad))
 
-            # Boxes are in confidence order, so a sticker overlapping two boxes goes to the more confident one
-            for boxId, boxQuad in boxQuads:
-                if insideQuad(centre, boxQuad):
-                    vertexes[boxId]["sticker"].append(sticker)
-                    break
+            for i in valid:
+                if labels[i] != STICKER_CLASS:
+                    continue
+                sticker, quad = toSegment(polygons[i], scores[i], includeMask)
+                centre = quad.mean(axis=0)
 
-    detections = {Path(imageDir).name: {"vertexes": vertexes}}
+                # Boxes are in confidence order, so a sticker overlapping two boxes goes to the more confident one
+                for boxId, boxQuad in boxQuads:
+                    if insideQuad(centre, boxQuad):
+                        vertexes[boxId]["sticker"].append(sticker)
+                        break
+
+        detections[result.path] = {"vertexes": vertexes}
     return detections
+
 
 def orderCorners(quad):
     """
@@ -97,7 +114,7 @@ def getCornerPoints(polygon):
     # iterating on error values (epsilon) to find simplest polygon approximation s.t. corners = 4
     for epsilon in np.linspace(0.01, 0.1, 10):
         # use Douglas-Pecker for vertex reduction
-        approx = cv2.approxPolyDP(hull, epsilon * perimeter, closed= True)
+        approx = cv2.approxPolyDP(hull, epsilon * perimeter, closed=True)
 
         # filter for quadrilaterals
         if len(approx) == 4:
@@ -117,7 +134,7 @@ def toPoints(quad):
 
     Args:
         quad (list[np.array]): ordered list of 4 numpy coordinates for the bounding box
-    
+
     Return:
         (list[dict]): returns a list of {"x": _, "y": _} dicts containing coordinates from quad
     """
@@ -149,7 +166,7 @@ def toSegment(polygon, score, includeMask):
     Args:
         polygon (list[np.array]): list of 4 points corresponding to bounding box edges
         score (float): confidence score for the given polygon
-    
+
     Returns:
         segment (dict): formatted dictionary with segment points and confidence score
         quad (list[np.array]): ordered list of 4 segment points from the polygon
@@ -159,7 +176,9 @@ def toSegment(polygon, score, includeMask):
     # set box details
     segment = {"points": toPoints(quad.round(1)), "confidence": float(score)}
 
-    if includeMask:  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
+    if (
+        includeMask
+    ):  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
         segment["mask"] = toPoints(polygon.round(1))
 
     return segment, quad

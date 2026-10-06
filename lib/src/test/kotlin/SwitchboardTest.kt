@@ -73,12 +73,7 @@ class SwitchboardTest {
         cacheLock.lock("createPreview")
         cache.withWriteLock { it.remove(directory) }
 
-        MockSwitchboard.createPreview(
-            directory,
-            permitExisting = false,
-            // We don't need weights as we are only calling the mock variant.
-            weights = Path("."),
-        )
+        MockSwitchboard.createPreview(directory, permitExisting = false)
 
         cacheLock.unlock("createPreview")
         Log.revokeConsumer(consumer)

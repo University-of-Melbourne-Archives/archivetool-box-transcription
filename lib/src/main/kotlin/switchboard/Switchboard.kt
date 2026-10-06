@@ -144,7 +144,7 @@ open class AbstractSwitchboard(
     fun createPreview(
         directory: Path,
         permitExisting: Boolean = false,
-        weights: Path = TODO("Put a default Weight Path here."),
+        weights: String = "python/model-sandbox/weights/yolo26n-archive-boxes-14-09.pt",
         rejectThreshold: Double = 0.05,
     ) {
         val state: JobState? =

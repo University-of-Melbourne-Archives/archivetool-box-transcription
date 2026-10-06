@@ -3,7 +3,7 @@ package au.edu.unimelb.archivetool.pythoninterop.extensions
 import org.graalvm.polyglot.Value
 
 @JvmInline
-value class PolyglotIterator(private val iterator: Value): Iterator<Value> {
+value class PolyglotIterator(private val iterator: Value) : Iterator<Value> {
     init {
         require(iterator.isIterator)
     }
@@ -18,7 +18,7 @@ value class PolyglotIterator(private val iterator: Value): Iterator<Value> {
 }
 
 @JvmInline
-value class PolyglotIterable(private val iterator: Value): Iterable<Value> {
+value class PolyglotIterable(private val iterator: Value) : Iterable<Value> {
     init {
         require(iterator.isIterator)
     }
@@ -29,4 +29,3 @@ value class PolyglotIterable(private val iterator: Value): Iterable<Value> {
         fun Value.asIterable() = PolyglotIterable(this)
     }
 }
-
