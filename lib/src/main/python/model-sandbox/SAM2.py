@@ -11,10 +11,10 @@ sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
 
 detector = SAM2AutomaticMaskGenerator(
     sam2_model,
-    points_per_side=32,          # denser grid = catches smaller/thinner boxes
+    points_per_side=32,  # denser grid = catches smaller/thinner boxes
     pred_iou_thresh=0.86,
     stability_score_thresh=0.92,
-    min_mask_region_area=2000,   # filters out label-sticker/tape sized fragments
+    min_mask_region_area=2000,  # filters out label-sticker/tape sized fragments
 )
 
 # Load image
@@ -32,11 +32,20 @@ for i, mask_data in enumerate(masks):
     x, y, w, h = map(int, mask_data["bbox"])  # SAM2 returns XYWH
     x1, y1, x2, y2 = x, y, x + w, y + h
 
-    print(f"Box {i}: ({x1}, {y1}) -> ({x2}, {y2})  "
-          f"[score={mask_data['predicted_iou']:.2f}]")
+    print(
+        f"Box {i}: ({x1}, {y1}) -> ({x2}, {y2})  "
+        f"[score={mask_data['predicted_iou']:.2f}]"
+    )
 
     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    cv2.putText(image, str(i), (x1 + 4, max(15, y1 + 20)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(
+        image,
+        str(i),
+        (x1 + 4, max(15, y1 + 20)),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (0, 0, 255),
+        2,
+    )
 
 cv2.imwrite("all_boxes_corners_detected.jpg", image)
