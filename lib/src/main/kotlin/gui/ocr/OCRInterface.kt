@@ -6,6 +6,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.MonoColour
+import au.edu.unimelb.archivetool.util.MutableWaitFlow
 import io.nacular.doodle.application.Application
 import io.nacular.doodle.controls.PopupManager
 import io.nacular.doodle.controls.buttons.PushButton
@@ -26,9 +27,12 @@ import io.nacular.doodle.utils.TextAlignment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlin.collections.set
 
 class OCRInterface(
-    jobsIn: Map<JobRelativePath, BoxMetadata?>,
+    jobsIn: Map<JobRelativePath, BoxMetadata>,
+    private val returnFlow: MutableWaitFlow<Map<JobRelativePath, BoxMetadata>>?,
     display: Display,
     windows: WindowGroup,
     themeManager: ThemeManager,
@@ -39,7 +43,7 @@ class OCRInterface(
     fonts: FontLoader,
 ) : Application {
     // -- Job data ------------------------------------------------------------
-    private val jobs: MutableMap<JobRelativePath, BoxMetadata?> = jobsIn.toMutableMap()
+    private val jobs: MutableMap<JobRelativePath, BoxMetadata> = jobsIn.toMutableMap()
 
     private val paths: List<JobRelativePath> = jobs.keys.toList()
 
@@ -48,7 +52,7 @@ class OCRInterface(
     private val currentPath: JobRelativePath
         get() = paths[currentIndex]
 
-    private val currentJob: BoxMetadata?
+    private val currentJob: BoxMetadata
         get() = jobs.getValue(currentPath)
 
     // -- Views ---------------------------------------------------------------
@@ -122,7 +126,7 @@ class OCRInterface(
                 PushButton("Previous").apply { fired += { moveIndex(currentIndex - 1) } },
                 PushButton("Next").apply { fired += { moveIndex(currentIndex + 1) } },
                 PushButton("Save").apply { fired += { save() } },
-                PushButton("Finish").apply { fired += {} },
+                PushButton("Finish").apply { fired += {CoroutineScope(Dispatchers.Default).launch { close() }} },
             )
 
         val buttonWidthTable = 108.0
@@ -232,7 +236,7 @@ class OCRInterface(
         val job = currentJob
 
         table.cellTexts =
-            listOf(formatTitleCell(job), job?.description ?: "", job?.dateRange?.CSVString ?: "")
+            listOf(formatTitleCell(job), job.description, job.dateRange?.CSVString ?: "")
     }
 
     // Column - Node Title: "<Record Set ID> Unit <%04d Unit Number>"
@@ -322,6 +326,19 @@ class OCRInterface(
         jobs[currentPath] = updatedJob
 
         displayJobText()
+    }
+
+    suspend fun close() {
+        outputMetadata()
+        returnFlow?.close()
+    }
+
+    private suspend fun outputMetadata() {
+        if (returnFlow == null) {
+            println("No return flow")
+        } else {
+            returnFlow.emit(jobs)
+        }
     }
 
     // Wraps based on text metrics text width
