@@ -7,7 +7,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
-class FileConsumer(val filePath: String, override val maxLogLevel: LogLevel = LogLevel.Info) : LogConsumer {
+class FileConsumer(val filePath: String, override val maxLogLevel: LogLevel = LogLevel.Info) :
+    LogConsumer {
     override val settings = ConsumerSettings()
 
     private val file by lazy {
@@ -16,6 +17,7 @@ class FileConsumer(val filePath: String, override val maxLogLevel: LogLevel = Lo
 
         handle
     }
+
     override fun recordLogEntry(logEntry: String) {
         Files.write(file, logEntry.toByteArray(), StandardOpenOption.APPEND)
     }

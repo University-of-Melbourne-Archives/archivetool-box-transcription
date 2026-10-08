@@ -2,7 +2,11 @@
 // `buildSrc` is a Gradle-recognized directory and every plugin there will be easily available in the rest of the build.
 package buildsrc.convention
 
-import org.gradle.api.tasks.testing.logging.TestLogEvent
+import buildsrc.convention.kotlin.jvm.Tests
+import buildsrc.convention.kotlin.common.AutoFormat
+import buildsrc.convention.util.Module
+import buildsrc.convention.util.Module.Companion.apply
+
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin in JVM projects.
@@ -14,16 +18,5 @@ kotlin {
     jvmToolchain(21)
 }
 
-tasks.withType<Test>().configureEach {
-    // Configure all test Gradle tasks to use JUnitPlatform.
-    useJUnitPlatform()
-
-    // Log information about all test results, not only the failed ones.
-    testLogging {
-        events(
-            TestLogEvent.FAILED,
-            TestLogEvent.PASSED,
-            TestLogEvent.SKIPPED
-        )
-    }
-}
+val modules: Set<Module> = setOf(AutoFormat, Tests)
+modules.apply(project)
