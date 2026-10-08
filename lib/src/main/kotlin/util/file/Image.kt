@@ -1,13 +1,20 @@
 package au.edu.unimelb.archivetool.util.file
 
+import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.extension.isNull
+import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.wrap.CV
 import au.edu.unimelb.archivetool.util.wrap.Doodle
 import au.edu.unimelb.archivetool.util.wrap.OpenAI
 import au.edu.unimelb.archivetool.util.wrap.YOLO
 import java.net.URLConnection
+import kotlin.io.path.Path
+import kotlin.io.path.copyTo
+import kotlin.io.path.exists
 import kotlin.io.path.extension
 import kotlin.io.path.inputStream
+import kotlin.io.path.nameWithoutExtension
 
 // TODO: I would like type-safe MIME typing, but I couldn't find a library for it.
 
@@ -75,6 +82,8 @@ object Image {
                 return supported.contains(path.relative.extension)
             }
 
+            fun trySupport(path: JobRelativePath) = trySupport(path, this)
+
             infix fun and(other: Supported): Supported =
                 object : Supported {
                     override val supportedFormats: Map<FileType, Set<String>?>
@@ -92,21 +101,50 @@ object Image {
         }
 
         companion object {
-            // Boolean matches if it was detectable by filetype.
+            // Boolean matches if it was detectable by file extension.
             fun detect(path: JobRelativePath): Pair<FileType, Boolean>? {
                 return entries.run {
-                    firstOrNull { it.matchesExtension(path.relative.extension) }?.let { it to true }
+                    firstOrNull { it.matchesExtension(path.relative.extension) }
+                        ?.let {
+                            it.also {
+                                Log.trace("Image $path was detected to be of type $it by filename.")
+                            } to true
+                        }
                         ?: mapNotNull {
                                 // TODO: I need to check and see if this actually detects the magic
                                 // of modern formats.
                                 it to
                                     URLConnection.guessContentTypeFromStream(
-                                            path.absolute.inputStream()
+                                            path.absolute.inputStream().buffered()
                                         )
-                                        .lowercase()
+                                        ?.lowercase()
                             }
-                            .firstOrNull { (variant, mime) -> variant.matchesMIME(mime) }
-                            ?.let { it.first to false }
+                            .firstOrNull { (variant, mime) ->
+                                Log.trace("Checking if MIME type matches $mime")
+                                variant.matchesMIME(mime ?: "not-a-real/mime-type")
+                            }
+                            ?.let { (variant, mime) ->
+                                variant.also {
+                                    Log.trace(
+                                        "Image $path was detected to be of type $it by MIME type $mime."
+                                    )
+                                } to false
+                            }
+                            .also {
+                                if (it.isNull()) Log.debug("Could not detect a file type for $path")
+                            }
+                }
+            }
+
+            fun trySupport(path: JobRelativePath, supported: Supported): JobRelativePath? {
+                if (supported.supports(path)) return path
+
+                assert(supported.supportedFormats.containsKey(bestSupported.first)) {
+                    "Image File Support call did not support the best commonly supported format."
+                }
+
+                return tryConvert(path, bestSupported).also {
+                    if (it.isNull()) Log.warn("Could not convert $path to a supported format.")
                 }
             }
 
@@ -132,5 +170,35 @@ object Image {
                     .let { it to allRequirements.supportedFormats[it] }
             }
         }
+    }
+
+    fun tryConvert(path: JobRelativePath, target: Pair<FileType, Set<String>?>): JobRelativePath? {
+        Log.debug("Attempting to convert $path to $target.")
+
+        if (FileType.detect(path)?.first == target.first) {
+            val destination =
+                Path(GENERATED_PATH)
+                    .resolve("conv")
+                    .resolve(
+                        path.relative.let {
+                            it.resolveSibling(
+                                "${it.nameWithoutExtension}.${target.second?.firstOrNull() ?: target.first.extensions.first()}"
+                            )
+                        }
+                    )
+            path.relative.takeUnless { it.exists() }?.copyTo(destination)
+
+            return JobRelativePath(path.rootDirectory, destination)
+        }
+
+        try {
+            return target.second?.firstOrNull()?.let { CV.convert(path, it) }
+                ?: CV.convert(path, target.first)
+        } catch (e: Exception) {
+            Log.warn("Image Conversion with OpenCV failed with $e.")
+        }
+        // TODO: Add Fallback Options (FFmpeg?)
+        Log.error("Could not convert file $path to format $target")
+        return null
     }
 }
