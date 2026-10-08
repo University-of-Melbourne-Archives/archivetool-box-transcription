@@ -105,6 +105,66 @@ data class DateRange(val range: LocalDateRange) {
                 .tightestBounds()
         }
 
+        // Validates a single string with the only valid format being
+        // "yyyy-yyyy;yyyy-MM-dd;yyyy-MM-dd" or "yyyy;;".
+        // Throws IllegalArgumentException with a corresponding user message on fail.
+        fun fromUserInput(input: String): DateRange {
+            val textParts = input.trim().split(';').map { it.trim() }
+
+            require(textParts.size == 3) {
+                "Expected \"yyyy-yyyy;yyyy-MM-dd;yyyy-MM-dd\", or \"yyyy;;\" if there is no end date."
+            }
+
+            val (years, start, end) = textParts
+
+            // Check if year or year range exists and is formatted correctly
+            require(Regex("^\\d{4}(?:-\\d{4})?$").matches(years)) {
+                "\"$years\" is not a valid year or year range (expected yyyy or yyyy-yyyy)."
+            }
+
+            if (start.isEmpty() && end.isEmpty()) {
+                require('-' !in years) {
+                    "A year range needs a start and end date. Use just \"yyyy;;\" if there is no end date."
+                }
+
+                return DateRange(LocalDate(years.toInt(), 1, 1), null)
+            }
+
+            require(start.isNotEmpty() && end.isNotEmpty()) {
+                "Provide both a start and an end date, or neither (\"yyyy;;\")."
+            }
+
+            val startDate = parseUserDate(start, "Start")
+            val endDate = parseUserDate(end, "End")
+            // Impossible year range
+            require(endDate >= startDate) { "The end date is before the start date." }
+
+            val range = DateRange(startDate, endDate)
+            // Inconsistent year range
+            require(range.yearRange == years) {
+                "Year range \"$years\" does not match the dates (expected \"${range.yearRange}\")."
+            }
+
+            return range
+        }
+
+        private fun parseUserDate(text: String, label: String): LocalDate {
+            val match =
+                Regex("^(\\d{4})-(\\d{1,2})-(\\d{1,2})$").matchEntire(text)
+                    ?: throw IllegalArgumentException(
+                        "$label date \"$text\" must look like yyyy-MM-dd."
+                    )
+
+            val (year, month, day) = match.destructured
+
+            return try {
+                LocalDate(year.toInt(), month.toInt(), day.toInt())
+            } catch (e: IllegalArgumentException) {
+                // If calendar date does not exist
+                throw IllegalArgumentException("$label date \"$text\" is not a real calendar date.")
+            }
+        }
+
         fun Iterable<DateRange>.tightestBounds(): DateRange? =
             map { it.range }
                 .tightestBoundsWithSentinel(LocalDate.DISTANT_FUTURE, { it.isDistantFuture })
