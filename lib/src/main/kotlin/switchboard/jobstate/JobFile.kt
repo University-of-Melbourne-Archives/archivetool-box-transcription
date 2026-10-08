@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
-import au.edu.unimelb.archivetool.util.geometry.Quad
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

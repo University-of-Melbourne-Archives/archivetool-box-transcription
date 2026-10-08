@@ -1,18 +1,37 @@
 package au.edu.unimelb.archivetool.util
 
+import au.edu.unimelb.archivetool.util.extension.DISTANT_FUTURE
+import au.edu.unimelb.archivetool.util.extension.isDistantFuture
+import au.edu.unimelb.archivetool.util.extension.tightestBoundsWithSentinel
 import java.time.format.DateTimeParseException
-import kotlin.collections.fold
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateRange
 import kotlinx.datetime.format
 import kotlinx.datetime.format.DateTimeFormat
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-// The UoM CMS always stores this in the format "yyyy-yyyy;yyyy-MM-dd;yyy-MM-dd".
+// The UoM CMS always stores this in the format "yyyy-yyyy;yyyy-MM-dd;yyyy-MM-dd".
 // If there is no end date, store as just "yyyy;;".
-@Serializable
-data class DateRange(val startDate: LocalDate, val endDate: LocalDate?) {
+@Serializable(DateRangeSerializer::class)
+data class DateRange(val range: LocalDateRange) {
+    constructor(
+        startDate: LocalDate,
+        endDate: LocalDate?,
+    ) : this(endDate?.let { startDate..it } ?: (startDate..LocalDate.DISTANT_FUTURE))
+
+    constructor(range: ClosedRange<LocalDate>) : this(range.start..range.endInclusive)
+
+    val startDate by lazy { range.start }
+
+    val endDate by lazy { range.endInclusive.takeUnless { it.isDistantFuture } }
+
     val startYear by lazy { startDate.year }
     val endYear by lazy { endDate?.year }
 
@@ -34,6 +53,10 @@ data class DateRange(val startDate: LocalDate, val endDate: LocalDate?) {
 
     val CSVString by lazy {
         yearRange + (endDate?.let { ";$startDateString;$endDateString" } ?: ";;")
+    }
+
+    override fun toString(): String {
+        return "DateRange(startDate=$startDate, endDate=$endDate)"
     }
 
     companion object {
@@ -83,23 +106,38 @@ data class DateRange(val startDate: LocalDate, val endDate: LocalDate?) {
         }
 
         fun Iterable<DateRange>.tightestBounds(): DateRange? =
-            this.fold(
-                    // This type-cast feels stupid, but kotlin defaults to guessing the type is
-                    // `Nothing?`
-                    null as Pair<LocalDate, LocalDate?>?
-                ) { acc, (start, end) ->
-                    var oldest = acc?.first ?: start
-                    var newest = acc?.second ?: end
-                    if (start < oldest) {
-                        oldest = start
-                    }
-                    end?.let {
-                        if (newest == null || end > newest) {
-                            newest = end
-                        }
-                    }
-                    oldest to newest
-                }
-                ?.let { DateRange(it.first, it.second) }
+            map { it.range }
+                .tightestBoundsWithSentinel(LocalDate.DISTANT_FUTURE, { it.isDistantFuture })
+                ?.let { DateRange(it) }
+    }
+}
+
+// https://kotlinlang.org/docs/serialization-create-and-use-serializers.html#serialize-classes-with-a-surrogate-class
+@Serializable
+@SerialName("DateRange")
+private class DateRangeSurrogate(val startDate: LocalDate, val endDate: LocalDate? = null) {}
+
+object DateRangeSerializer : KSerializer<DateRange> {
+    // The serialNames of descriptors must be unique
+    override val descriptor: SerialDescriptor =
+        SerialDescriptor(
+            "au.edu.unimelb.archivetool.util.DateRange",
+            DateRangeSurrogate.serializer().descriptor,
+        )
+
+    // Converts the original class to the surrogate representation
+    override fun serialize(encoder: Encoder, value: DateRange) {
+        val surrogate =
+            DateRangeSurrogate(
+                value.range.start,
+                value.range.endInclusive.takeUnless { it.isDistantFuture },
+            )
+        encoder.encodeSerializableValue(DateRangeSurrogate.serializer(), surrogate)
+    }
+
+    // Converts the surrogate representation back to the original class
+    override fun deserialize(decoder: Decoder): DateRange {
+        val surrogate = decoder.decodeSerializableValue(DateRangeSurrogate.serializer())
+        return DateRange(surrogate.startDate, surrogate.endDate)
     }
 }

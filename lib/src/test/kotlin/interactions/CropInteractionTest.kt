@@ -1,17 +1,17 @@
 package interactions
 
 import SemiManual
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogLevel
-import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CropInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.geometry.Quad
-import au.edu.unimelb.archivetool.util.geometry.Rectangle
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -71,15 +71,17 @@ class CropInteractionTest {
                                                 ),
                                                 confidence = 1.0,
                                             ),
-                                            listOf(Boundary(
-                                                Quad.create(
-                                                    695 to 1376,
-                                                    1000 to 1476,
-                                                    695 to 1876,
-                                                    1000 to 1876,
-                                                ),
-                                                confidence = 1.0,
-                                            ))
+                                            listOf(
+                                                Boundary(
+                                                    Quad.create(
+                                                        695 to 1376,
+                                                        1000 to 1476,
+                                                        695 to 1876,
+                                                        1000 to 1876,
+                                                    ),
+                                                    confidence = 1.0,
+                                                )
+                                            ),
                                         )
                                 ),
                         )

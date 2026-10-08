@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
-import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.lang.ref.WeakReference
 import kotlin.getValue
 import org.graalvm.polyglot.Context
@@ -9,7 +9,10 @@ import org.graalvm.python.embedding.VirtualFileSystem
 
 sealed class PythonContext(inject: Set<Injectable> = setOf()) {
     private val vfs by lazy {
-        VirtualFileSystem.newBuilder().allowHostIO(VirtualFileSystem.HostIO.READ).build()
+        VirtualFileSystem.newBuilder()
+            .resourceDirectory(GRAALPY_VFS_PATH)
+            .allowHostIO(VirtualFileSystem.HostIO.READ)
+            .build()
     }
 
     protected val _context: Context by lazy {

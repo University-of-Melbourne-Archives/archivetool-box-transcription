@@ -1,8 +1,7 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID.OldMultiID
-import au.edu.unimelb.archivetool.util.counted
+import au.edu.unimelb.archivetool.util.extension.counted
+import au.edu.unimelb.archivetool.util.logging.Log
 import kotlin.reflect.full.companionObject
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -51,7 +50,9 @@ sealed class RecordSetID {
         fun scanForAll(transcription: String): RecordSetID? {
             val ids =
                 RecordSetID::class.sealedSubclasses.mapNotNull {
-                    (it.companionObject as RecordSetIDCompanion).scanFor(transcription)
+                    (it.companionObject!!.objectInstance as RecordSetIDCompanion).scanFor(
+                        transcription
+                    )
                 }
             return searchInOrder(ids)
         }

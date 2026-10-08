@@ -1,7 +1,7 @@
 package au.edu.unimelb.archivetool.pythoninterop
 
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.io.BufferedReader
 import java.lang.ref.WeakReference
 import java.nio.file.FileSystems

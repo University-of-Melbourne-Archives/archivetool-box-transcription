@@ -1,16 +1,16 @@
 package interactions
 
 import SemiManual
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogLevel
-import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.geometry.Quad
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -69,15 +69,17 @@ class FlattenInteractionTest {
                                                 ),
                                                 confidence = 1.0,
                                             ),
-                                            listOf(Boundary(
-                                                Quad.create(
-                                                    1390 to 1680,
-                                                    1815 to 1680,
-                                                    1815 to 1850,
-                                                    1390 to 1850,
-                                                ),
-                                                confidence = 1.0,
-                                            ))
+                                            listOf(
+                                                Boundary(
+                                                    Quad.create(
+                                                        1390 to 1680,
+                                                        1815 to 1680,
+                                                        1815 to 1850,
+                                                        1390 to 1850,
+                                                    ),
+                                                    confidence = 1.0,
+                                                )
+                                            ),
                                         )
                                 ),
                         )

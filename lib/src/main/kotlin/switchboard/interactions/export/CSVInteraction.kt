@@ -7,7 +7,7 @@ import au.edu.unimelb.archivetool.switchboard.interactions.export.CSV.toCSV
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.with4IgnoredParameters
+import au.edu.unimelb.archivetool.util.extension.with4IgnoredParameters
 import com.jsoizo.kotlincsv.writer.CsvWriter
 import com.jsoizo.kotlincsv.writer.writeToFile
 import java.nio.file.Path

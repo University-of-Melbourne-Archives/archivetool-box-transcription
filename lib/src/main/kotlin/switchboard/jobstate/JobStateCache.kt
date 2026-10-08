@@ -18,19 +18,30 @@ class JobStateCache<S : JobState> {
     companion object {
         val caches = mutableMapOf<JobStateVariant<*>, RWLock<JobStateCache<*>>>()
 
-        inline fun <reified T : JobStateVariant<S>, S : JobState> getCache(
-            variant: T
-        ): RWLock<JobStateCache<S>> {
-            // We know that we have the right type from the function's type constraints,
-            // but Kotlin complains about the cast regardless.
-            @Suppress("UNCHECKED_CAST")
-            return ((caches.entries.filter { it.key is T }.map { it.value }.firstOrNull()
+        inline fun <
+            reified T : JobStateVariant<S>,
+            reified C : RWLock<JobStateCache<S>>,
+            S : JobState,
+        > getCache(variant: T): C {
+            return ((caches.entries.filter { it.key is T }.map { it.value as C }.firstOrNull()
                 ?: run {
                     val v = RWLock<JobStateCache<*>>(JobStateCache<S>())
                     caches[variant] = v
-                    v
-                })
-                as RWLock<JobStateCache<S>>)
+                    v as C
+                }))
         }
+
+        @Deprecated(
+            "Not strictly-typed reliably.",
+            ReplaceWith(
+                "getCache<T, RWLock<JobStateCache<S>>, S>()",
+                "au.edu.unimelb.archivetool.util.concurrency.RWLock",
+                "import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCacheOld",
+            ),
+            DeprecationLevel.WARNING,
+        )
+        inline fun <reified T : JobStateVariant<S>, S : JobState> getCacheOld(
+            variant: T
+        ): RWLock<JobStateCache<S>> = getCache<T, RWLock<JobStateCache<S>>, S>(variant)
     }
 }

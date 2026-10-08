@@ -1,11 +1,12 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
-import au.edu.unimelb.archivetool.logging.Log
 import au.edu.unimelb.archivetool.switchboard.interactions.Interaction
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
-import au.edu.unimelb.archivetool.util.map
-import au.edu.unimelb.archivetool.util.noop
+import au.edu.unimelb.archivetool.util.extension.PairExt.map
+import au.edu.unimelb.archivetool.util.extension.isNotNull
+import au.edu.unimelb.archivetool.util.extension.noop
+import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.extension
@@ -37,8 +38,22 @@ abstract class JobState(
                     } != null
                 }
                 .mapValues { it.value ?: JobFile() }
+        val needsConversion = valid.filter { (k, v) -> !type.supported().supports(k) }
+        Log.debug(
+            "${valid.size} valid files, with ${needsConversion.size} files requiring conversion."
+        )
         Log.trace("Valid files: ${valid.keys}")
-        return valid
+        Log.trace("Needing Conversion: ${needsConversion.keys}")
+        val converted =
+            valid
+                .mapKeys { (k, v) ->
+                    if (needsConversion.containsKey(k))
+                        return@mapKeys type.supported().trySupport(k)
+                    return@mapKeys k
+                }
+                .filterKeys { it.isNotNull() }
+                .mapKeys { (k, v) -> k!! }
+        return converted
     }
 
     // TODO maybe check if state transitions are valid?
@@ -114,7 +129,7 @@ abstract class JobState(
 
     // Expects File Names relative to root dir.
     internal fun defaultIgnore(file: Path): Boolean {
-        return !file.pathString.matches(GENERATED_PATH_REL_PAT)
+        return !file.pathString.contains(GENERATED_PATH)
     }
 
     internal open fun ignore(file: Path): Boolean = defaultIgnore(file)

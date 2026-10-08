@@ -1,7 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard
 
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
@@ -9,7 +7,9 @@ import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInt
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
-import au.edu.unimelb.archivetool.util.nullify
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.orNull
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
 import kotlin.io.path.Path
 
@@ -61,44 +61,32 @@ open class AbstractSwitchboard(
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction
+    var init: InitInteraction = _init
         private set
 
-    var config: ConfigInteraction
+    var config: ConfigInteraction = _config
         private set
 
-    var job: JobStateInteraction
+    var job: JobStateInteraction = _job
         private set
 
-    var status: StatusInteraction
+    var status: StatusInteraction = _status
         private set
 
-    var createPreview: CreatePreviewInteraction
+    var createPreview: CreatePreviewInteraction = _createPreview
         private set
 
-    var reviewPreview: ReviewPreviewInteraction
+    var reviewPreview: ReviewPreviewInteraction = _reviewPreview
         private set
 
-    var manip: ImageManipulationInteraction
+    var manip: ImageManipulationInteraction = _manip
         private set
 
-    var ocr: OCRInteraction
+    var ocr: OCRInteraction = _ocr
         private set
 
-    var export: ExportInteraction
+    var export: ExportInteraction = _export
         private set
-
-    init {
-        init = _init
-        config = _config
-        job = _job
-        status = _status
-        createPreview = _createPreview
-        reviewPreview = _reviewPreview
-        manip = _manip
-        ocr = _ocr
-        export = _export
-    }
 
     // Copy Constructor
     constructor(
@@ -145,7 +133,7 @@ open class AbstractSwitchboard(
 
     fun getStatus(directory: Path) {
         val state: JobState? =
-            job.companion.present(directory).nullify()?.let { job.read(directory) }
+            job.companion.present(directory).orNull()?.let { job.read(directory) }
 
         val inFiles =
             state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }

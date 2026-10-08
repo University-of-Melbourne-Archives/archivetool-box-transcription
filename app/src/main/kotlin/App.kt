@@ -1,8 +1,8 @@
 package au.edu.unimelb.archivetool.app
 
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.LogLevel
-import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 
 fun main() {
     Log.registerConsumer(StdoutConsumer())
