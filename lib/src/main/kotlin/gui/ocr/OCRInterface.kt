@@ -1,6 +1,7 @@
 package au.edu.unimelb.archivetool.gui.ocr
 
 import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.util.Colour
@@ -31,8 +32,8 @@ import kotlinx.coroutines.launch
 import kotlin.collections.set
 
 class OCRInterface(
-    jobsIn: Map<JobRelativePath, BoxMetadata>,
-    private val returnFlow: MutableWaitFlow<Map<JobRelativePath, BoxMetadata>>?,
+    jobsIn: Map<JobRelativePath, JobFile?>,
+    private val returnFlow: MutableWaitFlow<Map<JobRelativePath, JobFile>>?,
     display: Display,
     windows: WindowGroup,
     themeManager: ThemeManager,
@@ -43,7 +44,9 @@ class OCRInterface(
     fonts: FontLoader,
 ) : Application {
     // -- Job data ------------------------------------------------------------
-    private val jobs: MutableMap<JobRelativePath, BoxMetadata> = jobsIn.toMutableMap()
+    private val jobs: MutableMap<JobRelativePath, JobFile> =
+        jobsIn.mapNotNull { (path, file) -> file?.let { path to it } }
+            .toMap(mutableMapOf())
 
     private val paths: List<JobRelativePath> = jobs.keys.toList()
 
@@ -52,8 +55,14 @@ class OCRInterface(
     private val currentPath: JobRelativePath
         get() = paths[currentIndex]
 
-    private val currentJob: BoxMetadata
+    private val currentFile: JobFile
         get() = jobs.getValue(currentPath)
+
+    private val currentBoxKey: String?
+        get() = currentFile.vertexes?.keys?.firstOrNull()
+
+    private val currentJob: BoxMetadata?
+        get() = currentBoxKey?.let { currentFile.vertexes?.get(it)?.metadata }
 
     // -- Views ---------------------------------------------------------------
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -236,7 +245,11 @@ class OCRInterface(
         val job = currentJob
 
         table.cellTexts =
-            listOf(formatTitleCell(job), job.description, job.dateRange?.CSVString ?: "")
+            listOf(
+                formatTitleCell(job),
+                job?.description ?: "",
+                job?.dateRange?.CSVString ?: "",
+            )
     }
 
     // Column - Node Title: "<Record Set ID> Unit <%04d Unit Number>"
@@ -323,7 +336,14 @@ class OCRInterface(
                 description = descriptionText,
             )
 
-        jobs[currentPath] = updatedJob
+        val key = currentBoxKey
+        val vertexes = currentFile.vertexes
+        if (key == null || vertexes == null) {
+            showErrors(listOf("This file has no boxes to save data to."))
+            return
+        }
+
+        vertexes[key] = vertexes.getValue(key).copy(metadata = updatedJob)
 
         displayJobText()
     }

@@ -25,7 +25,8 @@ object Switchboard :
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
         PythonCreatePreviewInteraction(),
-        ReviewGUIInteraction(),
+        SegmentationGUIInteraction(),
+        OCRGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
         CSVExportInteraction(
@@ -41,7 +42,8 @@ object MockSwitchboard :
         MemoryJobStateInteraction(),
         StdoutStatusInteraction(),
         MockCreatePreviewInteraction(),
-        MockReviewInteraction(),
+        MockSegmentationReviewInteraction(),
+        MockOCRReviewInteraction(),
         MockImageManipulationInteraction(),
         MockOCRInteraction(),
         LogExportInteraction(),
@@ -56,7 +58,8 @@ open class AbstractSwitchboard(
     _job: JobStateInteraction,
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
-    _reviewPreview: ReviewPreviewInteraction,
+    _segmentationReviewPreview: SegmentationPreviewInteraction,
+    _ocrReviewPreview: OCRPreviewInteraction,
     _manip: ImageManipulationInteraction,
     _ocr: OCRInteraction,
     _export: ExportInteraction,
@@ -76,7 +79,10 @@ open class AbstractSwitchboard(
     var createPreview: CreatePreviewInteraction = _createPreview
         private set
 
-    var reviewPreview: ReviewPreviewInteraction = _reviewPreview
+    var segmentationPreview: SegmentationPreviewInteraction = _segmentationReviewPreview
+        private set
+
+    var ocrPreview: OCRPreviewInteraction = _ocrReviewPreview
         private set
 
     var manip: ImageManipulationInteraction = _manip
@@ -97,7 +103,8 @@ open class AbstractSwitchboard(
         sw.job,
         sw.status,
         sw.createPreview,
-        sw.reviewPreview,
+        sw.segmentationPreview,
+        sw.ocrPreview,
         sw.manip,
         sw.ocr,
         sw.export,
@@ -120,7 +127,8 @@ open class AbstractSwitchboard(
             is InitInteraction -> init = swapFor
             is JobStateInteraction -> job = swapFor
             is OCRInteraction -> ocr = swapFor
-            is ReviewPreviewInteraction -> reviewPreview = swapFor
+            is SegmentationPreviewInteraction -> segmentationPreview = swapFor
+            is OCRPreviewInteraction -> ocrPreview = swapFor
             is StatusInteraction -> status = swapFor
         }
     }
@@ -169,12 +177,12 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun reviewPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
+    fun reviewSegmentationPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
         val toUpdate =
-            reviewPreview.review(
+            segmentationPreview.review(
                 state
-                    ?.validFiles(reviewPreview)
+                    ?.validFiles(segmentationPreview)
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
@@ -182,6 +190,10 @@ open class AbstractSwitchboard(
                 autoApproveThreshold,
             )
         state?.update(toUpdate)
+    }
+
+    fun reviewOCRPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
+        // TODO add state updating
     }
 
     fun manipulateImages(directory: Path) {

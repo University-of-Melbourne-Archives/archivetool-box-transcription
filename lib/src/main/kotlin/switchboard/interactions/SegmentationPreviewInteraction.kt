@@ -14,7 +14,7 @@ import io.nacular.doodle.theme.basic.BasicTheme.Companion.basicLabelBehavior
 import kotlinx.coroutines.runBlocking
 import org.kodein.di.instance
 
-class ReviewGUIInteraction : ReviewPreviewInteraction, GUIInteraction {
+class SegmentationGUIInteraction : SegmentationPreviewInteraction, GUIInteraction {
     override fun mayRequireConversion(): Boolean = true
 
     override fun supported(): Image.FileType.Supported = super<GUIInteraction>.supported()
@@ -43,7 +43,7 @@ class ReviewGUIInteraction : ReviewPreviewInteraction, GUIInteraction {
     }
 }
 
-class MockReviewInteraction : ReviewPreviewInteraction {
+class MockSegmentationReviewInteraction : SegmentationPreviewInteraction {
     override fun review(
         files: Map<JobRelativePath, JobFile?>,
         autoApproveThreshold: Double,
@@ -58,7 +58,7 @@ class MockReviewInteraction : ReviewPreviewInteraction {
     }
 }
 
-interface ReviewPreviewInteraction : Interaction {
+interface SegmentationPreviewInteraction : Interaction {
     fun review(
         files: Map<JobRelativePath, JobFile?>,
         autoApproveThreshold: Double = 1.0,

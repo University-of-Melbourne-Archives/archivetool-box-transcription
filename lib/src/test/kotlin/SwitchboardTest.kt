@@ -136,7 +136,7 @@ class SwitchboardTest {
 
         cacheGuard.release()
 
-        MockSwitchboard.reviewPreview(directory)
+        MockSwitchboard.reviewSegmentationPreview(directory)
 
         cacheLock.unlock("reviewPreview")
         Log.revokeConsumer(consumer)
