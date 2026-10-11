@@ -1,9 +1,6 @@
 package au.edu.unimelb.archivetool.segmentation
 
-// Kotlin port of the Python box segmentation module.
-// Depends on Gradle, Kotlin DSL:
-//   implementation("com.microsoft.onnxruntime:onnxruntime:1.30.0")  // 1.30.0 is the latest 1.x version as of 10/10/2026
-//   implementation("org.openpnp:opencv:4.9.0-0")                    // bundles Windows/Linux/macOS natives
+
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
@@ -257,3 +254,8 @@ fun getBoxesForDirectory(dir: String, modelPath: String = DEFAULT_MODEL_PATH, co
     File(dir).listFiles { f -> f.extension.lowercase() in setOf("jpg", "jpeg", "png", "tif", "tiff", "bmp") }!!
         .sortedBy { it.name }
         .fold(linkedMapOf<String, ImageDetections>()) { acc, f -> acc.apply { putAll(getBoxes(f.path, modelPath, conf)) } }
+
+/** just for testing **/
+fun main() {
+    println("Hello from this file!")
+}

@@ -135,6 +135,7 @@ def runModel(imagePath, modelPath, conf):
     preds, protos = preds[0], protos[0]
     c, mh, mw = protos.shape
 
+    # Used for detecting incorrect ONNX exports
     if preds.shape[1] != 6 + c:
         raise ValueError(f"Unexpected output shape {preds.shape}; export the model with end2end=True")
 

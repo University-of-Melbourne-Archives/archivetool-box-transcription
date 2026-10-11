@@ -15,6 +15,10 @@ dependencies {
     // Add a dependency on the Kotlin Gradle plugin, so that convention plugins can apply it.
     implementation(libs.kotlinGradlePlugin)
     implementation(plugin(libs.plugins.ktfmtGradlePlugin))
+
+    // Segmentation Model Ports
+   implementation("com.microsoft.onnxruntime:onnxruntime:1.30.0")  // 1.30.0 is the latest 1.x version as of 10/10/2026
+   implementation("org.openpnp:opencv:4.9.0-0")                    // bundles Windows/Linux/macOS natives
 }
 
 // Helper function that transforms a Gradle Plugin alias from a
