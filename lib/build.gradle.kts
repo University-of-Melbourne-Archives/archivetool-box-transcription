@@ -29,6 +29,10 @@ dependencies {
     api("io.nacular.doodle:desktop-jvm-${osTarget()}:$doodleVersion")
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
+
+    // Segmentation Model Dependencies
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.30.0")  // 1.30.0 is the latest 1.x version as of 10/10/2026
+    implementation("org.openpnp:opencv:4.9.0-0")                    // bundles Windows/Linux/macOS natives
 }
 
 fun osTarget(): String {

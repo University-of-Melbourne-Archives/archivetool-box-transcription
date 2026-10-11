@@ -257,5 +257,25 @@ fun getBoxesForDirectory(dir: String, modelPath: String = DEFAULT_MODEL_PATH, co
 
 /** just for testing **/
 fun main() {
-    println("Hello from this file!")
+    val image = File("lib/src/test/resources/SwitchboardTest/PXL_20251127_230150462.jpg")
+    val model = File(DEFAULT_MODEL_PATH)
+
+    // Relative paths resolve against the working directory, so print it if a file can't be found
+    println("Working dir: ${File("").absolutePath}")
+    require(image.exists()) { "Image not found: ${image.absolutePath}" }
+    require(model.exists()) { "Model not found: ${model.absolutePath}" }
+
+    val start = System.currentTimeMillis()
+    val result = getBoxes(image.path)
+    println("Inference took ${System.currentTimeMillis() - start} ms")
+
+    for ((name, det) in result) {
+        println(name)
+        for ((id, entry) in det.vertexes) {
+            println("  $id  conf=%.3f  %s".format(entry.box.confidence, entry.box.points.joinToString { "(${it.x}, ${it.y})" }))
+            for (s in entry.sticker) {
+                println("    sticker  conf=%.3f  %s".format(s.confidence, s.points.joinToString { "(${it.x}, ${it.y})" }))
+            }
+        }
+    }
 }
