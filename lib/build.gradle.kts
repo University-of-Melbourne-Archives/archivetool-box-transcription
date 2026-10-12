@@ -13,7 +13,7 @@ plugins {
 
 graalPy {
     resourceDirectory = extensions.extraProperties["au.edu.unimelb.archivetool.pythoninterop.vfsDir"] as String
-    packages = setOf("openai==3.16.*") // Python dependencies
+    packages = setOf("openai==3.16.*", "numpy==2.2.4", "onnx==1.22.0") // Python dependencies
 }
 
 val doodleVersion = "0.11.5"
@@ -28,6 +28,9 @@ dependencies {
     api("io.nacular.doodle:desktop-jvm-${osTarget()}:$doodleVersion")
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
+
+    // Segmentation Model Dependencies
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.30.0")  // 1.30.0 is the latest 1.x version as of 10/10/2026
 }
 
 fun osTarget(): String {

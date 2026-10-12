@@ -1,5 +1,7 @@
 package au.edu.unimelb.archivetool.util.wrap
 
+import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.file.Image.FileType
@@ -8,7 +10,10 @@ import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import java.nio.file.Path
+import kotlin.io.path.Path
 import kotlin.io.path.createParentDirectories
+import kotlin.io.path.name
+import kotlin.io.path.notExists
 import kotlin.io.path.pathString
 import kotlin.math.roundToInt
 import org.bytedeco.javacpp.FloatPointer
@@ -246,4 +251,24 @@ object CV {
         path.createParentDirectories()
         opencv_imgcodecs.imwrite(path.pathString, this)
     }
+
+    // Takes a path to an image, converts it to a format via extension and returns the converted
+    // file path.
+    fun convert(path: JobRelativePath, extension: String): JobRelativePath =
+        JobRelativePath(
+                path.rootDirectory,
+                Path(GENERATED_PATH)
+                    .resolve("conv")
+                    .resolve(path.relative)
+                    .resolveSibling("${path.relative.name}.${extension}"),
+            )
+            .also {
+                if (it.absolute.notExists()) {
+                    readImage(path.absolute).writeImage(it.absolute)
+                }
+            }
+
+    // Takes a path to an image, converts it to a format and returns the converted file path.
+    fun convert(path: JobRelativePath, target: Image.FileType): JobRelativePath =
+        convert(path, target.extensions.first())
 }
