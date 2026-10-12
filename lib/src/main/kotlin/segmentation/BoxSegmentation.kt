@@ -48,6 +48,11 @@ object BoxSegmentation {
         )
     }
 
+    val alreadyLoaded by lazy {mutableMapOf<String, Path>()}
+    fun copyModelFromResourcesIfNotExists(resourcePath: String): Path {
+        return alreadyLoaded.getOrPut(resourcePath) { copyFromResources(resourcePath, modelDirectory) }
+    }
+
     private class Detection(val label: String, val score: Double, val polygon: Polygon)
     private class Model(val session: OrtSession, val names: Map<Int, String>, val inH: Int, val inW: Int)
 
@@ -63,7 +68,7 @@ object BoxSegmentation {
         modelPath: Path? = null,
         conf: Double = 0.5
     ): Pair<JobRelativePath, JobFile> {
-        val modelPath = modelPath ?: copyFromResources(DEFAULT_MODEL_RESOURCE, modelDirectory)
+        val modelPath = modelPath ?: copyModelFromResourcesIfNotExists(DEFAULT_MODEL_RESOURCE)
 
         val dets = runModel(imagePath, modelPath, conf).filter { it.polygon.vertices.size >= 3 }
         val vertexes = mutableMapOf<String, ArchiveBox>()
