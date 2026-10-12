@@ -6,6 +6,7 @@ import au.edu.unimelb.archivetool.pythoninterop.extensions.PolyglotIterable.Comp
 import au.edu.unimelb.archivetool.pythoninterop.extensions.PolyglotMap.Companion.asMap
 import au.edu.unimelb.archivetool.pythoninterop.extensions.invoke
 import au.edu.unimelb.archivetool.pythoninterop.extensions.withStringKeys
+import au.edu.unimelb.archivetool.segmentation.BoxSegmentation
 import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
@@ -26,6 +27,26 @@ import kotlin.io.path.createTempDirectory
 import kotlin.io.path.pathString
 import org.graalvm.polyglot.Value
 
+class KotlinCreatePreviewInteraction : CreatePreviewInteraction {
+    override fun mayRequireConversion(): Boolean = true
+
+    override fun supported(): Image.FileType.Supported = YOLO.formatRequirements
+
+    override fun createPreview(
+        files: Set<JobRelativePath>,
+        weights: Path?,
+        rejectConfidenceThreshold: Double,
+    ): Map<JobRelativePath, JobFile> =
+        files.map {
+            BoxSegmentation.getBoxes(
+                it,
+                modelPath = weights,
+                conf = rejectConfidenceThreshold,
+            )
+        }.toMap()
+}
+/*
+//TODO: This needs work.
 class PythonCreatePreviewInteraction : CreatePreviewInteraction {
     override fun mayRequireConversion(): Boolean = true
 
@@ -124,10 +145,12 @@ class PythonCreatePreviewInteraction : CreatePreviewInteraction {
         )
 }
 
+ */
+
 class MockCreatePreviewInteraction : CreatePreviewInteraction {
     override fun createPreview(
         files: Set<JobRelativePath>,
-        weights: String,
+        weights: Path?,
         rejectConfidenceThreshold: Double,
         /*
         edgeBufferSize: Double,
@@ -161,7 +184,7 @@ class MockCreatePreviewInteraction : CreatePreviewInteraction {
 interface CreatePreviewInteraction : Interaction {
     fun createPreview(
         files: Set<JobRelativePath>,
-        weights: String = "python/model-sandbox/weights/yolo26n-archive-boxes-14-09.pt",
+        weights: Path? = null,
         // Flatly rejects boxes under this threshold
         rejectConfidenceThreshold: Double = 0.05,
         /*

@@ -24,7 +24,7 @@ object Switchboard :
         JSONConfigInteraction(),
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
-        PythonCreatePreviewInteraction(),
+        KotlinCreatePreviewInteraction(),
         ReviewGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
@@ -144,7 +144,7 @@ open class AbstractSwitchboard(
     fun createPreview(
         directory: Path,
         permitExisting: Boolean = false,
-        weights: String = "python/model-sandbox/weights/yolo26n-archive-boxes-14-09.pt",
+        weights: Path? = null,
         rejectThreshold: Double = 0.05,
     ) {
         val state: JobState? =
