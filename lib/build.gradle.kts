@@ -30,7 +30,7 @@ dependencies {
     testImplementation(libs.kotlinxCoroutinesTest)
 
     // Segmentation Model Dependencies
-    implementation("com.microsoft.onnxruntime:onnxruntime:1.30.0")  // 1.30.0 is the latest 1.x version as of 10/10/2026
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.22.0")
 }
 
 fun osTarget(): String {

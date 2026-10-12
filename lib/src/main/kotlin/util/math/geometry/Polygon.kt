@@ -1,7 +1,9 @@
 package au.edu.unimelb.archivetool.util.math.geometry
 
 import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.PairExt.extract
 import au.edu.unimelb.archivetool.util.extension.PairExt.map
+import au.edu.unimelb.archivetool.util.wrap.CV
 import kotlin.getValue
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -26,6 +28,10 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
             .toFloatArray()
     }
 
+    val centroid by lazy {
+        Point.fromPair(vertices.map { it.inner }.extract().map {(it.sum() / it.size)})
+    }
+
     open fun replaceIndex(i: Int, p: Point): Polygon =
         create(
             vertices
@@ -45,6 +51,15 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
     open fun offsetBy(x: Int, y: Int): Polygon = offsetBy(Point.create(x, y))
 
     open fun mapPoints(mapper: (Point) -> Point): Polygon = create(vertices.map(mapper))
+
+    open fun convexHull() = create(CV.convexHull(vertices.toList()))
+
+    // TODO: Make a thing to clockwise-ify polygons
+    /*
+    val perimeter by lazy {
+        CV.perimeter(vertices.toList(), true)
+    }
+     */
 
     fun bestBoundingBox(): Rectangle =
         Rectangle.create(
@@ -68,7 +83,6 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
 
 abstract class PolySerializer<T : Polygon>(className: String, val constructor: (List<Point>) -> T) :
     KSerializer<T> {
-    @OptIn(ExperimentalSerializationApi::class)
     private val delegateSerializer = ListSerializer(PointSerializer)
 
     override val descriptor: SerialDescriptor =

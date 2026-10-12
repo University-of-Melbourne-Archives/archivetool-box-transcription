@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.util.math.geometry
 
+import au.edu.unimelb.archivetool.util.wrap.CV
 import kotlin.math.atan2
 import kotlinx.serialization.Serializable
 
@@ -7,6 +8,10 @@ import kotlinx.serialization.Serializable
 open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vertices) {
     init {
         require(vertices.size == 4) { "Quad had the wrong number of vertices." }
+    }
+
+    override fun toString(): String {
+        return "Quad: " + vertices.joinToString { it.inner.toString() }
     }
 
     open fun toClockwise(): Quad {
@@ -60,6 +65,10 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
                 )
             }
         )
+
+    val perimeter by lazy {
+        CV.perimeter(toClockwise().vertices.toList(), true)
+    }
 
     companion object {
         fun create(vararg points: Pair<Int, Int>): Quad = create(points.map { Point.fromPair(it) })
