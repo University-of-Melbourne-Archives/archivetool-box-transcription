@@ -149,11 +149,11 @@ interface OCRInteraction : Interaction {
         return file.second.let { jobFile ->
             jobFile.vertexes?.values?.run {
                 isNotEmpty() &&
-                    this.any { box ->
+                    any { box ->
                         box.metadata == null ||
                             box.keyedBoundaries.values.any { it.rawMetadata == null }
                     }
-            } ?: false
+            } ?: false && jobFile.approved
         }
         /*TODO: Add a check for if the generated crop etc exists.*/
     }
