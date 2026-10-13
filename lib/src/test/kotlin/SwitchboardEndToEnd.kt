@@ -40,7 +40,7 @@ class SwitchboardEndToEnd {
         "Manually Interact with the GUI.",
         lastSucceeded = "bfb9ca7fe545ce26860539588340ef886e373927",
     )
-    @Test
+    //@Test
     fun `try run end2end`() {
         directory.resolve(GENERATED_PATH).deleteRecursively()
 
