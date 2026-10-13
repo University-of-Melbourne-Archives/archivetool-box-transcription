@@ -193,7 +193,18 @@ open class AbstractSwitchboard(
     }
 
     fun reviewOCRPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
-        // TODO add state updating
+        val state: JobState? = job.read(directory)
+        val toUpdate =
+            ocrPreview.review(
+                state
+                    ?.validFiles(ocrPreview)
+                    ?.also {
+                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+                    }
+                    .expect("Could not load list of valid files."),
+                autoApproveThreshold,
+            )
+        state?.update(toUpdate)
     }
 
     fun manipulateImages(directory: Path) {
