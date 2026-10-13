@@ -58,7 +58,7 @@ class PythonOCRInteraction : OCRInteraction {
             val py = method_processOutputText(transcript)
             output = BoxMetadataConverter.toJvmValue(py)
         } catch (e: Exception) {
-            Log.trace("OCR::processOutputText threw: $e")
+            Log.trace("OCR::processOutputText threw: $e\n${e.printStackTrace()}")
         }
         return output // NOTE: I think failing and returning a nullable here is fine.
         // Some labels will not have
