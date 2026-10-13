@@ -13,7 +13,7 @@ plugins {
 
 graalPy {
     resourceDirectory = extensions.extraProperties["au.edu.unimelb.archivetool.pythoninterop.vfsDir"] as String
-    packages = setOf("openai==3.16.*", "numpy==2.2.4", "onnx==1.22.0") // Python dependencies
+    packages = setOf("openai==3.16.*", "certifi>=2026.7.22") // Python dependencies
 }
 
 val doodleVersion = "0.11.5"
