@@ -7,6 +7,8 @@ import java.nio.file.Paths
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmErasure
 
+// NOTE: This file was AI-Generated.
+
 /**
  * Scans the classpath for every class in a package and returns them as [KClass] instances.
  * No third-party dependencies.

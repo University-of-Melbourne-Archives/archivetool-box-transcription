@@ -20,14 +20,4 @@ fun main() {
     Log.log(LogLevel.Info, "test")
     Log.debug("test")
     Log.trace("test")
-
-    val uml = ClassDiagram(
-        *(ClasspathScanner.findClasses("au.edu.unimelb.archivetool", requireReflectable = true).toTypedArray()),
-        configuration = Configuration(false, false, false, recurse = true, KVisibility.PRIVATE, KVisibility.PRIVATE)
-    ).plantUml()
-
-    val f = createTempDirectory().resolve("archivetool.plantuml")
-    f.writeText(uml)
-
-    println("Wrote $uml to $f")
 }
