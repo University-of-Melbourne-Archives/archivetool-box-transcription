@@ -1,7 +1,7 @@
-import au.edu.unimelb.archivetool.logging.ConsumerSettings
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.LogLevel
-import au.edu.unimelb.archivetool.logging.consumers.StringConsumer
+import au.edu.unimelb.archivetool.util.logging.ConsumerSettings
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.StringConsumer
 import org.junit.jupiter.api.Test
 
 class LoggingTest {

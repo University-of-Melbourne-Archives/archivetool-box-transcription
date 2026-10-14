@@ -1,12 +1,17 @@
 package au.edu.unimelb.archivetool.switchboard
 
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVExportInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.orNull
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
+import kotlin.io.path.Path
 
 // Implements a switchboard with default options.
 // You should never use this in its global scope,
@@ -16,18 +21,23 @@ import java.nio.file.Path
 object Switchboard :
     AbstractSwitchboard(
         LogInitInteraction(),
+        JSONConfigInteraction(),
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
-        PythonCreatePreviewInteraction(),
+        KotlinCreatePreviewInteraction(),
         ReviewGUIInteraction(),
-        ImageManipulationInteraction.compose(FlattenInteraction(), MonochromifyInteraction()),
+        ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
-        CSVExportInteraction(),
+        CSVExportInteraction(
+            Path("/")
+        ), // TODO: Flag if the export destination is not set. We should set this to a default in the
+        // CLI before getting here.
     )
 
 object MockSwitchboard :
     AbstractSwitchboard(
         MockInitInteraction(),
+        MockConfigInteraction(),
         MemoryJobStateInteraction(),
         StdoutStatusInteraction(),
         MockCreatePreviewInteraction(),
@@ -42,6 +52,7 @@ object MockSwitchboard :
 // but will later also take stuff for things like Job data format parsing, or initial setup things.
 open class AbstractSwitchboard(
     _init: InitInteraction,
+    _config: ConfigInteraction,
     _job: JobStateInteraction,
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
@@ -50,46 +61,39 @@ open class AbstractSwitchboard(
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction
+    var init: InitInteraction = _init
         private set
 
-    var job: JobStateInteraction
+    var config: ConfigInteraction = _config
         private set
 
-    var status: StatusInteraction
+    var job: JobStateInteraction = _job
         private set
 
-    var createPreview: CreatePreviewInteraction
+    var status: StatusInteraction = _status
         private set
 
-    var reviewPreview: ReviewPreviewInteraction
+    var createPreview: CreatePreviewInteraction = _createPreview
         private set
 
-    var manip: ImageManipulationInteraction
+    var reviewPreview: ReviewPreviewInteraction = _reviewPreview
         private set
 
-    var ocr: OCRInteraction
+    var manip: ImageManipulationInteraction = _manip
         private set
 
-    var export: ExportInteraction
+    var ocr: OCRInteraction = _ocr
         private set
 
-    init {
-        init = _init
-        job = _job
-        status = _status
-        createPreview = _createPreview
-        reviewPreview = _reviewPreview
-        manip = _manip
-        ocr = _ocr
-        export = _export
-    }
+    var export: ExportInteraction = _export
+        private set
 
     // Copy Constructor
     constructor(
         sw: AbstractSwitchboard
     ) : this(
         sw.init,
+        sw.config,
         sw.job,
         sw.status,
         sw.createPreview,
@@ -109,6 +113,7 @@ open class AbstractSwitchboard(
     // Allows for on-the-fly swapping of interactions.
     fun swap(swapFor: Interaction) {
         when (swapFor) {
+            is ConfigInteraction -> config = swapFor
             is CreatePreviewInteraction -> createPreview = swapFor
             is ImageManipulationInteraction -> manip = swapFor
             is ExportInteraction -> export = swapFor
@@ -126,14 +131,20 @@ open class AbstractSwitchboard(
         init.init(logConsumers)
     }
 
-    fun getStatus() {
-        status.getStatus()
+    fun getStatus(directory: Path) {
+        val state: JobState? =
+            job.companion.present(directory).orNull()?.let { job.read(directory) }
+
+        val inFiles =
+            state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }
+
+        status.getStatus(inFiles)
     }
 
     fun createPreview(
         directory: Path,
         permitExisting: Boolean = false,
-        weights: Path = TODO("Put a default Weight Path here."),
+        weights: Path? = null,
         rejectThreshold: Double = 0.05,
     ) {
         val state: JobState? =
@@ -158,7 +169,7 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun reviewPreview(directory: Path) {
+    fun reviewPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
         val toUpdate =
             reviewPreview.review(
@@ -167,7 +178,8 @@ open class AbstractSwitchboard(
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
-                    .expect("Could not load list of valid files.")
+                    .expect("Could not load list of valid files."),
+                autoApproveThreshold,
             )
         state?.update(toUpdate)
     }
@@ -195,8 +207,10 @@ open class AbstractSwitchboard(
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
-                    .expect("Could not load list of valid files.")
+                    .expect("Could not load list of valid files."),
+                config.getConfig(),
             )
+        state?.update(toUpdate)
     }
 
     fun generateExport(directory: Path) {

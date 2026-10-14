@@ -7,9 +7,9 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
-              <build path="$USER_HOME$/dev/archivetool/buildSrc" name="buildSrc">
+              <build path="$PROJECT_DIR$/buildSrc" name="buildSrc">
                 <projects>
-                  <project path="$USER_HOME$/dev/archivetool/buildSrc" />
+                  <project path="$PROJECT_DIR$/buildSrc" />
                 </projects>
               </build>
             </builds>
@@ -18,11 +18,11 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
-            <option value="$USER_HOME$/dev/archivetool" />
-            <option value="$USER_HOME$/dev/archivetool/app" />
-            <option value="$USER_HOME$/dev/archivetool/buildSrc" />
-            <option value="$USER_HOME$/dev/archivetool/gui" />
-            <option value="$USER_HOME$/dev/archivetool/lib" />
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/gui" />
+            <option value="$PROJECT_DIR$/lib" />
           </set>
         </option>
         <option name="myGradleHome" value="" />

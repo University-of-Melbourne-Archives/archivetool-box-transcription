@@ -1,6 +1,3 @@
-import java.io.File
-import kotlin.io.copyRecursively
-import kotlin.io.path.createParentDirectories
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.kotlin
 
@@ -8,48 +5,53 @@ plugins {
     // Apply the shared build logic from a convention plugin.
     // The shared code is located in `buildSrc/src/main/kotlin/kotlin-jvm.gradle.kts`.
     id("buildsrc.convention.kotlin-jvm")
+    id("buildsrc.convention.python")
     // Apply Kotlin Serialization plugin from `gradle/libs.versions.toml`.
     alias(libs.plugins.kotlinPluginSerialization)
     alias(libs.plugins.graalpy)
 }
 
-fun SourceSet.setupPythonTask(inputDir: String) =
-    tasks.register("python-$name") {
-        description =
-            "Move Python files to the right directory. Any other steps should also go here."
-        group = "build"
-
-        // Register the project version as a task input, so Gradle can cache the task
-        inputs.dir(inputDir)
-
-        // tell Gradle about the output directory
-        outputs.dir(temporaryDir)
-
-        val outDir = File(temporaryDir, "python").toPath().apply { createParentDirectories() }
-
-        doLast { File(inputDir).copyRecursively(outDir.toFile(), overwrite = true) }
-    }
-
 graalPy {
-    packages = setOf() // Python dependencies (eg. "qrcode==7.4.2")
+    resourceDirectory = extensions.extraProperties["au.edu.unimelb.archivetool.pythoninterop.vfsDir"] as String
+    packages = setOf("openai==3.16.*", "certifi>=2026.7.22") // Python dependencies
 }
+
+val doodleVersion = "0.11.5"
 
 dependencies {
     // Apply the kotlinx bundle of dependencies from the version catalog
     // (`gradle/libs.versions.toml`).
-    implementation(libs.bundles.kotlinxEcosystem)
+    implementation(libs.bundles.kotlinEcosystem)
     implementation(libs.bundles.polyglot)
+    implementation(libs.javacv)
+    implementation(libs.csv)
+    api("io.nacular.doodle:desktop-jvm-${osTarget()}:$doodleVersion")
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
+
+    // Segmentation Model Dependencies
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.22.0")
 }
 
-sourceSets {
-    main {
-        resources { srcDir(setupPythonTask("$projectDir/src/main/python").map { it.temporaryDir }) }
-    }
-    test {
-        resources { srcDir(setupPythonTask("$projectDir/src/test/python").map { it.temporaryDir }) }
-    }
+fun osTarget(): String {
+    val osName = System.getProperty("os.name")
+    val targetOs =
+        when {
+            osName == "Mac OS X" -> "macos"
+            osName.startsWith("Win") -> "windows"
+            osName.startsWith("Linux") -> "linux"
+            else -> error("Unsupported OS: $osName")
+        }
+
+    val targetArch =
+        when (val osArch = System.getProperty("os.arch")) {
+            "x86_64",
+            "amd64" -> "x64"
+            "aarch64" -> "arm64"
+            else -> error("Unsupported arch: $osArch")
+        }
+
+    return "$targetOs-$targetArch"
 }
 
 // Enable bytecode -> machinecode JIT for faster python execution.

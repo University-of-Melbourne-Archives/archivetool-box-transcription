@@ -1,47 +1,35 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.logging.Log
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CropInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
-import java.nio.file.Path
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.file.Image
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.wrap.CV
 
 class MockImageManipulationInteraction : ImageManipulationInteraction {
-    override fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile> {
+    override fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         Log.error("Using mock image manipulation tool, nothing will happen.")
-        files.keys.forEach { Log.debug("Manipulating Image $it") }
+        files.keys.forEach { Log.debug("Manipulating Image ${it.relative}") }
         return mapOf()
     }
 }
 
-class CropInteraction : ImageManipulationInteraction {
-    override fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile> {
-        TODO("Not yet implemented")
-    }
+interface CVImageManipulationInteraction : ImageManipulationInteraction {
+    override fun mayRequireConversion(): Boolean = true
+
+    override fun supported(): Image.FileType.Supported = CV.formatRequirements
 }
 
-class FlattenInteraction : ImageManipulationInteraction {
-    override fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile> {
-        // These are technically composable, but flatten depends on crop.
-        CropInteraction().manipulate(files)
-        TODO("Not yet implemented")
-    }
-}
-
-class MonochromifyInteraction : ImageManipulationInteraction {
-    override fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile> {
-        TODO("Not yet implemented")
-    }
-}
-
-// TODO add a helper function that loads an existing manipulated version of a file if it exists.
+// TODO should have a thing that converts image to an API supported format
 interface ImageManipulationInteraction : Interaction {
-    fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile>
+    fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile>
 
-    override fun isEligible(file: Pair<Path, JobFile>): Boolean =
-        file.second.let {
-            it.crops.isNotEmpty() &&
-                it.approved &&
-                true /*TODO: Add a check for if the generated crop etc exists.*/
-        }
+    override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
+        // NOTE: We always re-run image processing because there's no good way to know if we need to
+        // apply/reapply.
+        file.second.let { it.vertexes?.isNotEmpty() ?: false && it.approved }
 
     companion object : ComposableInteraction<ImageManipulationInteraction> {
         override fun compose(
@@ -52,18 +40,21 @@ interface ImageManipulationInteraction : Interaction {
                 !(children.any { it is FlattenInteraction }) ||
                     !(children.any { it is CropInteraction })
             ) {
-                "FlattenInteraction already depends on CropInteraction and cannot compose with it."
+                "FlattenInteraction is mutually exclusive with CropInteraction and cannot compose with it."
             }
             return object : ImageManipulationInteraction {
-                override fun manipulate(files: Map<Path, JobFile>): Map<Path, JobFile> {
+                override fun manipulate(
+                    files: Map<JobRelativePath, JobFile>
+                ): Map<JobRelativePath, JobFile> {
                     var stillValid = files
                     children.forEach { stillValid = it.manipulate(stillValid) }
                     return stillValid
                 }
 
-                override fun isEligible(file: Pair<Path, JobFile>): Boolean = children.all {
-                    it.isEligible(file)
-                }
+                override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
+                    children.all {
+                        it.isEligible(file)
+                    }
             }
         }
     }

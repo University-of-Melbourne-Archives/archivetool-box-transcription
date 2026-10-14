@@ -11,7 +11,7 @@ class ConcreteJobState(
     val directory: Path,
     initial: Boolean = false,
     starterState: MutableMap<Path, JobFile?> = mutableMapOf(),
-) : JobState(starterState) {
+) : JobState(directory, starterState) {
     init {
         scan(directory, initial)
     }
