@@ -49,10 +49,10 @@ class SwitchboardEndToEnd {
 
         sw.init(setOf(StderrConsumer()))
         sw.createPreview(directory)
-        sw.reviewPreview(directory)
+        sw.reviewSegmentationPreview(directory)
         sw.manipulateImages(directory)
         sw.createOCR(directory)
-        // TODO: Port In OCR Review
+        sw.reviewOCRPreview(directory)
         sw.generateExport(directory)
 
         Log.info(csv.string)
