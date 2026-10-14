@@ -24,7 +24,7 @@ object Switchboard :
         JSONConfigInteraction(),
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
-        PythonCreatePreviewInteraction(),
+        KotlinCreatePreviewInteraction(),
         ReviewGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
@@ -144,7 +144,7 @@ open class AbstractSwitchboard(
     fun createPreview(
         directory: Path,
         permitExisting: Boolean = false,
-        weights: Path = TODO("Put a default Weight Path here."),
+        weights: Path? = null,
         rejectThreshold: Double = 0.05,
     ) {
         val state: JobState? =

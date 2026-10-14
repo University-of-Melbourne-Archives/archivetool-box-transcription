@@ -1,8 +1,8 @@
 import base64
 import os
 import re
-from openai import OpenAI
-
+from openai import OpenAI, APIConnectionError, DefaultHttpxClient
+import ssl, certifi
 
 def executeOCR(imagePath, base_url, api_key, model):
     """Perform OCR to read printed and handwritten texts from an image using Gemini model
@@ -21,35 +21,41 @@ def executeOCR(imagePath, base_url, api_key, model):
     with open(imagePath, "rb") as f:
         b64 = base64.b64encode(f.read()).decode("utf-8")
 
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    sslctx = ssl.create_default_context(cadata=certifi.contents())
+    client = OpenAI(api_key=api_key, base_url=base_url, http_client=DefaultHttpxClient(verify=sslctx, timeout=60))
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": (
-                            "Extract all text from this image exactly as it appears. "
-                            "Preserve line breaks and formatting. Do not summarize or add commentary. "
-                            "Ignore strikethroughs, text on logo and randomly placed numbers outside the sticker."
-                            "Identify the unique date ranges and output them as 'Date ranges: {date ranges}',"
-                            "with the start and end of the range separated by a '!', and each date in ISO8601."
-                            "If a single date appears, treat it as a range with no end"
-                            "Return 'None' if there's none."
-                        ),
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-                    },
-                ],
-            },
-        ],
-        reasoning_effort="low",
-    )
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Extract all text from this image exactly as it appears. "
+                                "Preserve line breaks and formatting. Do not summarize or add commentary. "
+                                "Ignore strikethroughs, text on logo and randomly placed numbers outside the sticker."
+                                "Identify the unique date ranges and output them as 'Date ranges: {date ranges}',"
+                                "with the start and end of the range separated by a '!', and each date in ISO8601."
+                                "If a single date appears, treat it as a range with no end"
+                                "Return 'None' if there's none."
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+                        },
+                    ],
+                },
+            ],
+            reasoning_effort="low",
+        )
+        Log.debug(f"got response {response.choices[0].message.content}")
+    except APIConnectionError as e:
+        # e.__cause__ is usually an httpx.ConnectError / ssl.SSLError with the real reason
+        raise RuntimeError(f"Connection failed: {e.__cause__!r}") from e
 
     return response.choices[0].message.content
 
@@ -76,11 +82,12 @@ def processOutputText(extractedText):
 
     # Identify date range(s)
     dateRangePattern = r"Date ranges: [\w\W]+"
-    dateRangeMatch = re.findall(dateRangePattern, extractedText)[0]
-    outputDict["Date ranges"] = dateRangeMatch[len("Date ranges: ") :]
-    # Remove date ranges to prevent dupes in description
-    extractedText = re.sub(dateRangePattern, "", extractedText)
-    extractedText = extractedText.replace(dateRangeMatch[len("Date ranges: ") :], "")
+    dateRangeMatch = next(iter(re.findall(dateRangePattern, extractedText)), None)
+    if dateRangeMatch != None:
+        outputDict["Date ranges"] = dateRangeMatch[len("Date ranges: ") :]
+        # Remove date ranges to prevent dupes in description
+        extractedText = re.sub(dateRangePattern, "", extractedText)
+        extractedText = extractedText.replace(dateRangeMatch[len("Date ranges: ") :], "")
 
     # Identify format of ID string(s)
     # - {4 digit year}.{4 digit} ID string (e.g. 1964.0009)
