@@ -29,12 +29,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.collections.set
 
 class OCRInterface(
     jobsIn: Map<JobRelativePath, JobFile?>,
     private val returnFlow: MutableWaitFlow<Map<JobRelativePath, JobFile>>?,
-    display: Display,
+    private val display: Display,
     windows: WindowGroup,
     themeManager: ThemeManager,
     theme: Theme,
@@ -71,9 +72,15 @@ class OCRInterface(
     private val table = ReviewTable(textMetrics, fonts, appScope)
 
     init {
-        windows.main.apply {
-            title = "OCRReview"
-            size = Size(1200.0, 675.0)
+        windows.apply {
+            main.apply {
+                title = "OCRReview"
+                size = Size(1100.0, 1000.0)
+            }
+
+            mainWindowCloseBehavior = {
+                runBlocking { close() }
+            }
         }
 
         themeManager.selected = theme
@@ -351,6 +358,8 @@ class OCRInterface(
     suspend fun close() {
         outputMetadata()
         returnFlow?.close()
+
+        display.children.clear()
     }
 
     private suspend fun outputMetadata() {
