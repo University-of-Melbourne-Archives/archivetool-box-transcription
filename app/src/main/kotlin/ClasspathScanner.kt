@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.app
 
-
 import java.io.IOException
 import java.net.JarURLConnection
 import java.net.URL
@@ -29,10 +28,33 @@ import kotlin.reflect.jvm.jvmErasure
 object ClasspathScanner {
 
     /**
+     * Substrings that identify compiler/plugin-generated helper classes. Matched against the
+     * binary class name, so they are filtered out before the class is even loaded.
+     * Add your own here if other generated classes show up (e.g. "\$\$Lambda").
+     */
+    val GENERATED_MARKERS: List<String> = listOf(
+        "\$\$serializer",         // kotlinx.serialization
+        "\$WhenMappings",         // `when` over enums
+        "\$DefaultImpls",         // interface default method bridges
+        "\$\$inlined\$",          // inlined lambdas
+        "\$\$ExternalSyntheticLambda",
+    )
+
+    /**
      * @param packageName     e.g. "com.example.plugins"
      * @param recursive       include sub-packages
      * @param initialize      run static initializers on load (default false - safer for scanning)
      * @param includeNested   include nested/inner/anonymous classes (names containing '$')
+     * @param excludeGenerated
+     *                        skip compiler/plugin-generated helper classes such as
+     *                        `Foo$$serializer` (kotlinx.serialization), `$WhenMappings`,
+     *                        `$DefaultImpls` and `$$inlined$...`. On by default; see
+     *                        [GENERATED_MARKERS] for the full list.
+     * @param includeAnonymousAndLocal
+     *                        include anonymous classes (`object : Foo {}`, Java `Outer$1`) and
+     *                        local classes declared inside functions. Their simpleName /
+     *                        qualifiedName are null, which shows up as "null" in diagram and
+     *                        serialization tools. Off by default.
      * @param includeKotlinSyntheticClasses
      *                        include Kotlin file facades (FooKt, multifile facades/parts) and
      *                        compiler-generated synthetic classes (lambdas, etc.). Off by default
@@ -51,6 +73,8 @@ object ClasspathScanner {
         recursive: Boolean = true,
         initialize: Boolean = false,
         includeNested: Boolean = true,
+        excludeGenerated: Boolean = true,
+        includeAnonymousAndLocal: Boolean = false,
         includeKotlinSyntheticClasses: Boolean = false,
         requireReflectable: Boolean = false,
         classLoader: ClassLoader = defaultClassLoader(),
@@ -71,7 +95,9 @@ object ClasspathScanner {
 
         return classNames.asSequence()
             .filter { name -> includeNested || '$' !in name }
+            .filter { name -> !excludeGenerated || GENERATED_MARKERS.none { it in name } }
             .mapNotNull { name -> loadOrNull(name, initialize, includeKotlinSyntheticClasses, classLoader) }
+            .filter { includeAnonymousAndLocal || !it.java.isAnonymousOrLocal() }
             .filter { !requireReflectable || it.isSafelyReflectable() }
             .filter(filter)
             .toList()
@@ -153,6 +179,14 @@ object ClasspathScanner {
             // NoClassDefFoundError, UnsatisfiedLinkError, ExceptionInInitializerError, etc.
             null
         }
+
+    /**
+     * Uses java.lang.Class rather than kotlin-reflect so it can't itself blow up on odd classes.
+     * A null canonicalName covers anonymous classes, local classes, and anything nested inside them.
+     */
+    private fun Class<*>.isAnonymousOrLocal(): Boolean =
+        runCatching { isAnonymousClass || isLocalClass || canonicalName == null }
+            .getOrDefault(true) // malformed names: treat as unusable
 
     /**
      * kotlin.Metadata.kind values:
