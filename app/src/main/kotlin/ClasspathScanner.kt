@@ -1,5 +1,3 @@
-package au.edu.unimelb.archivetool.app
-
 import java.io.IOException
 import java.net.JarURLConnection
 import java.net.URL
@@ -50,6 +48,12 @@ object ClasspathScanner {
      *                        `Foo$$serializer` (kotlinx.serialization), `$WhenMappings`,
      *                        `$DefaultImpls` and `$$inlined$...`. On by default; see
      *                        [GENERATED_MARKERS] for the full list.
+     * @param excludeCompanions
+     *                        skip companion objects. They all share the simple name "Companion",
+     *                        so tools that key entities by simple name (e.g. PlantUML diagrams)
+     *                        merge every companion into one giant class. On by default; the
+     *                        owning class is still returned, and its companion stays reachable
+     *                        via `kClass.companionObject`.
      * @param includeAnonymousAndLocal
      *                        include anonymous classes (`object : Foo {}`, Java `Outer$1`) and
      *                        local classes declared inside functions. Their simpleName /
@@ -74,6 +78,7 @@ object ClasspathScanner {
         initialize: Boolean = false,
         includeNested: Boolean = true,
         excludeGenerated: Boolean = true,
+        excludeCompanions: Boolean = true,
         includeAnonymousAndLocal: Boolean = false,
         includeKotlinSyntheticClasses: Boolean = false,
         requireReflectable: Boolean = false,
@@ -98,6 +103,7 @@ object ClasspathScanner {
             .filter { name -> !excludeGenerated || GENERATED_MARKERS.none { it in name } }
             .mapNotNull { name -> loadOrNull(name, initialize, includeKotlinSyntheticClasses, classLoader) }
             .filter { includeAnonymousAndLocal || !it.java.isAnonymousOrLocal() }
+            .filter { !excludeCompanions || !it.isCompanionSafe() }
             .filter { !requireReflectable || it.isSafelyReflectable() }
             .filter(filter)
             .toList()
@@ -180,6 +186,10 @@ object ClasspathScanner {
             null
         }
 
+    /** `isCompanion` needs kotlin-reflect and can throw on odd classes; treat failures as "no". */
+    private fun KClass<*>.isCompanionSafe(): Boolean =
+        runCatching { isCompanion }.getOrDefault(false)
+
     /**
      * Uses java.lang.Class rather than kotlin-reflect so it can't itself blow up on odd classes.
      * A null canonicalName covers anonymous classes, local classes, and anything nested inside them.
@@ -231,3 +241,4 @@ fun findUnreflectableClasses(packageName: String, recursive: Boolean = true): Ma
             }
         }.exceptionOrNull()?.let { kClass to it }
     }.toMap()
+
