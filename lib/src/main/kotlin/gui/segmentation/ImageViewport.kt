@@ -98,6 +98,7 @@ class ImageViewport(
     private val imageLoader: ImageLoader,
     private val appScope: CoroutineScope,
     private val onImageChanged: (index: Int, total: Int) -> Unit = { _, _ -> },
+    private val kill: () -> Unit = {},
 ) : View() {
     companion object {
         private const val MIN_ZOOM = 0.02
@@ -402,6 +403,7 @@ class ImageViewport(
         changed[paths[currentIndex]] = JobFile(vertexes = currentJob.vertexes, approved = true)
         outputCrops()
         returnFlow?.close()
+        kill()
     }
 
     private suspend fun outputCrops() {

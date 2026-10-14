@@ -42,23 +42,27 @@ object BoxMetadataConverter : PythonToJvmConverter<BoxMetadata> {
     override fun toJvmValue(polyglotValue: Value): BoxMetadata {
         assert(polyglotValue.hasMembers())
         val id = id(polyglotValue)
-        val description = description(polyglotValue)
+        val description = description(polyglotValue) ?: ""
         val dateRange = dateRange(polyglotValue)
         val unitNumber = unitNumber(polyglotValue)
         return BoxMetadata(id, unitNumber, dateRange, description)
     }
 
-    private fun id(polyglotValue: Value) =
+    private fun id(polyglotValue: Value): RecordSetID? =
         if (polyglotValue.hasMember("ID strings")) {
             RecordSetID.fromOCROutput(
-                SetConverter.toJvmValue(polyglotValue.getMember("ID strings")).map { it.asString() }
+                SetConverter.toJvmValue(
+                    polyglotValue
+                        .takeIf { it.hasMember("ID strings")}
+                        ?.getMember("ID strings") ?: return null
+                ).map { it.asString() }
             )
         } else {
             null
         }
 
     private fun description(polyglotValue: Value) =
-        polyglotValue.getMember("Description").asString()
+        polyglotValue.getMember("Description")?.asString()
 
     private fun unitNumber(polyglotValue: Value) =
         if (polyglotValue.hasMember("Unit ID")) {

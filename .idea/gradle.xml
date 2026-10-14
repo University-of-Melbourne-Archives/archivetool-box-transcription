@@ -25,6 +25,7 @@
             <option value="$PROJECT_DIR$/lib" />
           </set>
         </option>
+        <option name="myGradleHome" value="" />
       </GradleProjectSettings>
     </option>
   </component>

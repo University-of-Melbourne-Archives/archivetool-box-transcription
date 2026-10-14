@@ -4,6 +4,7 @@ import au.edu.unimelb.archivetool.config.Config
 import au.edu.unimelb.archivetool.config.OpenAIAPIData
 import au.edu.unimelb.archivetool.pythoninterop.PythonModule
 import au.edu.unimelb.archivetool.pythoninterop.extensions.invoke
+import au.edu.unimelb.archivetool.pythoninterop.injectables.DisableTrustStore
 import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox.Companion.BOX_CROP_NAME
@@ -25,7 +26,7 @@ class PythonOCRInteraction : OCRInteraction {
 
     override fun supported(): Image.FileType.Supported = OpenAI.formatRequirements
 
-    val module by lazy { PythonModule(setOf("ocr.py"), setOf(LoggerInjectable())) }
+    val module by lazy { PythonModule(setOf("ocr.py"), setOf(LoggerInjectable(), DisableTrustStore)) }
 
     private val method_executeOCR by lazy {
         module.methods["executeOCR"].expect("OCR Module is missing function OCR::executeOCR")
@@ -57,7 +58,7 @@ class PythonOCRInteraction : OCRInteraction {
             val py = method_processOutputText(transcript)
             output = BoxMetadataConverter.toJvmValue(py)
         } catch (e: Exception) {
-            Log.trace("OCR::processOutputText threw: $e")
+            Log.trace("OCR::processOutputText threw: $e\n${e.printStackTrace()}")
         }
         return output // NOTE: I think failing and returning a nullable here is fine.
         // Some labels will not have
@@ -149,11 +150,11 @@ interface OCRInteraction : Interaction {
         return file.second.let { jobFile ->
             jobFile.vertexes?.values?.run {
                 isNotEmpty() &&
-                    this.any { box ->
+                    any { box ->
                         box.metadata == null ||
                             box.keyedBoundaries.values.any { it.rawMetadata == null }
                     }
-            } ?: false
+            } ?: false && jobFile.approved
         }
         /*TODO: Add a check for if the generated crop etc exists.*/
     }

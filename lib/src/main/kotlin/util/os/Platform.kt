@@ -5,6 +5,7 @@ import au.edu.unimelb.archivetool.util.extension.takeIfNotNull
 import au.edu.unimelb.archivetool.util.extension.tryOrIgnore
 import java.nio.file.Path
 import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
@@ -16,7 +17,7 @@ sealed class PlatformImpl {
     internal abstract fun configBasePath(): Path
 
     fun configPath(): Path =
-        configBasePath().resolve("archivetool").tryOrIgnore<Path, FileAlreadyExistsException> {
+        configBasePath().resolve("archivetool").tryOrIgnore<Path, java.nio.file.FileAlreadyExistsException> {
             createDirectory()
         }
 }

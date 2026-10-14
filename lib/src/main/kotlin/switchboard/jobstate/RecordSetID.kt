@@ -86,7 +86,7 @@ sealed class RecordSetID {
         // Sort by priority order, then the most frequent one remaining, with ties being broken by
         // alphabetical order or something?
         fun bestGuess(options: List<RecordSetID>): RecordSetID {
-            val typeOf = searchInOrder(options)!!
+            val typeOf = searchInOrder(options) ?: return OldShorthandID("00/0")
             val ofBestType = options.filter { typeOf.matchesType(it) }
             // TODO: Better tie-breaking if counts match.
             return ofBestType.counted().maxBy { it.first }.second

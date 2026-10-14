@@ -44,12 +44,17 @@ class SegmentationInterface(
             onImageChanged = { index, total ->
                 fileCounter.text = "%03d/%03d".format(index + 1, total)
             },
+            kill = {display.children.clear()}
         )
 
     init {
-        windows.main.apply {
-            title = "SegmentationReview"
-            size = Size(1100.0, 1000.0)
+        windows.apply {
+            main.apply {
+                title = "SegmentationReview"
+                size = Size(1100.0, 1000.0)
+            }
+
+            mainWindowCloseBehavior = {runBlocking { viewport.close() }}
         }
 
         themeManager.selected = theme
@@ -68,7 +73,7 @@ class SegmentationInterface(
                 PushButton("Create").apply { fired += { viewport.create() } },
                 PushButton("Delete").apply { fired += { viewport.delete() } },
                 PushButton("Finish").apply {
-                    fired += { CoroutineScope(Dispatchers.Default).launch { viewport.close() } }
+                    fired += { windows.main.close() }
                 },
             )
 
