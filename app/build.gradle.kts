@@ -11,6 +11,8 @@ dependencies {
     // Project "app" depends on project "utils". (Project paths are separated with ":", so ":utils"
     // refers to the top-level "utils" project.)
     implementation(project(":lib"))
+    implementation(libs.kotlinReflect)
+    implementation("io.github.kelvindev15:Kotlin2PlantUML:3.0.16")
 }
 
 application {
