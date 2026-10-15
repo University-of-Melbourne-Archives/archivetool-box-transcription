@@ -92,11 +92,21 @@ class CliCommandTest {
     }
 
     @Test
-    fun `ocr help lists review`() {
+    fun `ocr help lists create and review`() {
         val result = BaseCommand().test("ocr --help")
 
         assertEquals(0, result.statusCode)
+        assertContains(result.output, "create")
         assertContains(result.output, "review")
+    }
+
+    @Test
+    fun `ocr create is available without a job directory argument`() {
+        val result = BaseCommand().test("ocr create --help")
+
+        assertEquals(0, result.statusCode)
+        assertContains(result.output, "generate OCR results")
+        assertFalse(result.output.contains("Job Directory"))
     }
 
     @Test

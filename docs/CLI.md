@@ -27,9 +27,10 @@ If `-i` is omitted, ArchiveTool uses the current working directory.
 | `archivetool run` | Run the complete ArchiveTool workflow |
 | `archivetool preview create` | Create detection previews for input images |
 | `archivetool preview review` | Open the preview review stage |
+| `archivetool ocr create` | Prepare approved images and generate OCR results |
 | `archivetool ocr review` | Open the OCR review stage |
 | `archivetool status` | Show the status of a job |
-| `archivetool finalise` | Run final processing and export to CSV |
+| `archivetool finalise` | Export the completed job to CSV |
 | `archivetool --help` | Show general CLI help |
 
 ## `run`
@@ -120,6 +121,16 @@ archivetool preview review -A 95
 
 `preview review` does not take a job-directory argument. Run it from the job's input-photo directory.
 
+## `ocr create`
+
+Prepares approved images and generates OCR results for the job in the current working directory.
+
+```bash
+archivetool ocr create
+```
+
+This command runs the image-manipulation stage first, then calls the Switchboard OCR generation stage. Run it after segmentation review is complete.
+
 ## `ocr review`
 
 Opens the OCR review stage for the job in the current working directory.
@@ -128,7 +139,7 @@ Opens the OCR review stage for the job in the current working directory.
 archivetool ocr review
 ```
 
-The command is available in the CLI, but the OCR review GUI is not yet exposed through the Switchboard. The backend connection will be added once that interface is available.
+`ocr review` calls the Switchboard OCR review stage directly. Run it after OCR results have been generated.
 
 ## `status`
 
@@ -154,7 +165,7 @@ archivetool status ./photos
 
 ## `finalise`
 
-Runs the final processing/export stage for the job in the current working directory.
+Exports the completed job to CSV from the current working directory.
 
 ```bash
 archivetool finalise -o <output.csv>
@@ -223,6 +234,7 @@ archivetool preview --help
 archivetool preview create --help
 archivetool preview review --help
 archivetool ocr --help
+archivetool ocr create --help
 archivetool ocr review --help
 archivetool status --help
 archivetool finalise --help
@@ -237,7 +249,6 @@ In particular:
 - preview creation is still being completed in the Switchboard/Detection integration;
 - status output is still under development;
 - auto-approval behaviour may change while the review integration is finalised;
-- OCR review is present in the CLI but is not yet connected to the Switchboard;
 - the packaged `archivetool` launcher and installation instructions are not yet final.
 
 The CLI syntax in this guide should be updated if the public Switchboard interface changes before release.
