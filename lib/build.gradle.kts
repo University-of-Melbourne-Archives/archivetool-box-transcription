@@ -31,6 +31,9 @@ dependencies {
 
     // Segmentation Model Dependencies
     implementation("com.microsoft.onnxruntime:onnxruntime:1.22.0")
+
+    // For OpenAI API (Java)
+    implementation("com.openai:openai-java:4.81.0")
 }
 
 fun osTarget(): String {
