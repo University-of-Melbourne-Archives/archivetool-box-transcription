@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.interactions.imagemanip
 
-import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.CVImageManipulationInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
@@ -10,7 +10,7 @@ import kotlin.io.path.extension
 import kotlin.io.path.isReadable
 import kotlin.io.path.isWritable
 
-class CLAHEInteraction : ImageManipulationInteraction {
+class CLAHEInteraction : CVImageManipulationInteraction {
     val tileGridSize = Pair(8, 8)
     val clipLimit = 1.5
 
@@ -40,7 +40,10 @@ class CLAHEInteraction : ImageManipulationInteraction {
         val src = CV.readImage(path)
         val gray = CV.bgr2grayc1(src)
 
-        val clahe = CV.clahe(gray, tileGridSize, clipLimit)
+        val blurred = CV.gaussian(gray, 0 to 0, 20.0)
+        val norm = CV.divide(gray, blurred, 255.0)
+
+        val clahe = CV.clahe(norm, tileGridSize, clipLimit)
 
         clahe.writeImage(
             path.parent.resolve(
@@ -55,6 +58,8 @@ class CLAHEInteraction : ImageManipulationInteraction {
         )
 
         clahe.release()
+        norm.release()
+        blurred.release()
         gray.release()
         src.release()
     }

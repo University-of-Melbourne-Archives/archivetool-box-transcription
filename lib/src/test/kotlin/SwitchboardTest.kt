@@ -38,7 +38,7 @@ class SwitchboardTest {
     }
 
     val cache by lazy {
-        JobStateCache.getCache<JobStateVariant.Memory, ConcreteJobState>(JobStateVariant.Memory)
+        JobStateCache.getCacheOld<JobStateVariant.Memory, ConcreteJobState>(JobStateVariant.Memory)
     }
 
     val cacheLock = Mutex()
@@ -73,12 +73,7 @@ class SwitchboardTest {
         cacheLock.lock("createPreview")
         cache.withWriteLock { it.remove(directory) }
 
-        MockSwitchboard.createPreview(
-            directory,
-            permitExisting = false,
-            // We don't need weights as we are only calling the mock variant.
-            weights = Path("."),
-        )
+        MockSwitchboard.createPreview(directory, permitExisting = false)
 
         cacheLock.unlock("createPreview")
         Log.revokeConsumer(consumer)
@@ -136,7 +131,7 @@ class SwitchboardTest {
 
         cacheGuard.release()
 
-        MockSwitchboard.reviewPreview(directory)
+        MockSwitchboard.reviewSegmentationPreview(directory)
 
         cacheLock.unlock("reviewPreview")
         Log.revokeConsumer(consumer)

@@ -12,8 +12,8 @@ plugins {
 }
 
 graalPy {
-    resourceDirectory = "GRAALPY-VFS/${rootProject.name}/${project.name}"
-    packages = setOf("openai==3.16.*") // Python dependencies (eg. "qrcode==7.4.2")
+    resourceDirectory = extensions.extraProperties["au.edu.unimelb.archivetool.pythoninterop.vfsDir"] as String
+    packages = setOf("openai==3.16.*", "certifi>=2026.7.22") // Python dependencies
 }
 
 val doodleVersion = "0.11.5"
@@ -28,6 +28,9 @@ dependencies {
     api("io.nacular.doodle:desktop-jvm-${osTarget()}:$doodleVersion")
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
+
+    // Segmentation Model Dependencies
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.22.0")
 }
 
 fun osTarget(): String {

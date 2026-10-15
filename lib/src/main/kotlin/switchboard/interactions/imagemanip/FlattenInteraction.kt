@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.interactions.imagemanip
 
-import au.edu.unimelb.archivetool.switchboard.interactions.ImageManipulationInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.CVImageManipulationInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox.Companion.BOX_CROP_NAME
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
@@ -12,7 +12,7 @@ import au.edu.unimelb.archivetool.util.wrap.CV
 import au.edu.unimelb.archivetool.util.wrap.CV.writeImage
 import org.bytedeco.opencv.opencv_core.Mat
 
-class FlattenInteraction : ImageManipulationInteraction {
+class FlattenInteraction : CVImageManipulationInteraction {
     override fun manipulate(files: Map<JobRelativePath, JobFile>): Map<JobRelativePath, JobFile> {
         val outFiles: MutableMap<JobRelativePath, JobFile> = mutableMapOf()
 

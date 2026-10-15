@@ -10,4 +10,9 @@ object PairExt {
 
     fun <A> Pair<A, A>.any(predicate: (A) -> Boolean): Boolean =
         predicate(first) || predicate(second)
+
+    fun <A, B> List<Pair<A, B>>.extract(): Pair<List<A>, List<B>> = fold(mutableListOf<A>() to mutableListOf<B>()) {
+        (lA, lB), (a, b) ->
+        lA.apply {add(a)} to lB.apply {add(b)}
+    }
 }

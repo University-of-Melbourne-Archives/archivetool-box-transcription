@@ -1,7 +1,7 @@
 package interactions
 
 import SemiManual
-import au.edu.unimelb.archivetool.switchboard.interactions.ReviewGUIInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.SegmentationGUIInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
@@ -11,11 +11,9 @@ import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
-import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Test
 import kotlinx.serialization.json.Json
 
 class SegmentationGUITest {
@@ -113,6 +111,6 @@ class SegmentationGUITest {
                 )
                 .mapKeys { JobRelativePath(directory, it.key) }
                 .toMutableMap()
-        println(ReviewGUIInteraction().review(files).mapValues { (_, v) -> Json.encodeToString(v) })
+        println(SegmentationGUIInteraction().review(files).mapValues { (_, v) -> Json.encodeToString(v) })
     }
 }

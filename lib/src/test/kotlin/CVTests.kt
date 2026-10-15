@@ -1,4 +1,4 @@
-import au.edu.unimelb.archivetool.util.CV
+import au.edu.unimelb.archivetool.util.wrap.CV
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bytedeco.opencv.global.opencv_core.CV_16S

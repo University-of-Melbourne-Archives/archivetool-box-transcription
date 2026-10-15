@@ -42,6 +42,8 @@ sealed interface Colour {
         val WHITE = MonoColour.WHITE
         val LIGHT_GREY = MonoColour.LIGHT_GREY
         val BLUE = HSLAColour.BLUE
+        val PALE_GREY = HSLAColour.PALE_GREY
+        val BLACK = HSLAColour.BLACK
         val CYAN = RGBAColour.CYAN
     }
 }
@@ -195,6 +197,8 @@ value class HSLAColour(val inner: UInt) : Colour {
 
     companion object {
         val BLUE = HSLAColour(240.0, 255u, 127u, 255u)
+        val PALE_GREY = HSLAColour(0.0, 0u, 249u, 255u)
+        val BLACK = HSLAColour(0.0, 0u, 0u, 255u)
     }
 }
 

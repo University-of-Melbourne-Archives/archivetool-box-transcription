@@ -3,7 +3,7 @@ package au.edu.unimelb.archivetool.switchboard.jobstate.memory
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.JobStateInteractionCompanion
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
-import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCache
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.getCacheOld
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
@@ -13,7 +13,7 @@ class MemoryJobStateInteraction : JobStateInteraction {
     val variant = JobStateVariant.Memory
 
     override fun create(folder: Path): JobState = runBlocking {
-        getCache<JobStateVariant.Memory, ConcreteJobState>(variant).withWriteLock {
+        getCacheOld<JobStateVariant.Memory, ConcreteJobState>(variant).withWriteLock {
             it.put(folder, ConcreteJobState(folder, initial = true))
         }
     }
@@ -22,7 +22,7 @@ class MemoryJobStateInteraction : JobStateInteraction {
     // cache.
     override fun read(folder: Path): JobState = runBlocking {
         val state =
-            getCache<JobStateVariant.Memory, ConcreteJobState>(variant).withWriteLock {
+            getCacheOld<JobStateVariant.Memory, ConcreteJobState>(variant).withWriteLock {
                 it.get(folder)
             }
 
@@ -30,7 +30,7 @@ class MemoryJobStateInteraction : JobStateInteraction {
 
         val new = ConcreteJobState(folder)
 
-        return@runBlocking getCache<JobStateVariant.Memory, ConcreteJobState>(variant)
+        return@runBlocking getCacheOld<JobStateVariant.Memory, ConcreteJobState>(variant)
             .withWriteLock { it.put(folder, new) }
     }
 

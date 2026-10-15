@@ -8,7 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
 import au.edu.unimelb.archivetool.util.error.expect
-import au.edu.unimelb.archivetool.util.extension.nullify
+import au.edu.unimelb.archivetool.util.extension.orNull
 import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -24,8 +24,9 @@ object Switchboard :
         JSONConfigInteraction(),
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
-        PythonCreatePreviewInteraction(),
-        ReviewGUIInteraction(),
+        KotlinCreatePreviewInteraction(),
+        SegmentationGUIInteraction(),
+        OCRGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
         PythonOCRInteraction(),
         CSVExportInteraction(
@@ -41,7 +42,8 @@ object MockSwitchboard :
         MemoryJobStateInteraction(),
         StdoutStatusInteraction(),
         MockCreatePreviewInteraction(),
-        MockReviewInteraction(),
+        MockSegmentationReviewInteraction(),
+        MockOCRReviewInteraction(),
         MockImageManipulationInteraction(),
         MockOCRInteraction(),
         LogExportInteraction(),
@@ -56,49 +58,41 @@ open class AbstractSwitchboard(
     _job: JobStateInteraction,
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
-    _reviewPreview: ReviewPreviewInteraction,
+    _segmentationReviewPreview: SegmentationPreviewInteraction,
+    _ocrReviewPreview: OCRPreviewInteraction,
     _manip: ImageManipulationInteraction,
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction
+    var init: InitInteraction = _init
         private set
 
-    var config: ConfigInteraction
+    var config: ConfigInteraction = _config
         private set
 
-    var job: JobStateInteraction
+    var job: JobStateInteraction = _job
         private set
 
-    var status: StatusInteraction
+    var status: StatusInteraction = _status
         private set
 
-    var createPreview: CreatePreviewInteraction
+    var createPreview: CreatePreviewInteraction = _createPreview
         private set
 
-    var reviewPreview: ReviewPreviewInteraction
+    var segmentationPreview: SegmentationPreviewInteraction = _segmentationReviewPreview
         private set
 
-    var manip: ImageManipulationInteraction
+    var ocrPreview: OCRPreviewInteraction = _ocrReviewPreview
         private set
 
-    var ocr: OCRInteraction
+    var manip: ImageManipulationInteraction = _manip
         private set
 
-    var export: ExportInteraction
+    var ocr: OCRInteraction = _ocr
         private set
 
-    init {
-        init = _init
-        config = _config
-        job = _job
-        status = _status
-        createPreview = _createPreview
-        reviewPreview = _reviewPreview
-        manip = _manip
-        ocr = _ocr
-        export = _export
-    }
+    var export: ExportInteraction = _export
+        private set
 
     // Copy Constructor
     constructor(
@@ -109,7 +103,8 @@ open class AbstractSwitchboard(
         sw.job,
         sw.status,
         sw.createPreview,
-        sw.reviewPreview,
+        sw.segmentationPreview,
+        sw.ocrPreview,
         sw.manip,
         sw.ocr,
         sw.export,
@@ -132,7 +127,8 @@ open class AbstractSwitchboard(
             is InitInteraction -> init = swapFor
             is JobStateInteraction -> job = swapFor
             is OCRInteraction -> ocr = swapFor
-            is ReviewPreviewInteraction -> reviewPreview = swapFor
+            is SegmentationPreviewInteraction -> segmentationPreview = swapFor
+            is OCRPreviewInteraction -> ocrPreview = swapFor
             is StatusInteraction -> status = swapFor
         }
     }
@@ -145,7 +141,7 @@ open class AbstractSwitchboard(
 
     fun getStatus(directory: Path) {
         val state: JobState? =
-            job.companion.present(directory).nullify()?.let { job.read(directory) }
+            job.companion.present(directory).orNull()?.let { job.read(directory) }
 
         val inFiles =
             state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }
@@ -156,7 +152,7 @@ open class AbstractSwitchboard(
     fun createPreview(
         directory: Path,
         permitExisting: Boolean = false,
-        weights: Path = TODO("Put a default Weight Path here."),
+        weights: Path? = null,
         rejectThreshold: Double = 0.05,
     ) {
         val state: JobState? =
@@ -181,12 +177,27 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun reviewPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
+    fun reviewSegmentationPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
         val toUpdate =
-            reviewPreview.review(
+            segmentationPreview.review(
                 state
-                    ?.validFiles(reviewPreview)
+                    ?.validFiles(segmentationPreview)
+                    ?.also {
+                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+                    }
+                    .expect("Could not load list of valid files."),
+                autoApproveThreshold,
+            )
+        state?.update(toUpdate)
+    }
+
+    fun reviewOCRPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
+        val state: JobState? = job.read(directory)
+        val toUpdate =
+            ocrPreview.review(
+                state
+                    ?.validFiles(ocrPreview)
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }

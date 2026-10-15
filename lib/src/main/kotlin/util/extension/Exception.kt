@@ -2,7 +2,17 @@ package au.edu.unimelb.archivetool.util.extension
 
 import au.edu.unimelb.archivetool.util.logging.Log
 
-fun <T, R> T.tryOrNull(couldThrow: T.() -> R): R? =
+inline fun <T, R, reified Ex: Exception> T.tryOrNull(couldThrow: T.() -> R): R? =
+    this.let {
+        try {
+            couldThrow(it)
+        } catch (e: Ex) {
+            Log.debug("tryOrNull caught exception: $e")
+            null
+        }
+    }
+
+fun <T, R> T.tryOrNullAll(couldThrow: T.() -> R): R? =
     this.let {
         try {
             couldThrow(it)
@@ -12,20 +22,17 @@ fun <T, R> T.tryOrNull(couldThrow: T.() -> R): R? =
         }
     }
 
-inline fun <T, reified Ex> T.tryOrIgnore(couldThrow: T.() -> T): T =
+inline fun <T, reified Ex: Exception> T.tryOrIgnore(couldThrow: T.() -> T): T =
     this.let {
         try {
             couldThrow(it)
-        } catch (e: Exception) {
-            if (e is Ex) {
-                Log.debug("tryOrIgnore caught exception: $e")
-                return@let it
-            }
-            throw e
+        } catch (e: Ex) {
+            Log.debug("tryOrIgnore caught exception: $e")
+            return@let it
         }
     }
 
-inline fun <T> T.tryOrIgnoreAll(couldThrow: T.() -> T): T =
+fun <T> T.tryOrIgnoreAll(couldThrow: T.() -> T): T =
     this.let {
         try {
             couldThrow(it)

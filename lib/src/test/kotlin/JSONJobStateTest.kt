@@ -47,7 +47,7 @@ class JSONJobStateTest {
     }
 
     val cache by lazy {
-        JobStateCache.getCache<JobStateVariant.JSON, JSONJobState>(JobStateVariant.JSON)
+        JobStateCache.getCacheOld<JobStateVariant.JSON, JSONJobState>(JobStateVariant.JSON)
     }
 
     val cacheLock = Mutex()

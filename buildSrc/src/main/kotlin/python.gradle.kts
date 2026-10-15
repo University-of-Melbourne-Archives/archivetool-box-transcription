@@ -4,10 +4,11 @@ package buildsrc.convention
 import buildsrc.convention.python.AutoFormat
 import buildsrc.convention.python.CopySources
 import buildsrc.convention.python.CreateSourceDirectorySet
+import buildsrc.convention.python.GraalPyVFS
 import buildsrc.convention.util.Module
 import buildsrc.convention.util.Module.Companion.apply
 
-val modules: Set<Module> = setOf(CreateSourceDirectorySet, AutoFormat, CopySources)
+val modules: Set<Module> = setOf(CreateSourceDirectorySet, AutoFormat, CopySources, GraalPyVFS)
 modules.apply(project)
 
 
