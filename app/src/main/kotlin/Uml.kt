@@ -1,168 +1,161 @@
 import au.edu.unimelb.archivetool.util.logging.Log
-import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import io.github.kelvindev15.kotlin2plantuml.plantuml.ClassDiagram
 import io.github.kelvindev15.kotlin2plantuml.plantuml.Configuration
+import kotlinx.serialization.Serializable
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeText
+import kotlin.reflect.KCallable
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
+import kotlin.reflect.KProperty
 import kotlin.reflect.KVisibility
-
-fun processUml(uml: String): String = uml.run {
-    val prepend = listOf("hide empty members", "hide circle")
-    val edges = mutableSetOf<String>()
-    val append = mutableListOf<String>()
-    val classNames = mutableSetOf<String>()
-    "@startuml\n" + prepend.joinToString("\n") + "\n" +
-            lineSequence().joinToString("\n") {
-                it
-                    .removeStartEndDirectives()
-                    .replaceUnitReturnValues()
-                    .replaceFunctionNWithLambda()
-
-            }.getPlantUmlClasses().run {
-                map {
-                    it to (classBase.find(it)?.groups["classname"]?.value ?: "Anonymous")
-                }.also {
-                    it.forEach { (_, className) ->
-                        classNames.add(className)
-                    }
-                }.joinToString("\n") { (string, className) ->
-                    val (remaining, found) = string.removeAutomaticCode(className).attributesToAssociations(classNames)
-                    edges += found
-                    remaining
-                }
-            } + "\n" + append.apply {addAll(edges)}.joinToString("\n") + "\n@enduml\n"
-}
-
-val classBase by lazy {
-    "(?:abstract )?(?:class|interface) (?<classname>\\w+)".toRegex()
-}
-val parameterRegex by lazy {
-    "\\w+\\s*: (?:\\w+|\\w+<\\w+>)".toRegex()
-}
-val attributeRegex by lazy {
-    "^ {4}[+~#-](?:\\{\\w+\\} )?(?<name>\\w+): (?<type>.+)\$".toRegex()
-}
-val classRegex by lazy {
-    val genericType = "\\w+(?:\\s*: (?:\\w+|\\w+<\\w+>))?".toRegex()
-    val generics = "(?:<$genericType(?:,(?:\\s|\\\\n)*$genericType)*>)?".toRegex()
-    val member = "\\s{4}.*\\n".toRegex()
-
-    "$classBase$generics \\{\\n(?:$member)*\\}".toRegex()
-}
-fun String.getPlantUmlClasses(): Sequence<String> = classRegex.findAll(this).map { it.value }
-fun String.removeStartEndDirectives(): String = replace("@startuml", "").replace("@enduml", "")
-fun String.replaceUnitReturnValues(): String = "(\\(.*\\)): Unit".toRegex().replace(this) {
-    it.groupValues[1]
-}
-fun String.replaceFunctionNWithLambda(): String = "Function(?<n>\\d+)<(?<types>\\w+(?:, \\w+)*)>".toRegex().replace(this) {
-    val params = it.groups["n"]!!.value.toInt()
-    val types = it.groups["types"]!!.value.split(", ")
-    val paramTypes = types.subList(0, params)
-    "(${paramTypes.joinToString()}) -> ${types.last()}"
-}
-fun String.removeAutomaticCode(className: String): String {
-    val classBaseMatch = classBase.find(this)
-    if (!(classBaseMatch?.value?.contains("class ") ?: false)) return this
-    val componentRegex by lazy {
-        "^ {4}\\+component\\d+\\(\\): \\w+\$".toRegex()
-    }
-    val copyRegex by lazy {
-        "^ {4}\\+copy\\((?:$parameterRegex(?:, $parameterRegex)*)?\\): ${Regex.escape(className)}\$".toRegex()
-    }
-    val equalsRegex by lazy {
-        "^ {4}\\+equals\\(other: Any\\): Boolean\$".toRegex()
-    }
-    val hcRegex by lazy {
-        "^ {4}\\+hashCode\\(\\): Int\$".toRegex()
-    }
-    val toStringRegex by lazy {
-        "^ {4}\\+toString\\(\\): String\$".toRegex()
-    }
-    val writeRegex by lazy {
-        "^ {4}[~+]write\\\$Self\\(self: $className, output: CompositeEncoder, serialDesc: SerialDescriptor\\)\$".toRegex()
-    }
-    return lineSequence()
-        .filter { !it.matches(copyRegex) }
-        .filter { !it.matches(componentRegex) }
-        .filter { !it.matches(equalsRegex) }
-        .filter { !it.matches(hcRegex) }
-        .filter { !it.matches(toStringRegex) }
-        .filter { !it.matches(writeRegex) }
-        .joinToString("\n")
-}
-
-val multiValuedTypes = setOf(
-    "List", "MutableList", "ArrayList",
-    "Set", "MutableSet", "HashSet", "LinkedHashSet",
-    "Collection", "MutableCollection", "Iterable", "Sequence",
-    "Array", "Queue", "Deque", "ArrayDeque",
-    "Map", "MutableMap", "HashMap", "LinkedHashMap",
-)
-
-fun getMultiplicity(type: String, classNames: Set<String>): Map<String, String?> {
-    if ("->" in type) return emptyMap()
-    val outer = "\\w+".toRegex().find(type)?.value ?: return emptyMap()
-    val multiple = outer in multiValuedTypes
-    val nullable = type.endsWith("?")
-
-    return "\\w+".toRegex().findAll(type)
-        .map { it.value }
-        .filter { it in classNames }
-        .distinct()
-        .associateWith { id ->
-            when {
-                multiple -> "0..*"
-                id == outer -> if (nullable) "0..1" else "1"
-                else -> null
-            }
-        }
-}
-
-fun edge(owner: String, target: String, multiplicity: String?, label: String): String =
-    "$owner 1 --> ${if (multiplicity != null) {"\"$multiplicity\" "} else {""}}$target : $label"
-
-/**
- * For one class block: removes every attribute whose type references another known class and
- * returns the trimmed block together with the association edges that replace those attributes.
- * Attributes of plain types (String, Int, lambdas, external classes) are left untouched.
- */
-fun String.attributesToAssociations(classNames: Set<String>): Pair<String, List<String>> {
-    val owner = classBase.find(this)?.groups?.get("classname")?.value
-        ?: return this to emptyList()
-    val edges = mutableListOf<String>()
-
-    val remaining = lineSequence().filter { line ->
-        val match = attributeRegex.matchEntire(line) ?: return@filter true
-        val targets = getMultiplicity(match.groups["type"]!!.value.trim(), classNames)
-        if (targets.isEmpty()) return@filter true
-
-        val label = match.groups["name"]!!.value
-        targets.forEach { (target, multiplicity) -> edges += edge(owner, target, multiplicity, label) }
-        false
-    }.joinToString("\n")
-
-    return remaining to edges
-}
-
+import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.declaredMembers
+import kotlin.reflect.jvm.javaField
+import kotlin.reflect.jvm.javaMethod
+import kotlin.reflect.jvm.jvmErasure
 
 fun main() {
     Log.registerConsumer(StdoutConsumer())
 
-    //println(classRegex)
+    val root = "au.edu.unimelb.archivetool"
 
-    ///*
-    val uml = ClassDiagram(
-        *(ClasspathScanner.findClasses("au.edu.unimelb.archivetool", requireReflectable = true).toTypedArray()),
-        configuration = Configuration(false, false, false, recurse = true, KVisibility.PRIVATE, KVisibility.PRIVATE)
-    ).plantUml().let {
-        println("Raw: $it")
-        processUml(it)
+    // Build a global map of SimpleName -> FullyQualifiedName from all scanned classes
+    val allClasses = ClasspathScanner.findClasses(root, requireReflectable = true)
+    val globalTypeMap = mutableMapOf<String, String>()
+    val externalSupertypes = mutableMapOf<String, MutableSet<String>>() // childSimpleName -> parentNames
+    val classAnnotations = mutableMapOf<String, MutableSet<String>>()   // className -> annotationNames
+
+    allClasses.forEach { kClass ->
+        val simpleName = kClass.java.simpleName
+        val qualName = kClass.normalisedQualifiedName()
+        globalTypeMap[simpleName] = qualName
+
+        // 1. Capture Supertypes (Inheritance)
+        kClass.supertypes.forEach { supertype ->
+            runCatching {
+                val superKClass = supertype.jvmErasure
+                val superSimple = superKClass.java.simpleName
+                val superQual = superKClass.normalisedQualifiedName()
+
+                if (superSimple != "Any" && superSimple != "Object") {
+                    globalTypeMap[superSimple] = superQual
+                    externalSupertypes.getOrPut(simpleName) { mutableSetOf() }.add(superSimple)
+                }
+            }
+        }
+
+        // 2. Capture Annotations for relationship lines
+        kClass.annotations.forEach { ann ->
+            val annClass = ann.annotationClass
+            val annSimple = annClass.java.simpleName
+            val annQual = annClass.qualifiedName ?: annClass.java.name
+
+            // Skip built-in metadata annotations if desired, or keep them
+            if (annSimple != "Metadata" && annSimple != "Target" && annSimple != "Retention") {
+                globalTypeMap[annSimple] = annQual
+                classAnnotations.getOrPut(simpleName) { mutableSetOf() }.add(annSimple)
+            }
+        }
     }
+
+    val runs = allClasses
+        .groupBy { it.java.packageName }
+        .toSortedMap()
+        .mapNotNull { (pkg, classes) ->
+            runCatching {
+                PackageRun(
+                    packageName = pkg,
+                    classNames = classes.map { it.normalisedQualifiedName() }.toSet(),
+                    declarations = classes.map { kClass ->
+                        val javaClass = kClass.java
+                        val enclosing = javaClass.enclosingClass
+                        DeclarationMetadata(
+                            qualifiedName = kClass.normalisedQualifiedName(),
+                            simpleName = javaClass.simpleName,
+                            enclosingQualifiedName = enclosing?.name?.replace('$', '.'),
+                            isObject = runCatching { kClass.objectInstance != null }.getOrDefault(false),
+                            isInner = kClass.isInner,
+                            companionMembers = kClass.synthesiseCompanionMembers(),
+                            annotations = kClass.annotations.map { it.annotationClass.java.simpleName },
+                            isSerializable = kClass.annotations.any { it is Serializable },
+                        )
+                    },
+                    uml = ClassDiagram(
+                        *classes.toTypedArray(),
+                        configuration = Configuration(false, false, false, recurse = true, KVisibility.PRIVATE, KVisibility.PRIVATE)
+                    ).plantUml(),
+                )
+            }.onFailure { println("Skipping package $pkg: $it") }.getOrNull()
+        }
+
+    val uml = UmlCombiner.combine(runs, rootPackage = root, globalTypeMap, externalSupertypes, classAnnotations)
 
     val f = createTempDirectory().resolve("archivetool.plantuml")
     f.writeText(uml)
 
-    println("Wrote $uml to $f")
-    // */
+    println("Wrote ${runs.size} packages to $f")
+}
+
+private fun KClass<*>.normalisedQualifiedName(): String =
+    (qualifiedName ?: java.name).replace('$', '.')
+
+private fun KClass<*>.synthesiseCompanionMembers(): List<String> {
+    val companion = companionObject ?: return emptyList()
+    return companion.declaredMembers
+        .filterNot { it.isSyntheticMember() }
+        .mapNotNull { member -> runCatching {
+            val line = member.toPlantUmlLine() ?: return@runCatching null
+            // Filter out serializer() method from companion members
+            if (line.contains("serializer()")) return@runCatching null
+            line
+        }.getOrNull() }
+        .distinct()
+}
+
+/**
+ * `KCallable` has no `isSynthetic`. The backing Java member does, and kotlin-reflect exposes it
+ * through `javaField` / `javaMethod` / `javaConstructor`. Any of those that is a
+ * `java.lang.reflect.Member` carries the flag.
+ */
+private fun KCallable<*>.isSyntheticMember(): Boolean {
+    val member: java.lang.reflect.Member? = when (this) {
+        is KProperty<*> -> runCatching { javaField }.getOrNull()
+        is KFunction<*> -> runCatching { javaMethod }.getOrNull()
+        else -> null
+    }
+    return member?.isSynthetic ?: false
+}
+
+private fun KCallable<*>.toPlantUmlLine(): String? {
+    val visibility = when (visibility) {
+        KVisibility.PUBLIC -> "+"
+        KVisibility.PROTECTED -> "#"
+        KVisibility.INTERNAL -> "~"
+        KVisibility.PRIVATE -> "-"
+        null -> "+"
+    }
+    val name = name
+    return when (this) {
+        is KProperty<*> -> {
+            val isConstant = isFinal && (this.visibility == KVisibility.PUBLIC) // heuristic for constants
+            val prefix = if (isConstant) "{static} {const} " else "$visibility"
+            val type = returnType.jvmErasure.simpleName ?: return null
+            "$prefix$name: $type"
+        }
+        is KFunction<*> -> {
+            // Drop the instance / extension-receiver slots; keep declared parameters only.
+            val params = parameters
+                .filter { it.kind == KParameter.Kind.VALUE }
+                .joinToString(", ") { p ->
+                    val t = p.type.jvmErasure.simpleName ?: "Any"
+                    "${p.name ?: "_"}: $t"
+                }
+            val ret = returnType.jvmErasure.simpleName ?: "Unit"
+            "$visibility$name($params): $ret"
+        }
+        else -> null
+    }
 }

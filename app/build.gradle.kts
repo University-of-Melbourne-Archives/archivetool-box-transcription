@@ -12,6 +12,7 @@ dependencies {
     // refers to the top-level "utils" project.)
     implementation(project(":lib"))
     implementation(libs.kotlinReflect)
+    implementation(libs.kotlinxSerialization)
     implementation("io.github.kelvindev15:Kotlin2PlantUML:3.0.16")
 }
 
