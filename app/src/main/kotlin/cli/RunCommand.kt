@@ -57,9 +57,10 @@ class RunCommand : Command(name = "run") {
             )
 
         switchboard.createPreview(jobRoot, permitExisting = resume)
-        switchboard.reviewPreview(jobRoot, threshold)
+        switchboard.reviewSegmentationPreview(jobRoot, threshold)
         switchboard.manipulateImages(jobRoot)
         switchboard.createOCR(jobRoot)
+        switchboard.reviewOCRPreview(jobRoot)
         switchboard.generateExport(jobRoot)
     }
 }

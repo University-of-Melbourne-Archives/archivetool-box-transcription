@@ -15,6 +15,7 @@ class CliCommandTest {
         assertEquals(0, result.statusCode)
         assertContains(result.output, "run")
         assertContains(result.output, "preview")
+        assertContains(result.output, "ocr")
         assertContains(result.output, "status")
         assertContains(result.output, "finalise")
     }
@@ -88,6 +89,22 @@ class CliCommandTest {
         val result = BaseCommand().test("preview review -A 101")
 
         assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `ocr help lists review`() {
+        val result = BaseCommand().test("ocr --help")
+
+        assertEquals(0, result.statusCode)
+        assertContains(result.output, "review")
+    }
+
+    @Test
+    fun `ocr review uses the current working directory`() {
+        val result = BaseCommand().test("ocr review --help")
+
+        assertEquals(0, result.statusCode)
+        assertContains(result.output, "current working directory")
     }
 
     @Test

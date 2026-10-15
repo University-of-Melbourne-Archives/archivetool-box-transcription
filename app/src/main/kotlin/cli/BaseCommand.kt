@@ -19,7 +19,8 @@ import kotlin.jvm.optionals.getOrNull
 class BaseCommand :
     Command(
         name = "archivetool",
-        subcommands = setOf(RunCommand(), PreviewCommand(), StatusCommand(), FinaliseCommand()),
+        subcommands =
+            setOf(RunCommand(), PreviewCommand(), OCRCommand(), StatusCommand(), FinaliseCommand()),
     ) {
     init {
         // Adds a command for generating terminal tab-completion scripts.

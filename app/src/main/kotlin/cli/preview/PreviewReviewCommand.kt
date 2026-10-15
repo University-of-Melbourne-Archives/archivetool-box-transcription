@@ -26,6 +26,6 @@ class PreviewReviewCommand : Command(name = "review") {
     override fun run() {
         val jobRoot = Path(".").toAbsolutePath().normalize()
         val threshold = autoApproveThreshold?.toDouble()?.div(100.0) ?: 1.0
-        Switchboard.reviewPreview(jobRoot, threshold)
+        Switchboard.reviewSegmentationPreview(jobRoot, threshold)
     }
 }
