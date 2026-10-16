@@ -8,6 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import au.edu.unimelb.archivetool.util.os.Platform
+import kotlin.io.path.exists
 import kotlin.io.path.inputStream
 import kotlin.io.path.notExists
 import kotlin.io.path.outputStream
@@ -15,7 +16,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
-import kotlin.io.path.exists
 
 class JSONConfigInteraction : ConfigInteraction {
     val json by lazy { Json { prettyPrint = true } }

@@ -66,9 +66,7 @@ open class Quad protected constructor(vertices: Array<out Point>) : Polygon(vert
             }
         )
 
-    val perimeter by lazy {
-        CV.perimeter(toClockwise().vertices.toList(), true)
-    }
+    val perimeter by lazy { CV.perimeter(toClockwise().vertices.toList(), true) }
 
     companion object {
         fun create(vararg points: Pair<Int, Int>): Quad = create(points.map { Point.fromPair(it) })

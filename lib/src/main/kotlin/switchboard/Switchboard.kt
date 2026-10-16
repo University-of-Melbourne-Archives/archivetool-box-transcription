@@ -65,9 +65,8 @@ open class AbstractSwitchboard(
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction = _config.createInteraction()?.let {
-        InitInteraction.compose(it, _init )
-    } ?: _init
+    var init: InitInteraction =
+        _config.createInteraction()?.let { InitInteraction.compose(it, _init) } ?: _init
         private set
 
     var config: ConfigInteraction = _config
@@ -125,18 +124,17 @@ open class AbstractSwitchboard(
         when (swapFor) {
             is ConfigInteraction -> {
                 config = swapFor
-                init = config.createInteraction()?.let {
-                    InitInteraction.compose(it, _init )
-                } ?: _init
+                init =
+                    config.createInteraction()?.let { InitInteraction.compose(it, _init) } ?: _init
             }
             is CreatePreviewInteraction -> createPreview = swapFor
             is ImageManipulationInteraction -> manip = swapFor
             is ExportInteraction -> export = swapFor
             is InitInteraction -> {
                 _init = swapFor
-                init = config.createInteraction()?.let {
-                    InitInteraction.compose(it, swapFor )
-                } ?: swapFor
+                init =
+                    config.createInteraction()?.let { InitInteraction.compose(it, swapFor) }
+                        ?: swapFor
             }
             is JobStateInteraction -> job = swapFor
             is OCRInteraction -> ocr = swapFor

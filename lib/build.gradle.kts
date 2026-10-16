@@ -12,7 +12,8 @@ plugins {
 }
 
 graalPy {
-    resourceDirectory = extensions.extraProperties["au.edu.unimelb.archivetool.pythoninterop.vfsDir"] as String
+    resourceDirectory =
+        extensions.extraProperties["au.edu.unimelb.archivetool.pythoninterop.vfsDir"] as String
     packages = setOf("openai==3.16.*", "certifi>=2026.7.22") // Python dependencies
 }
 

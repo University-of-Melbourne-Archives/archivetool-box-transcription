@@ -1,7 +1,5 @@
 package au.edu.unimelb.archivetool.segmentation
 
-
-
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
@@ -17,15 +15,6 @@ import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import au.edu.unimelb.archivetool.util.wrap.CV
 import au.edu.unimelb.archivetool.util.wrap.CV.subMat
-import org.bytedeco.javacpp.FloatPointer
-import org.bytedeco.opencv.global.opencv_core.CV_32F
-import org.bytedeco.opencv.global.opencv_core.CV_32FC3
-import org.bytedeco.opencv.global.opencv_core.CV_8U
-import org.bytedeco.opencv.global.opencv_imgproc.CHAIN_APPROX_SIMPLE
-import org.bytedeco.opencv.global.opencv_imgproc.INTER_LINEAR
-import org.bytedeco.opencv.global.opencv_imgproc.RETR_EXTERNAL
-import org.bytedeco.opencv.global.opencv_imgproc.THRESH_BINARY
-import org.bytedeco.opencv.opencv_core.Mat
 import java.io.FileNotFoundException
 import java.nio.FloatBuffer
 import java.nio.file.Path
@@ -36,6 +25,15 @@ import kotlin.io.path.pathString
 import kotlin.math.ceil
 import kotlin.math.min
 import kotlin.math.round
+import org.bytedeco.javacpp.FloatPointer
+import org.bytedeco.opencv.global.opencv_core.CV_32F
+import org.bytedeco.opencv.global.opencv_core.CV_32FC3
+import org.bytedeco.opencv.global.opencv_core.CV_8U
+import org.bytedeco.opencv.global.opencv_imgproc.CHAIN_APPROX_SIMPLE
+import org.bytedeco.opencv.global.opencv_imgproc.INTER_LINEAR
+import org.bytedeco.opencv.global.opencv_imgproc.RETR_EXTERNAL
+import org.bytedeco.opencv.global.opencv_imgproc.THRESH_BINARY
+import org.bytedeco.opencv.opencv_core.Mat
 
 object BoxSegmentation {
     const val BOX_CLASS = "Box"
@@ -48,25 +46,34 @@ object BoxSegmentation {
         )
     }
 
-    val alreadyLoaded by lazy {mutableMapOf<String, Path>()}
+    val alreadyLoaded by lazy { mutableMapOf<String, Path>() }
+
     fun copyModelFromResourcesIfNotExists(resourcePath: String): Path {
-        return alreadyLoaded.getOrPut(resourcePath) { copyFromResources(resourcePath, modelDirectory) }
+        return alreadyLoaded.getOrPut(resourcePath) {
+            copyFromResources(resourcePath, modelDirectory)
+        }
     }
 
     private class Detection(val label: String, val score: Double, val polygon: Polygon)
-    private class Model(val session: OrtSession, val names: Map<Int, String>, val inH: Int, val inW: Int)
+
+    private class Model(
+        val session: OrtSession,
+        val names: Map<Int, String>,
+        val inH: Int,
+        val inW: Int,
+    )
 
     private val env: OrtEnvironment by lazy { OrtEnvironment.getEnvironment() }
     private val models: MutableMap<String, Model> by lazy { mutableMapOf() }
 
     /**
-     * Segments an image into Box & Sticker polygons and returns detections as quadrilaterals,
-     * keyed by image file name.
+     * Segments an image into Box & Sticker polygons and returns detections as quadrilaterals, keyed
+     * by image file name.
      */
     fun getBoxes(
         imagePath: JobRelativePath,
         modelPath: Path? = null,
-        conf: Double = 0.5
+        conf: Double = 0.5,
     ): Pair<JobRelativePath, JobFile> {
         val modelPath = modelPath ?: copyModelFromResourcesIfNotExists(DEFAULT_MODEL_RESOURCE)
 
@@ -75,55 +82,75 @@ object BoxSegmentation {
 
         // Key every box as box-N in confidence order
         val boxQuads = mutableListOf<Pair<String, Quad>>()
-        dets.filter { it.label == BOX_CLASS }.sortedByDescending { it.score }.forEachIndexed { n, d ->
-            val seg = Boundary(d.polygon.cornerPoints(), d.score)
-            val id = "box-${n + 1}"
-            vertexes[id] = ArchiveBox(seg)
-            boxQuads += id to seg.points
-        }
+        dets
+            .filter { it.label == BOX_CLASS }
+            .sortedByDescending { it.score }
+            .forEachIndexed { n, d ->
+                val seg = Boundary(d.polygon.cornerPoints(), d.score)
+                val id = "box-${n + 1}"
+                vertexes[id] = ArchiveBox(seg)
+                boxQuads += id to seg.points
+            }
 
         for (d in dets.filter { it.label == STICKER_CLASS }) {
             val seg = Boundary(d.polygon.cornerPoints(), d.score)
             val center = seg.points.centroid
-            // Boxes are in confidence order, so a sticker overlapping two boxes goes to the more confident one
-            boxQuads.firstOrNull { it.second.containsPoint(center) }?.let { box ->
-                vertexes[box.first] = vertexes[box.first].let {
-                    it!!.copy(
-                        labelBoundaries = listOf(*it.labelBoundaries.toTypedArray(), seg)
-                    )
+            // Boxes are in confidence order, so a sticker overlapping two boxes goes to the more
+            // confident one
+            boxQuads
+                .firstOrNull { it.second.containsPoint(center) }
+                ?.let { box ->
+                    vertexes[box.first] =
+                        vertexes[box.first].let {
+                            it!!.copy(
+                                labelBoundaries = listOf(*it.labelBoundaries.toTypedArray(), seg)
+                            )
+                        }
                 }
-            }
         }
 
         return imagePath to JobFile(vertexes)
     }
 
     /** Loads an ONNX model once per path, with the class names and input size stored at export. */
-    private fun loadModel(modelPath: Path): Model = models.getOrPut(modelPath.pathString) {
-        val session = env.createSession(modelPath.pathString, OrtSession.SessionOptions())
-        val meta = session.metadata.customMetadata
-        // Ultralytics stores these as Python reprs: "{0: 'Box', 1: 'Sticker'}" and "[640, 640]"
-        val names = Regex("""(\d+)\s*:\s*['"]([^'"]*)['"]""").findAll(meta.getValue("names"))
-            .associate { it.groupValues[1].toInt() to it.groupValues[2] }
-        val (inH, inW) = Regex("""\d+""").findAll(meta.getValue("imgsz")).map { it.value.toInt() }.toList()
-        Model(session, names, inH, inW)
-    }
+    private fun loadModel(modelPath: Path): Model =
+        models.getOrPut(modelPath.pathString) {
+            val session = env.createSession(modelPath.pathString, OrtSession.SessionOptions())
+            val meta = session.metadata.customMetadata
+            // Ultralytics stores these as Python reprs: "{0: 'Box', 1: 'Sticker'}" and "[640, 640]"
+            val names =
+                Regex("""(\d+)\s*:\s*['"]([^'"]*)['"]""")
+                    .findAll(meta.getValue("names"))
+                    .associate { it.groupValues[1].toInt() to it.groupValues[2] }
+            val (inH, inW) =
+                Regex("""\d+""").findAll(meta.getValue("imgsz")).map { it.value.toInt() }.toList()
+            Model(session, names, inH, inW)
+        }
 
-    private class Letterboxed(val padded: Mat, val r: Double, val left: Int, val top: Int, val newW: Int, val newH: Int)
+    private class Letterboxed(
+        val padded: Mat,
+        val r: Double,
+        val left: Int,
+        val top: Int,
+        val newW: Int,
+        val newH: Int,
+    )
 
-    /** Resizes an image to fit the model input while keeping aspect ratio, padding the rest grey. */
+    /**
+     * Resizes an image to fit the model input while keeping aspect ratio, padding the rest grey.
+     */
     private fun letterbox(image: Mat, inH: Int, inW: Int): Letterboxed {
-        val h = image.rows();
+        val h = image.rows()
         val w = image.cols()
         val r = min(inH.toDouble() / h, inW.toDouble() / w)
 
-        val newW = round(w * r).toInt();
+        val newW = round(w * r).toInt()
         val newH = round(h * r).toInt()
-        val padX = (inW - newW) / 2.0;
+        val padX = (inW - newW) / 2.0
         val padY = (inH - newH) / 2.0
-        val top = round(padY - 0.1).toInt();
+        val top = round(padY - 0.1).toInt()
         val bottom = round(padY + 0.1).toInt()
-        val left = round(padX - 0.1).toInt();
+        val left = round(padX - 0.1).toInt()
         val right = round(padX + 0.1).toInt()
 
         val resized = CV.resize(image, newW to newH, interp = INTER_LINEAR)
@@ -134,14 +161,18 @@ object BoxSegmentation {
     }
 
     /** Runs the ONNX model on one image and decodes each detection into a mask outline. */
-    private fun runModel(imagePath: JobRelativePath, modelPath: Path, conf: Double): List<Detection> {
+    private fun runModel(
+        imagePath: JobRelativePath,
+        modelPath: Path,
+        conf: Double,
+    ): List<Detection> {
         val model = loadModel(modelPath)
-        val inH = model.inH;
+        val inH = model.inH
         val inW = model.inW
 
         val image = CV.readImage(imagePath.absolute)
         if (image.empty()) throw FileNotFoundException("Could not read image: $imagePath")
-        val h = image.rows();
+        val h = image.rows()
         val w = image.cols()
 
         // BGR -> RGB, HWC -> NCHW, scaled to 0-1 as in training
@@ -155,7 +186,8 @@ object BoxSegmentation {
             FloatPointer(src.data()).get(out)
             out
         }
-        rgb.release(); lb.padded.release()
+        rgb.release()
+        lb.padded.release()
 
         val chw = FloatArray(hwc.size)
         val plane = inH * inW
@@ -163,23 +195,36 @@ object BoxSegmentation {
 
         val inputName = model.session.inputNames.first()
         val (predsShape, preds, protosShape, protos) =
-            OnnxTensor.createTensor(env, FloatBuffer.wrap(chw), longArrayOf(1, 3, inH.toLong(), inW.toLong()))
+            OnnxTensor.createTensor(
+                    env,
+                    FloatBuffer.wrap(chw),
+                    longArrayOf(1, 3, inH.toLong(), inW.toLong()),
+                )
                 .use { input ->
                     model.session.run(mapOf(inputName to input)).use { result ->
-                        // Detections are (1, N, 6 + 32) and mask prototypes are (1, 32, H, W), so tell them apart by rank
-                        val outs = result.map { it.value as OnnxTensor }.sortedBy { it.info.shape.size }
+                        // Detections are (1, N, 6 + 32) and mask prototypes are (1, 32, H, W), so
+                        // tell them apart by rank
+                        val outs =
+                            result.map { it.value as OnnxTensor }.sortedBy { it.info.shape.size }
                         fun data(t: OnnxTensor) =
                             t.floatBuffer.let { b -> FloatArray(b.remaining()).also { b.get(it) } }
-                        Outputs(outs[0].info.shape, data(outs[0]), outs[1].info.shape, data(outs[1]))
+                        Outputs(
+                            outs[0].info.shape,
+                            data(outs[0]),
+                            outs[1].info.shape,
+                            data(outs[1]),
+                        )
                     }
                 }
 
-        val c = protosShape[1].toInt();
-        val mh = protosShape[2].toInt();
+        val c = protosShape[1].toInt()
+        val mh = protosShape[2].toInt()
         val mw = protosShape[3].toInt()
-        val n = predsShape[1].toInt();
+        val n = predsShape[1].toInt()
         val stride = predsShape[2].toInt()
-        require(stride == 6 + c) { "Unexpected output shape ${predsShape.toList()}; export the model with end2end=True" }
+        require(stride == 6 + c) {
+            "Unexpected output shape ${predsShape.toList()}; export the model with end2end=True"
+        }
 
         val out = mutableListOf<Detection>()
         for (k in 0 until n) {
@@ -203,16 +248,17 @@ object BoxSegmentation {
             }
             val small = Mat(mh, mw, CV_32F).also { FloatPointer(it.data()).put(*logits) }
             val modelRes = CV.resize(small, inW to inH, interp = INTER_LINEAR)
-            val full = CV.resize(
-                modelRes.subMat(Rectangle.create(lb.left, lb.top, lb.newW, lb.newH)),
-                w to h,
-                interp = INTER_LINEAR
-            )
+            val full =
+                CV.resize(
+                    modelRes.subMat(Rectangle.create(lb.left, lb.top, lb.newW, lb.newH)),
+                    w to h,
+                    interp = INTER_LINEAR,
+                )
 
             // logit > 0 is sigmoid > 0.5; masks are cropped to their own box as Ultralytics does
-            val ix1 = x1.toInt();
+            val ix1 = x1.toInt()
             val iy1 = y1.toInt()
-            val ix2 = ceil(x2).toInt();
+            val ix2 = ceil(x2).toInt()
             val iy2 = ceil(y2).toInt()
             val mask = Mat.zeros(h, w, CV_8U).asMat()
             if (ix2 > ix1 && iy2 > iy1) {
@@ -221,7 +267,9 @@ object BoxSegmentation {
                 bin.convertTo(mask.subMat(roi), CV_8U)
                 bin.release()
             }
-            small.release(); modelRes.release(); full.release()
+            small.release()
+            modelRes.release()
+            full.release()
 
             val contours = CV.contours(mask, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
 
@@ -231,7 +279,12 @@ object BoxSegmentation {
 
             // Largest contour only, so stray specks of mask don't drag the convex hull around
             val largest = contours.largest
-            out += Detection(model.names.getValue(preds[o + 5].toInt()), score.toDouble(), Polygon.create(largest))
+            out +=
+                Detection(
+                    model.names.getValue(preds[o + 5].toInt()),
+                    score.toDouble(),
+                    Polygon.create(largest),
+                )
         }
         return out
     }
@@ -241,7 +294,7 @@ object BoxSegmentation {
         val predsShape: LongArray,
         val preds: FloatArray,
         val protosShape: LongArray,
-        val protos: FloatArray
+        val protos: FloatArray,
     )
 
     /** Gets corners of a (not axis-aligned) polygon by simplifying its convex hull to 4 points. */

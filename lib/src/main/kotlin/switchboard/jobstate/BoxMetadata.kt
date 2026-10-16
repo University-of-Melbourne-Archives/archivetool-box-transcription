@@ -52,10 +52,10 @@ object BoxMetadataConverter : PythonToJvmConverter<BoxMetadata> {
         if (polyglotValue.hasMember("ID strings")) {
             RecordSetID.fromOCROutput(
                 SetConverter.toJvmValue(
-                    polyglotValue
-                        .takeIf { it.hasMember("ID strings")}
-                        ?.getMember("ID strings") ?: return null
-                ).map { it.asString() }
+                        polyglotValue.takeIf { it.hasMember("ID strings") }?.getMember("ID strings")
+                            ?: return null
+                    )
+                    .map { it.asString() }
             )
         } else {
             null

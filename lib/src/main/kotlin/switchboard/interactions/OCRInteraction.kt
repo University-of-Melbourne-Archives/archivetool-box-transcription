@@ -26,7 +26,9 @@ class PythonOCRInteraction : OCRInteraction {
 
     override fun supported(): Image.FileType.Supported = OpenAI.formatRequirements
 
-    val module by lazy { PythonModule(setOf("ocr.py"), setOf(LoggerInjectable(), DisableTrustStore)) }
+    val module by lazy {
+        PythonModule(setOf("ocr.py"), setOf(LoggerInjectable(), DisableTrustStore))
+    }
 
     private val method_executeOCR by lazy {
         module.methods["executeOCR"].expect("OCR Module is missing function OCR::executeOCR")

@@ -3,7 +3,6 @@ import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import io.github.kelvindev15.kotlin2plantuml.plantuml.ClassDiagram
 import io.github.kelvindev15.kotlin2plantuml.plantuml.Configuration
 import io.github.kelvindev15.kotlin2plantuml.utils.ReflectUtils.Companion.isInterface
-import kotlinx.serialization.Serializable
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeText
 import kotlin.reflect.KCallable
@@ -17,6 +16,7 @@ import kotlin.reflect.full.declaredMembers
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaMethod
 import kotlin.reflect.jvm.jvmErasure
+import kotlinx.serialization.Serializable
 
 fun main() {
     Log.registerConsumer(StdoutConsumer())
@@ -26,8 +26,10 @@ fun main() {
     // Build a global map of SimpleName -> FullyQualifiedName from all scanned classes
     val allClasses = ClasspathScanner.findClasses(root, requireReflectable = true)
     val globalTypeMap = mutableMapOf<String, String>()
-    val externalSupertypes = mutableMapOf<String, MutableSet<String>>() // childSimpleName -> parentNames
-    val classAnnotations = mutableMapOf<String, MutableSet<String>>()   // className -> annotationNames
+    val externalSupertypes =
+        mutableMapOf<String, MutableSet<String>>() // childSimpleName -> parentNames
+    val classAnnotations =
+        mutableMapOf<String, MutableSet<String>>() // className -> annotationNames
 
     allClasses.forEach { kClass ->
         val simpleName = kClass.java.simpleName
@@ -62,38 +64,66 @@ fun main() {
         }
     }
 
-    val runs = allClasses
-        .groupBy { it.java.packageName }
-        .toSortedMap()
-        .mapNotNull { (pkg, classes) ->
-            runCatching {
-                PackageRun(
-                    packageName = pkg,
-                    classNames = classes.map { it.normalisedQualifiedName() }.toSet(),
-                    declarations = classes.map { kClass ->
-                        val javaClass = kClass.java
-                        val enclosing = javaClass.enclosingClass
-                        DeclarationMetadata(
-                            qualifiedName = kClass.normalisedQualifiedName(),
-                            simpleName = javaClass.simpleName,
-                            enclosingQualifiedName = enclosing?.name?.replace('$', '.'),
-                            isObject = runCatching { kClass.objectInstance != null }.getOrDefault(false),
-                            isInner = kClass.isInner,
-                            companionMembers = kClass.synthesiseCompanionMembers(),
-                            companionAssociations = kClass.synthesiseCompanionSupertypes(),
-                            annotations = kClass.annotations.map { it.annotationClass.java.simpleName },
-                            isSerializable = kClass.annotations.any { it is Serializable },
+    val runs =
+        allClasses
+            .groupBy { it.java.packageName }
+            .toSortedMap()
+            .mapNotNull { (pkg, classes) ->
+                runCatching {
+                        PackageRun(
+                            packageName = pkg,
+                            classNames = classes.map { it.normalisedQualifiedName() }.toSet(),
+                            declarations =
+                                classes.map { kClass ->
+                                    val javaClass = kClass.java
+                                    val enclosing = javaClass.enclosingClass
+                                    DeclarationMetadata(
+                                        qualifiedName = kClass.normalisedQualifiedName(),
+                                        simpleName = javaClass.simpleName,
+                                        enclosingQualifiedName = enclosing?.name?.replace('$', '.'),
+                                        isObject =
+                                            runCatching { kClass.objectInstance != null }
+                                                .getOrDefault(false),
+                                        isInner = kClass.isInner,
+                                        companionMembers = kClass.synthesiseCompanionMembers(),
+                                        companionAssociations =
+                                            kClass.synthesiseCompanionSupertypes(),
+                                        annotations =
+                                            kClass.annotations.map {
+                                                it.annotationClass.java.simpleName
+                                            },
+                                        isSerializable =
+                                            kClass.annotations.any { it is Serializable },
+                                    )
+                                },
+                            uml =
+                                ClassDiagram(
+                                        *classes.toTypedArray(),
+                                        configuration =
+                                            Configuration(
+                                                false,
+                                                false,
+                                                false,
+                                                recurse = true,
+                                                KVisibility.PRIVATE,
+                                                KVisibility.PRIVATE,
+                                            ),
+                                    )
+                                    .plantUml(),
                         )
-                    },
-                    uml = ClassDiagram(
-                        *classes.toTypedArray(),
-                        configuration = Configuration(false, false, false, recurse = true, KVisibility.PRIVATE, KVisibility.PRIVATE)
-                    ).plantUml(),
-                )
-            }.onFailure { println("Skipping package $pkg: $it") }.getOrNull()
-        }
+                    }
+                    .onFailure { println("Skipping package $pkg: $it") }
+                    .getOrNull()
+            }
 
-    val uml = UmlCombiner.combine(runs, rootPackage = root, globalTypeMap, externalSupertypes, classAnnotations)
+    val uml =
+        UmlCombiner.combine(
+            runs,
+            rootPackage = root,
+            globalTypeMap,
+            externalSupertypes,
+            classAnnotations,
+        )
 
     val f = createTempDirectory().resolve("archivetool.plantuml")
     f.writeText(uml)
@@ -108,18 +138,30 @@ private fun KClass<*>.synthesiseCompanionMembers(): List<String> {
     val companion = companionObject ?: return emptyList()
     return companion.declaredMembers
         .filterNot { it.isSyntheticMember() }
-        .mapNotNull { member -> runCatching {
-            val line = member.toPlantUmlLine() ?: return@runCatching null
-            // Filter out serializer() method from companion members
-            if (line.contains("serializer()")) return@runCatching null
-            line
-        }.getOrNull() }
+        .mapNotNull { member ->
+            runCatching {
+                    val line = member.toPlantUmlLine() ?: return@runCatching null
+                    // Filter out serializer() method from companion members
+                    if (line.contains("serializer()")) return@runCatching null
+                    line
+                }
+                .getOrNull()
+        }
         .distinct()
 }
 
 private fun KClass<*>.synthesiseCompanionSupertypes(): List<UmlCombiner.Relation> {
     val companion = companionObject ?: return emptyList()
-    return companion.supertypes.map {it.classifier as KClass<*>}.map { UmlCombiner.Relation(parent = it.java.simpleName, child = this.java.simpleName, dashed = it.isInterface, label = "(via. companion)") }
+    return companion.supertypes
+        .map { it.classifier as KClass<*> }
+        .map {
+            UmlCombiner.Relation(
+                parent = it.java.simpleName,
+                child = this.java.simpleName,
+                dashed = it.isInterface,
+                label = "(via. companion)",
+            )
+        }
 }
 
 /**
@@ -128,38 +170,42 @@ private fun KClass<*>.synthesiseCompanionSupertypes(): List<UmlCombiner.Relation
  * `java.lang.reflect.Member` carries the flag.
  */
 private fun KCallable<*>.isSyntheticMember(): Boolean {
-    val member: java.lang.reflect.Member? = when (this) {
-        is KProperty<*> -> runCatching { javaField }.getOrNull()
-        is KFunction<*> -> runCatching { javaMethod }.getOrNull()
-        else -> null
-    }
+    val member: java.lang.reflect.Member? =
+        when (this) {
+            is KProperty<*> -> runCatching { javaField }.getOrNull()
+            is KFunction<*> -> runCatching { javaMethod }.getOrNull()
+            else -> null
+        }
     return member?.isSynthetic ?: false
 }
 
 private fun KCallable<*>.toPlantUmlLine(): String? {
-    val visibility = when (visibility) {
-        KVisibility.PUBLIC -> "+"
-        KVisibility.PROTECTED -> "#"
-        KVisibility.INTERNAL -> "~"
-        KVisibility.PRIVATE -> "-"
-        null -> "+"
-    }
+    val visibility =
+        when (visibility) {
+            KVisibility.PUBLIC -> "+"
+            KVisibility.PROTECTED -> "#"
+            KVisibility.INTERNAL -> "~"
+            KVisibility.PRIVATE -> "-"
+            null -> "+"
+        }
     val name = name
     return when (this) {
         is KProperty<*> -> {
-            val isConstant = isFinal && (this.visibility == KVisibility.PUBLIC) // heuristic for constants
+            val isConstant =
+                isFinal && (this.visibility == KVisibility.PUBLIC) // heuristic for constants
             val prefix = if (isConstant) "{static} {const} " else "$visibility"
             val type = returnType.jvmErasure.simpleName ?: return null
             "$prefix$name: $type"
         }
         is KFunction<*> -> {
             // Drop the instance / extension-receiver slots; keep declared parameters only.
-            val params = parameters
-                .filter { it.kind == KParameter.Kind.VALUE }
-                .joinToString(", ") { p ->
-                    val t = p.type.jvmErasure.simpleName ?: "Any"
-                    "${p.name ?: "_"}: $t"
-                }
+            val params =
+                parameters
+                    .filter { it.kind == KParameter.Kind.VALUE }
+                    .joinToString(", ") { p ->
+                        val t = p.type.jvmErasure.simpleName ?: "Any"
+                        "${p.name ?: "_"}: $t"
+                    }
             val ret = returnType.jvmErasure.simpleName ?: "Unit"
             "$visibility$name($params): $ret"
         }

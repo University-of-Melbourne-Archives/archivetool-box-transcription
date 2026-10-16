@@ -12,8 +12,13 @@ class BoxSegmentationTest {
     )
     @Test
     fun `test_model_detections`() {
-        val image = JobRelativePath(Path(".").toAbsolutePath().parent, Path("src/test/resources/SwitchboardTest/PXL_20251127_230150462.jpg"))
-        // Relative paths resolve against the working directory, so print it if a file can't be found
+        val image =
+            JobRelativePath(
+                Path(".").toAbsolutePath().parent,
+                Path("src/test/resources/SwitchboardTest/PXL_20251127_230150462.jpg"),
+            )
+        // Relative paths resolve against the working directory, so print it if a file can't be
+        // found
         println("Working dir: ${Path(".").toAbsolutePath().parent}")
         require(image.absolute.exists()) { "Image not found: ${image.absolute}" }
 
@@ -24,7 +29,10 @@ class BoxSegmentationTest {
         result.let { (name, det) ->
             println(name)
             for ((id, entry) in det.vertexes!!) {
-                println("  $id  conf=%.3f  %s".format(entry.boxBoundary.confidence, entry.boxBoundary.points))
+                println(
+                    "  $id  conf=%.3f  %s"
+                        .format(entry.boxBoundary.confidence, entry.boxBoundary.points)
+                )
                 for (s in entry.labelBoundaries) {
                     println("    sticker  conf=%.3f  %s".format(s.confidence, s.points))
                 }

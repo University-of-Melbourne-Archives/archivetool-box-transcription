@@ -5,10 +5,14 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.file.Image.FileType
+import au.edu.unimelb.archivetool.util.math.geometry.Point as Pt
 import au.edu.unimelb.archivetool.util.math.geometry.Point.Companion.flatten
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
+import java.nio.file.Path
+import kotlin.io.path.*
+import kotlin.math.roundToInt
 import org.bytedeco.javacpp.FloatPointer
 import org.bytedeco.javacpp.IntPointer
 import org.bytedeco.javacpp.indexer.DoubleIndexer
@@ -22,10 +26,6 @@ import org.bytedeco.opencv.opencv_core.Mat
 import org.bytedeco.opencv.opencv_core.MatExpr
 import org.bytedeco.opencv.opencv_core.MatVector
 import org.bytedeco.opencv.opencv_core.Size
-import java.nio.file.Path
-import kotlin.io.path.*
-import kotlin.math.roundToInt
-import au.edu.unimelb.archivetool.util.math.geometry.Point as Pt
 
 object CV {
     data class ColourSpace(val depth: DepthType, val channels: Int) {
@@ -99,11 +99,7 @@ object CV {
 
     fun bgr2rgb(_in: Mat): Mat {
         val _out = Mat()
-        opencv_imgproc.cvtColor(
-            _in,
-            _out,
-            opencv_imgproc.COLOR_BGR2RGB,
-        )
+        opencv_imgproc.cvtColor(_in, _out, opencv_imgproc.COLOR_BGR2RGB)
         return _out
     }
 
@@ -252,7 +248,12 @@ object CV {
         return Polygon.create(vertices)
     }
 
-    fun resize(src: Mat, targetDims: Pair<Int, Int>? = null, factors: Pair<Double, Double> = 0.0 to 0.0, interp: Int = INTER_LINEAR): Mat {
+    fun resize(
+        src: Mat,
+        targetDims: Pair<Int, Int>? = null,
+        factors: Pair<Double, Double> = 0.0 to 0.0,
+        interp: Int = INTER_LINEAR,
+    ): Mat {
         val result = Mat()
 
         val dsize = targetDims?.let { (w, h) -> Size(w, h) } ?: Size()
@@ -263,7 +264,15 @@ object CV {
         return result
     }
 
-    fun border(src: Mat, top: Int, bottom: Int, left: Int, right: Int, colour: Colour, borderType: Int = BORDER_CONSTANT): Mat {
+    fun border(
+        src: Mat,
+        top: Int,
+        bottom: Int,
+        left: Int,
+        right: Int,
+        colour: Colour,
+        borderType: Int = BORDER_CONSTANT,
+    ): Mat {
         val dst = Mat()
         copyMakeBorder(src, dst, top, bottom, left, right, borderType, colour.rgb().toCVBGRScalar())
         return dst
@@ -276,32 +285,33 @@ object CV {
     }
 
     data class Contours(val points: List<List<Pt>>, val nodes: List<Node>) {
-        internal constructor(contours: MatVector, hierarchy: Mat): this(
+        internal constructor(
+            contours: MatVector,
+            hierarchy: Mat,
+        ) : this(
             (0 until contours.size()).map { i ->
                 val mat = contours.get(i)
                 mat.toPointList()
-            }, listOf<Node>().takeIf {hierarchy.empty()} ?: hierarchy.createIndexer<IntIndexer>().use { idx ->
-                List(hierarchy.cols()) { i ->
-                    fun v(k: Long): Int? = idx.get(0L, i.toLong(), k).takeIf { it >= 0 }
-                    Node(i, v(0), v(1), v(2), v(3))
-                }
-            }
+            },
+            listOf<Node>().takeIf { hierarchy.empty() }
+                ?: hierarchy.createIndexer<IntIndexer>().use { idx ->
+                    List(hierarchy.cols()) { i ->
+                        fun v(k: Long): Int? = idx.get(0L, i.toLong(), k).takeIf { it >= 0 }
+                        Node(i, v(0), v(1), v(2), v(3))
+                    }
+                },
         )
 
-        val areas by lazy {
-            points.map { it to contourArea(it.toMat()) }
-        }
+        val areas by lazy { points.map { it to contourArea(it.toMat()) } }
 
-        val largest by lazy {
-            areas.maxBy { it.second }.first
-        }
+        val largest by lazy { areas.maxBy { it.second }.first }
 
         data class Node(
             val index: Int,
-            val next: Int?,        // next contour at the same level
-            val previous: Int?,    // previous contour at the same level
-            val firstChild: Int?,  // first contour nested inside this one
-            val parent: Int?       // contour that contains this one
+            val next: Int?, // next contour at the same level
+            val previous: Int?, // previous contour at the same level
+            val firstChild: Int?, // first contour nested inside this one
+            val parent: Int?, // contour that contains this one
         )
     }
 
@@ -316,23 +326,26 @@ object CV {
         return mat
     }
 
-    fun Mat.toPointList(): List<Pt> = createIndexer<IntIndexer>().use { idx ->
-        List(rows()) { r ->
-            Pt.create(
-                idx.get(r.toLong(), 0, 0), idx.get(r.toLong(), 0, 1)
-            )
+    fun Mat.toPointList(): List<Pt> =
+        createIndexer<IntIndexer>().use { idx ->
+            List(rows()) { r -> Pt.create(idx.get(r.toLong(), 0, 0), idx.get(r.toLong(), 0, 1)) }
         }
-    }
 
-    fun MatVector.release() = (0 until size()).forEach { i ->
-        get(i).release()
-    }.also {releaseReference()}
+    fun MatVector.release() =
+        (0 until size()).forEach { i -> get(i).release() }.also { releaseReference() }
 
     fun contours(src: Mat, mode: Int, method: Int, offset: Pt? = null): Contours {
         val contours = MatVector()
         val hierarchy = Mat()
         if (offset != null) {
-            findContours(src, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, offset.toCV())
+            findContours(
+                src,
+                contours,
+                hierarchy,
+                RETR_EXTERNAL,
+                CHAIN_APPROX_SIMPLE,
+                offset.toCV(),
+            )
         } else {
             findContours(src, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
         }
@@ -353,14 +366,21 @@ object CV {
 
     fun perimeter(poly: List<Pt>, closed: Boolean) = arcLength(poly.toMat(), closed)
 
-    fun approxPoly(curve: List<Pt>, epsilon: Double, closed: Boolean = true) = approxPolyDouglasPecker(curve, epsilon, closed)
-    fun approxPolyDouglasPecker(curve: List<Pt>, epsilon: Double, closed: Boolean = true): List<Pt> {
+    fun approxPoly(curve: List<Pt>, epsilon: Double, closed: Boolean = true) =
+        approxPolyDouglasPecker(curve, epsilon, closed)
+
+    fun approxPolyDouglasPecker(
+        curve: List<Pt>,
+        epsilon: Double,
+        closed: Boolean = true,
+    ): List<Pt> {
         val out = Mat()
         approxPolyDP(curve.toMat(), out, epsilon, closed)
         return out.toPointList()
     }
 
     fun Mat.subMat(rect: Rectangle): Mat = apply(rect.toCVRect())
+
     fun MatExpr.subMat(rect: Rectangle): MatExpr = apply(rect.toCVRect())
 
     fun readImage(path: Path): Mat = opencv_imgcodecs.imread(path.pathString)

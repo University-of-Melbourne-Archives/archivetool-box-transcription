@@ -8,7 +8,9 @@ import onnxruntime as ort
 
 BOX_CLASS = "Box"
 STICKER_CLASS = "Sticker"
-DEFAULT_MODEL_PATH = r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.onnx"
+DEFAULT_MODEL_PATH = (
+    r"lib\src\main\python\model-sandbox\weights\yolo26n-archive-boxes-14-09.onnx"
+)
 
 
 def getBoxes(
@@ -37,7 +39,11 @@ def getBoxes(
 
         # Ignore non-quadrilaterals and above
         valid = [i for i in range(len(labels)) if len(polygons[i]) >= 3]
-        boxIdx = sorted((i for i in valid if labels[i] == BOX_CLASS), key=lambda i: scores[i], reverse=True)
+        boxIdx = sorted(
+            (i for i in valid if labels[i] == BOX_CLASS),
+            key=lambda i: scores[i],
+            reverse=True,
+        )
 
         # Key every box as box-N in confidence order
         boxQuads = []
@@ -106,7 +112,9 @@ def letterbox(image, inH, inW):
     left, right = round(padX - 0.1), round(padX + 0.1)
 
     resized = cv2.resize(image, (newW, newH), interpolation=cv2.INTER_LINEAR)
-    padded = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))
+    padded = cv2.copyMakeBorder(
+        resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114)
+    )
     return padded, r, left, top, newW, newH
 
 
@@ -133,7 +141,12 @@ def runModel(imagePath, modelPath, conf):
 
     # BGR -> RGB, HWC -> NCHW, scaled to 0-1 as in training
     padded, r, left, top, newW, newH = letterbox(image, inH, inW)
-    blob = np.ascontiguousarray(padded[:, :, ::-1].transpose(2, 0, 1)[None], dtype=np.float32) / 255.0
+    blob = (
+        np.ascontiguousarray(
+            padded[:, :, ::-1].transpose(2, 0, 1)[None], dtype=np.float32
+        )
+        / 255.0
+    )
 
     outputs = session.run(None, {session.get_inputs()[0].name: blob})
 
@@ -144,7 +157,9 @@ def runModel(imagePath, modelPath, conf):
 
     # Used for detecting incorrect ONNX exports
     if preds.shape[1] != 6 + c:
-        raise ValueError(f"Unexpected output shape {preds.shape}; export the model with end2end=True")
+        raise ValueError(
+            f"Unexpected output shape {preds.shape}; export the model with end2end=True"
+        )
 
     labels, scores, polygons = [], [], []
     for det in preds[preds[:, 4] >= conf]:
@@ -156,7 +171,11 @@ def runModel(imagePath, modelPath, conf):
         # upsampled to full image resolution, equivalent to retina_masks=True
         logits = (det[6:] @ protos.reshape(c, -1)).reshape(mh, mw)
         logits = cv2.resize(logits, (inW, inH), interpolation=cv2.INTER_LINEAR)
-        logits = cv2.resize(logits[top:top + newH, left:left + newW], (w, h), interpolation=cv2.INTER_LINEAR)
+        logits = cv2.resize(
+            logits[top : top + newH, left : left + newW],
+            (w, h),
+            interpolation=cv2.INTER_LINEAR,
+        )
 
         # logit > 0 is sigmoid > 0.5; masks are cropped to their own box as Ultralytics does
         ix1, iy1, ix2, iy2 = int(x1), int(y1), int(np.ceil(x2)), int(np.ceil(y2))
@@ -170,7 +189,9 @@ def runModel(imagePath, modelPath, conf):
         labels.append(names[int(det[5])])
         scores.append(float(det[4]))
         # Largest contour only, so stray specks of mask don't drag the convex hull around
-        polygons.append(max(contours, key=cv2.contourArea).reshape(-1, 2).astype(np.float32))
+        polygons.append(
+            max(contours, key=cv2.contourArea).reshape(-1, 2).astype(np.float32)
+        )
 
     return labels, scores, polygons
 
@@ -272,7 +293,9 @@ def toSegment(polygon, score, includeMask):
     # set box details
     segment = {"points": toPoints(quad.round(1)), "confidence": float(score)}
 
-    if includeMask:  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
+    if (
+        includeMask
+    ):  # debug only; incudes mask polygon for comparison (in case of misdrawn polygon)
         segment["mask"] = toPoints(polygon.round(1))
 
     return segment, quad

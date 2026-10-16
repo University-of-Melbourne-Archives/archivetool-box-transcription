@@ -5,7 +5,6 @@ import au.edu.unimelb.archivetool.util.extension.PairExt.extract
 import au.edu.unimelb.archivetool.util.extension.PairExt.map
 import au.edu.unimelb.archivetool.util.wrap.CV
 import kotlin.getValue
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -29,7 +28,7 @@ open class Polygon protected constructor(val vertices: Array<out Point>) {
     }
 
     val centroid by lazy {
-        Point.fromPair(vertices.map { it.inner }.extract().map {(it.sum() / it.size)})
+        Point.fromPair(vertices.map { it.inner }.extract().map { (it.sum() / it.size) })
     }
 
     open fun replaceIndex(i: Int, p: Point): Polygon =

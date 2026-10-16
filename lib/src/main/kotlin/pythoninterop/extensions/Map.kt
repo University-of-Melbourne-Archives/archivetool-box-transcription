@@ -1,44 +1,48 @@
 package au.edu.unimelb.archivetool.pythoninterop.extensions
 
 import au.edu.unimelb.archivetool.pythoninterop.extensions.PolyglotIterator.Companion.asIterator
-import au.edu.unimelb.archivetool.util.Ref
 import io.nacular.doodle.controls.table.map
-import org.graalvm.polyglot.Value
 import kotlin.collections.mapKeys
+import org.graalvm.polyglot.Value
 
 @JvmInline
-value class PolyglotMap(private val hash: Value): Map<Value, Value> {
+value class PolyglotMap(private val hash: Value) : Map<Value, Value> {
     init {
         require(hash.hasHashEntries())
     }
 
     override val size: Int
         get() = hash.hashSize.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+
     override val keys: Set<Value>
         get() = hash.hashKeysIterator.asIterator().asSequence().toSet()
+
     override val values: Collection<Value>
         get() = hash.hashValuesIterator.asIterator().asSequence().toSet()
+
     override val entries: Set<Map.Entry<Value, Value>>
-        get() = hash.hashEntriesIterator.asIterator().map {
-            object : Map.Entry<Value, Value> {
-                override val key
-                    get() = it.getArrayElement(0)
-                override val value
-                    get() = it.getArrayElement(1)
-            }
-        }.asSequence().toSet()
+        get() =
+            hash.hashEntriesIterator
+                .asIterator()
+                .map {
+                    object : Map.Entry<Value, Value> {
+                        override val key
+                            get() = it.getArrayElement(0)
 
-    override fun isEmpty(): Boolean =
-        size == 0
+                        override val value
+                            get() = it.getArrayElement(1)
+                    }
+                }
+                .asSequence()
+                .toSet()
 
-    override fun containsKey(key: Value): Boolean =
-        hash.hasHashEntry(key)
+    override fun isEmpty(): Boolean = size == 0
 
-    override fun containsValue(value: Value): Boolean =
-        values.contains(value)
+    override fun containsKey(key: Value): Boolean = hash.hasHashEntry(key)
 
-    override fun get(key: Value): Value? =
-        hash.getHashValueOrDefault(key, null)
+    override fun containsValue(value: Value): Boolean = values.contains(value)
+
+    override fun get(key: Value): Value? = hash.getHashValueOrDefault(key, null)
 
     companion object {
         fun Value.asMap() = PolyglotMap(this)
