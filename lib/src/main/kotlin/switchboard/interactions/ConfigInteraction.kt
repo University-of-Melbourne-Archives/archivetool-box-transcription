@@ -22,25 +22,7 @@ class JSONConfigInteraction : ConfigInteraction {
     val filePath by lazy { Platform.configPath().resolve("config.json") }
 
     override fun getConfig(): Config {
-        if (filePath.notExists()) {
-            val hasApiKeyInEnv = System.getenv(API_KEY_ENV_VAR) == null
-            Log.error(
-                "Could not find config file!" +
-                    if (hasApiKeyInEnv) {
-                        "Without this, we will not be able to perform OCR.\n"
-                    } else {
-                        ""
-                    } +
-                    "Writing a default configuration to $filePath.\n" +
-                    if (hasApiKeyInEnv) {
-                        "You will need to either set the \"ARCHIVETOOL_API_KEY\" environment variable,\n" +
-                            " or include it as \"api_key\" in the configuration file above."
-                    } else {
-                        ""
-                    }
-            )
-            writeDefault()
-        }
+        writeDefault()
 
         return filePath.inputStream().use {
             @OptIn(ExperimentalSerializationApi::class) json.decodeFromStream<Config>(it)
@@ -50,9 +32,24 @@ class JSONConfigInteraction : ConfigInteraction {
     override fun writeDefault() {
         if (filePath.exists()) return
 
+        val hasNoApiKeyInEnv = System.getenv(API_KEY_ENV_VAR) == null
+
+        Log.error(
+            "Could not find config file! Without this, we will not be able to perform OCR."
+        )
         filePath.outputStream().use {
             @OptIn(ExperimentalSerializationApi::class) json.encodeToStream(Config(), it)
         }
+        Log.info(
+            "Writing a default configuration to $filePath.\n" +
+            "You will need to either ${
+                if (hasNoApiKeyInEnv) {
+                    "set"
+                } else {
+                    "continue using"
+                }
+            } the \"ARCHIVETOOL_API_KEY\" environment variable, or include it as \"api_key\" in the configuration file above."
+        )
     }
 
     override fun createInteraction(): InitInteraction = CreateInteraction
