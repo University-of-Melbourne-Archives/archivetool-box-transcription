@@ -81,5 +81,5 @@ interface OCRPreviewInteraction : Interaction {
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.let { it.vertexes.isNotNull() && !it.approved }
+        file.second.vertexes?.values?.all { box -> box.metadata != null } ?: false
 }
