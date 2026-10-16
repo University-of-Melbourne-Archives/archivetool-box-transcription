@@ -4,13 +4,18 @@ import au.edu.unimelb.archivetool.switchboard.interactions.*
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVExportInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
+import au.edu.unimelb.archivetool.util.ProgressBar.Companion.withProgressBar
 import au.edu.unimelb.archivetool.util.error.expect
 import au.edu.unimelb.archivetool.util.extension.orNull
+import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
+import kotlin.collections.toSet
 import kotlin.io.path.Path
 
 // Implements a switchboard with default options.
@@ -173,19 +178,13 @@ open class AbstractSwitchboard(
                 job.create(directory)
             }
 
-        val inFiles =
-            state?.validFiles(createPreview, allowNulls = true)?.also {
-                it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-            }
-
-        val toUpdate =
-            createPreview.createPreview(
-                inFiles?.keys.expect("Could not load list of valid files."),
+        state!!.validFilesChunkedWithProgressBar(createPreview, true) { interaction, chunk ->
+            interaction.createPreview(
+                chunk.map(Pair<JobRelativePath, *>::first).toSet(),
                 weights,
                 rejectThreshold,
             )
-
-        state?.update(toUpdate)
+        }
     }
 
     fun reviewSegmentationPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
@@ -203,6 +202,26 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
+    fun manipulateImages(directory: Path) {
+        val state: JobState? = job.read(directory)
+        state!!.validFilesSingleWithProgressBar(manip, true) { interaction, file ->
+            interaction.manipulate(
+                mapOf(file)
+            )
+        }
+    }
+
+    fun createOCR(directory: Path) {
+        val state: JobState? = job.read(directory)
+        state!!.validFilesSingleWithProgressBar(ocr, true) { interaction, file ->
+            interaction.generateOCR(
+                mapOf(file),
+                config.getConfig(),
+            )
+        }
+    }
+
+
     fun reviewOCRPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
         val toUpdate =
@@ -218,35 +237,6 @@ open class AbstractSwitchboard(
         state?.update(toUpdate)
     }
 
-    fun manipulateImages(directory: Path) {
-        val state: JobState? = job.read(directory)
-        val toUpdate =
-            manip.manipulate(
-                state
-                    ?.validFiles(manip)
-                    ?.also {
-                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-                    }
-                    .expect("Could not load list of valid files.")
-            )
-        state?.update(toUpdate)
-    }
-
-    fun createOCR(directory: Path) {
-        val state: JobState? = job.read(directory)
-        val toUpdate =
-            ocr.generateOCR(
-                state
-                    ?.validFiles(ocr)
-                    ?.also {
-                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-                    }
-                    .expect("Could not load list of valid files."),
-                config.getConfig(),
-            )
-        state?.update(toUpdate)
-    }
-
     fun generateExport(directory: Path) {
         val state: JobState? = job.read(directory)
         export.export(
@@ -255,5 +245,70 @@ open class AbstractSwitchboard(
                 ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
                 .expect("Could not load list of valid files.")
         )
+    }
+
+    fun <T: Interaction> JobState.validFilesChunkedWithProgressBar(
+        type: T,
+        nullsAreValid: Boolean = false,
+        runInteraction: (interaction: T, chunk: Set<Pair<JobRelativePath, JobFile>>) ->  Map<JobRelativePath, JobFile>
+    ) {
+        val valid = validFiles(type, nullsAreValid).also {
+            it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+        }.expect("Could not load list of valid files.")
+
+        val chunkCountSuffix: String
+        val (chunks, chunkSize) = if (valid.size < MIN_CHUNKABLE_SIZE) {
+            chunkCountSuffix = ""
+            listOf(valid.map { (k, v) -> k to v }.toSet()) to valid.size
+        } else {
+            chunkCountSuffix = "s"
+            val size = if (valid.size / TARGET_CHUNK_SIZE < MIN_CHUNK_COUNT) {
+                valid.size / MIN_CHUNK_COUNT
+            } else {
+                valid.size / TARGET_CHUNK_SIZE
+            }
+            valid.entries.chunked(size) { l ->
+                l.map { (k, v) -> k to v }.toSet()
+            } to size
+        }
+
+        Log.debug("${valid.size} valid files for $type, breaking into ${chunks.size} chunk$chunkCountSuffix of $chunkSize")
+
+        withProgressBar(valid.size) {
+            for (chunk in chunks) {
+                val toUpdate = runInteraction(type, chunk)
+
+                update(toUpdate)
+                increment(chunkSize)
+            }
+        }
+    }
+
+    fun <T: Interaction> JobState.validFilesSingleWithProgressBar(
+        type: T,
+        nullsAreValid: Boolean = false,
+        runInteraction: (interaction: T, file: Pair<JobRelativePath, JobFile>) -> Map<JobRelativePath, JobFile>
+    ) {
+        val valid = validFiles(type, nullsAreValid).also {
+            it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
+        }.expect("Could not load list of valid files.")
+
+        Log.debug("${valid.size} valid files for $type, passing individually")
+
+
+        withProgressBar(valid.size) {
+            valid.map { (k, v) -> k to v }.forEachIndexed { i, file ->
+                val toUpdate = runInteraction(type, file)
+
+                update(toUpdate)
+                setProgress(i)
+            }
+        }
+    }
+
+    companion object {
+        const val TARGET_CHUNK_SIZE = 10
+        const val MIN_CHUNK_COUNT = 5
+        const val MIN_CHUNKABLE_SIZE = 30
     }
 }
