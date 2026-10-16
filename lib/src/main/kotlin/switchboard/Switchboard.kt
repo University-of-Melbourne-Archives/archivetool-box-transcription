@@ -18,6 +18,7 @@ import kotlin.io.path.Path
 // rather assigning it to a `AbstractSwitchboard` val.
 // You can swap out a given interaction using `.with` or create an AbstractSwitchboard yourself.
 // You can also make additional switchboard types, like a `MockSwitchboard` or something.
+// Also note: Config Creation Interactions are composed internally in the constructor.
 object Switchboard :
     AbstractSwitchboard(
         LogInitInteraction(),
@@ -53,7 +54,7 @@ object MockSwitchboard :
 // Currently just takes one interaction per command,
 // but will later also take stuff for things like Job data format parsing, or initial setup things.
 open class AbstractSwitchboard(
-    _init: InitInteraction,
+    var _init: InitInteraction,
     _config: ConfigInteraction,
     _job: JobStateInteraction,
     _status: StatusInteraction,
@@ -64,7 +65,9 @@ open class AbstractSwitchboard(
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction = _init
+    var init: InitInteraction = _config.createInteraction()?.let {
+        InitInteraction.compose(it, _init )
+    } ?: _init
         private set
 
     var config: ConfigInteraction = _config
@@ -120,11 +123,21 @@ open class AbstractSwitchboard(
     // Allows for on-the-fly swapping of interactions.
     fun swap(swapFor: Interaction) {
         when (swapFor) {
-            is ConfigInteraction -> config = swapFor
+            is ConfigInteraction -> {
+                config = swapFor
+                init = config.createInteraction()?.let {
+                    InitInteraction.compose(it, _init )
+                } ?: _init
+            }
             is CreatePreviewInteraction -> createPreview = swapFor
             is ImageManipulationInteraction -> manip = swapFor
             is ExportInteraction -> export = swapFor
-            is InitInteraction -> init = swapFor
+            is InitInteraction -> {
+                _init = swapFor
+                init = config.createInteraction()?.let {
+                    InitInteraction.compose(it, swapFor )
+                } ?: swapFor
+            }
             is JobStateInteraction -> job = swapFor
             is OCRInteraction -> ocr = swapFor
             is SegmentationPreviewInteraction -> segmentationPreview = swapFor

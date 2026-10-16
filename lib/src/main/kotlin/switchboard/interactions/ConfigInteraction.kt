@@ -6,6 +6,7 @@ import au.edu.unimelb.archivetool.config.OpenAIAPIData
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import au.edu.unimelb.archivetool.util.os.Platform
 import kotlin.io.path.inputStream
 import kotlin.io.path.notExists
@@ -53,6 +54,15 @@ class JSONConfigInteraction : ConfigInteraction {
             @OptIn(ExperimentalSerializationApi::class) json.encodeToStream(Config(), it)
         }
     }
+
+    override fun createInteraction(): InitInteraction = CreateInteraction
+
+    object CreateInteraction : InitInteraction {
+        override fun init(logConsumers: Set<LogConsumer>) = JSONConfigInteraction().writeDefault()
+
+        // This is an interaction that doesn't need files.
+        override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean = false
+    }
 }
 
 class MockConfigInteraction : ConfigInteraction {
@@ -66,6 +76,8 @@ interface ConfigInteraction : Interaction {
     fun getConfig(): Config
 
     fun writeDefault()
+
+    fun createInteraction(): InitInteraction? = null
 
     // We want every file here.
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean = true
