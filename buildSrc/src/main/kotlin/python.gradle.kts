@@ -10,5 +10,3 @@ import buildsrc.convention.util.Module.Companion.apply
 
 val modules: Set<Module> = setOf(CreateSourceDirectorySet, AutoFormat, CopySources, GraalPyVFS)
 modules.apply(project)
-
-
