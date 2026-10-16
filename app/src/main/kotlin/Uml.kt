@@ -2,6 +2,7 @@ import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import io.github.kelvindev15.kotlin2plantuml.plantuml.ClassDiagram
 import io.github.kelvindev15.kotlin2plantuml.plantuml.Configuration
+import io.github.kelvindev15.kotlin2plantuml.utils.ReflectUtils.Companion.isInterface
 import kotlinx.serialization.Serializable
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeText
@@ -79,6 +80,7 @@ fun main() {
                             isObject = runCatching { kClass.objectInstance != null }.getOrDefault(false),
                             isInner = kClass.isInner,
                             companionMembers = kClass.synthesiseCompanionMembers(),
+                            companionAssociations = kClass.synthesiseCompanionSupertypes(),
                             annotations = kClass.annotations.map { it.annotationClass.java.simpleName },
                             isSerializable = kClass.annotations.any { it is Serializable },
                         )
@@ -113,6 +115,11 @@ private fun KClass<*>.synthesiseCompanionMembers(): List<String> {
             line
         }.getOrNull() }
         .distinct()
+}
+
+private fun KClass<*>.synthesiseCompanionSupertypes(): List<UmlCombiner.Relation> {
+    val companion = companionObject ?: return emptyList()
+    return companion.supertypes.map {it.classifier as KClass<*>}.map { UmlCombiner.Relation(parent = it.java.simpleName, child = this.java.simpleName, dashed = it.isInterface, label = "(via. companion)") }
 }
 
 /**

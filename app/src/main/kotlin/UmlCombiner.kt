@@ -15,6 +15,7 @@ data class DeclarationMetadata(
     val isInner: Boolean = false,
     val isSerializable: Boolean = false,
     val companionMembers: List<String> = emptyList(),
+    val companionAssociations: List<UmlCombiner.Relation> = emptyList(),
     val annotations: List<String> = emptyList(),
 )
 
@@ -107,7 +108,7 @@ object UmlCombiner {
                     } else null
                 }
 
-                if (parentAlias != null) {
+                if (parentAlias != null && !parentQual.contains("au.edu.unimelb")) {
                     inheritance += "$parentAlias <|-- $childAlias"
                 }
             }
@@ -121,12 +122,29 @@ object UmlCombiner {
             annotations.forEach { annSimple ->
                 val annQual = externalTypeMap[annSimple] ?: annSimple
                 if (isAllowedExternal(annSimple)) {
-                    externalAnnotations += annSimple // Register specifically as an annotation
+                    externalAnnotations += annSimple
                     val annAlias = "ext_${aliasFor(annSimple)}"
                     //associations += "$classAlias ..> $annAlias : <<annotation>>"
                 }
             }
         }
+
+        runs.forEach { run -> run.declarations.forEach { decl -> decl.companionAssociations.forEach { rel ->
+            val parent = resolveSimple(rel.parent, run.packageName)
+            val child = resolveSimple(rel.child, run.packageName)
+
+            val parentAlias = if (parent != null) aliasFor(parent) else {
+                if (isAllowedExternal(rel.parent)) {
+                    externalClasses += rel.parent
+                    "ext_${aliasFor(rel.parent)}"
+                } else null
+            }
+            val childAlias = child?.let { aliasFor(it) }
+
+            if (parentAlias != null && childAlias != null) {
+                inheritance += "$parentAlias <|${if (rel.dashed) ".." else "--"} $childAlias" + if (rel.label != "") " : \"${rel.label}\"" else rel.label
+            }
+        }}}
 
         for ((run, items) in parsed) {
             val blocks = packageBlocks.getOrPut(run.packageName) { mutableListOf() }
@@ -145,7 +163,7 @@ object UmlCombiner {
                         val childAlias = child?.let { aliasFor(it) }
 
                         if (parentAlias != null && childAlias != null) {
-                            inheritance += "$parentAlias <|${if (item.dashed) ".." else "--"} $childAlias"
+                            inheritance += "$parentAlias <|${if (item.dashed) ".." else "--"} $childAlias" + if (item.label != "") " : \"${item.label}\"" else item.label
                         }
                     }
                     is ClassBlock -> {
@@ -197,17 +215,18 @@ object UmlCombiner {
 
         return buildString {
             appendLine("@startuml")
+            appendLine("!pragma layout elk")
             appendLine("top to bottom direction")
             appendLine("hide empty members")
             //appendLine("hide circle")
             appendLine("skinparam linetype ortho")
             appendLine("skinparam defaultFontName Liberation Sans")
-            appendLine("skinparam nodesep 20")
-            appendLine("skinparam ranksep 50")
+            appendLine("skinparam nodesep 15")
+            appendLine("skinparam ranksep 25")
 
             // Render external classes and external annotations cleanly in their own package
             if (externalClasses.isNotEmpty() || externalAnnotations.isNotEmpty()) {
-                appendLine("package \"External / Libraries\" {")
+                appendLine("package \"External\" {")
                 externalClasses.sorted().forEach { ext ->
                     val safeAlias = "ext_${aliasFor(ext)}"
                     val displayName = externalTypeMap[ext] ?: ext
@@ -240,7 +259,7 @@ object UmlCombiner {
 
     private sealed interface Item
     private class ClassBlock(val name: String, val lines: List<String>) : Item
-    private class Relation(val parent: String, val child: String, val dashed: Boolean) : Item
+    class Relation(val parent: String, val child: String, val dashed: Boolean, val label: String = "") : Item
 
     /** One distinct definition of a class. */
     private class Version(val alias: String, val body: List<String>) {
@@ -482,7 +501,7 @@ object UmlCombiner {
             "KProperty", "KFunction", "KCallable", "KClass",
             "Function", "Function0", "Function1", "Function2", "Function3", "Function4", "Function5",
             // Common exceptions / base classes
-            "Throwable", "Exception", "Error"
+            "Throwable", "Exception", "Error", "Object",
         )
 
         if (name in ignoredTypes || name.startsWith("Function") || name.startsWith("KFunction")) {
@@ -524,7 +543,13 @@ object UmlCombiner {
         val stereotypePrefix = stereotypes.takeUnless { it.isEmpty() }
             ?.joinToString("", prefix = "<i>", postfix = "</i>\\n") { if (it.startsWith("@")) { it } else {"<<$it>>"} } ?: ""
 
-        val first = "${header.groups["kw"]!!.value} \"$stereotypePrefix<b>$display</b>\" as $alias {"
+        val match = "(\\w+)\\s*(<\\w+(?:,\\s*\\w+)*>)".toRegex().find(display)
+        val name = if (match != null) {
+            "<b>${match.groupValues[1]}</b>${match.groupValues[2]}\""
+        } else {
+            display + '"'
+        }
+        val first = "${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias {"
         val members = lines.drop(1).map { line ->
             if (metadata?.isObject == true) markStatic(line) else line
         }
