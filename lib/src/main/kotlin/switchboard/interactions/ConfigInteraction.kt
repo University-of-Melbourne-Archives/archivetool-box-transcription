@@ -14,6 +14,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import kotlin.io.path.exists
 
 class JSONConfigInteraction : ConfigInteraction {
     val json by lazy { Json { prettyPrint = true } }
@@ -46,7 +47,7 @@ class JSONConfigInteraction : ConfigInteraction {
     }
 
     override fun writeDefault() {
-        if (!filePath.notExists()) return
+        if (filePath.exists()) return
 
         filePath.outputStream().use {
             @OptIn(ExperimentalSerializationApi::class) json.encodeToStream(Config(), it)
