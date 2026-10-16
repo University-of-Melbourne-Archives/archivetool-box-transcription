@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.pythoninterop
+package au.edu.unimelb.archivetool.python.interop
 
 import au.edu.unimelb.archivetool.util.error.expect
 import au.edu.unimelb.archivetool.util.logging.Log

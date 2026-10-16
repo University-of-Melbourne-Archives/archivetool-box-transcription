@@ -15,11 +15,11 @@ object GraalPyVFS: Module {
             inputs.property("vfsDir", vfsDir)
             outputs.dir(outDir)
             doLast {
-                val f = outDir.get().file("pythoninterop/GraalPyVFS.generated.kt").asFile
+                val f = outDir.get().file("interop/GraalPyVFS.generated.kt").asFile
                 f.parentFile.mkdirs()
                 f.writeText(
                     """
-                    package au.edu.unimelb.archivetool.pythoninterop
+                    package au.edu.unimelb.archivetool.python.interop
         
                     const val GRAALPY_VFS_PATH: String = "$vfsDir";
                     """.trimIndent()

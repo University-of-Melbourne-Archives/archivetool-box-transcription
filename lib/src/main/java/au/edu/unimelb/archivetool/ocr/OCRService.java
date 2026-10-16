@@ -1,3 +1,6 @@
+package au.edu.unimelb.archivetool.ocr;
+
+import au.edu.unimelb.archivetool.config.OpenAIAPIData;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ReasoningEffort;
@@ -21,12 +24,14 @@ public class OCRService {
                     + "with the start and end of the range separated by a '!', and each date in ISO8601. "
                     + "If a single date appears, treat it as a range with no end. "
                     + "Return 'None' if there's none.";
+    private final OpenAIAPIData settings;
     private final OpenAIClient client;
 
-    public OCRService(String apiKeyString) {
+    public OCRService(OpenAIAPIData settings) {
+        this.settings = settings;
         this.client = OpenAIOkHttpClient.builder()
-                .apiKey(apiKeyString)
-                .baseUrl("https://generativelanguage.googleapis.com/v1beta/openai/")
+                .apiKey(settings.getApiKey())
+                .baseUrl(settings.getBaseUrl())
                 .build();
     }
 
@@ -38,7 +43,7 @@ public class OCRService {
         String imageBase64Url = "data:image/png;base64," + base64String;
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                .model("gemini-3-flash-preview")
+                .model(settings.getModel())
                 .reasoningEffort(ReasoningEffort.LOW)
                 .addUserMessageOfArrayOfContentParts(List.of(
                         ChatCompletionContentPart.ofText(

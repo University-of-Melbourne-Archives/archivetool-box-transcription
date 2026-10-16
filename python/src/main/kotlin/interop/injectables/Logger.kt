@@ -1,6 +1,6 @@
-package au.edu.unimelb.archivetool.pythoninterop.injectables
+package au.edu.unimelb.archivetool.python.interop.injectables
 
-import au.edu.unimelb.archivetool.pythoninterop.Injectable
+import au.edu.unimelb.archivetool.python.interop.Injectable
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import java.util.function.Consumer

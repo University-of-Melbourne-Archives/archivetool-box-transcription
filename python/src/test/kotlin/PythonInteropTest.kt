@@ -1,7 +1,7 @@
-import au.edu.unimelb.archivetool.pythoninterop.PythonModule
-import au.edu.unimelb.archivetool.pythoninterop.PythonScript
-import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger
-import au.edu.unimelb.archivetool.pythoninterop.types.PythonBoolean
+import au.edu.unimelb.archivetool.python.interop.PythonModule
+import au.edu.unimelb.archivetool.python.interop.PythonScript
+import au.edu.unimelb.archivetool.python.interop.injectables.Logger
+import au.edu.unimelb.archivetool.python.interop.types.PythonBoolean
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer

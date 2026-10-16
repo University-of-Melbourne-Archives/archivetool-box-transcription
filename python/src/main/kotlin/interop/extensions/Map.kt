@@ -1,6 +1,6 @@
-package au.edu.unimelb.archivetool.pythoninterop.extensions
+package au.edu.unimelb.archivetool.python.interop.extensions
 
-import au.edu.unimelb.archivetool.pythoninterop.extensions.PolyglotIterator.Companion.asIterator
+import au.edu.unimelb.archivetool.python.interop.extensions.PolyglotIterator.Companion.asIterator
 import io.nacular.doodle.controls.table.map
 import kotlin.collections.mapKeys
 import org.graalvm.polyglot.Value

@@ -1,6 +1,6 @@
-package au.edu.unimelb.archivetool.pythoninterop.injectables
+package au.edu.unimelb.archivetool.python.interop.injectables
 
-import au.edu.unimelb.archivetool.pythoninterop.Injectable
+import au.edu.unimelb.archivetool.python.interop.Injectable
 import org.graalvm.polyglot.Context
 
 // httpx (what openai uses to make its requests) reaches into CPython's OpenSSL to get system ssl

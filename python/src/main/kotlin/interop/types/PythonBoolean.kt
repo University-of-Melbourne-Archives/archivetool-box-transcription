@@ -1,7 +1,7 @@
-package au.edu.unimelb.archivetool.pythoninterop.types
+package au.edu.unimelb.archivetool.python.interop.types
 
-import au.edu.unimelb.archivetool.pythoninterop.PythonType
-import au.edu.unimelb.archivetool.pythoninterop.converters.BooleanConverter
+import au.edu.unimelb.archivetool.python.interop.PythonType
+import au.edu.unimelb.archivetool.python.interop.converters.BooleanConverter
 import java.lang.ref.WeakReference
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value

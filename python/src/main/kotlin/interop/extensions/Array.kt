@@ -1,5 +1,6 @@
-package au.edu.unimelb.archivetool.pythoninterop.extensions
+package au.edu.unimelb.archivetool.python.interop.extensions
 
+import au.edu.unimelb.archivetool.python.interop.extensions.get
 import org.graalvm.polyglot.Value
 
 operator fun Value.get(index: Long): Value = getArrayElement(index)

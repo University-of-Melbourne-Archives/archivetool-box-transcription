@@ -1,4 +1,4 @@
-package au.edu.unimelb.archivetool.pythoninterop.extensions
+package au.edu.unimelb.archivetool.python.interop.extensions
 
 import org.graalvm.polyglot.Value
 

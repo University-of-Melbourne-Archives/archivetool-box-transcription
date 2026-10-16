@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.pythoninterop.extensions.invoke
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
@@ -8,7 +7,6 @@ import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.wrap.CV
 import java.nio.file.Path
-import kotlin.io.path.Path
 
 class KotlinCreatePreviewInteraction : CreatePreviewInteraction {
     override fun mayRequireConversion(): Boolean = true

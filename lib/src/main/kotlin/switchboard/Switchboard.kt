@@ -29,7 +29,7 @@ object Switchboard :
         SegmentationGUIInteraction(),
         OCRGUIInteraction(),
         ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
-        PythonOCRInteraction(),
+        KotlinOCRInteraction(),
         CSVExportInteraction(
             Path("/")
         ), // TODO: Flag if the export destination is not set. We should set this to a default in the

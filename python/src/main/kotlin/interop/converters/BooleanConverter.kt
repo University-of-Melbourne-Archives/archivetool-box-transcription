@@ -1,6 +1,6 @@
-package au.edu.unimelb.archivetool.pythoninterop.converters
+package au.edu.unimelb.archivetool.python.interop.converters
 
-import au.edu.unimelb.archivetool.pythoninterop.PythonTypeConverter
+import au.edu.unimelb.archivetool.python.interop.PythonTypeConverter
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
 
