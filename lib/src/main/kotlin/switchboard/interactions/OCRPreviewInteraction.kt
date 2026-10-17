@@ -4,7 +4,6 @@ import au.edu.unimelb.archivetool.gui.applicationWithResult
 import au.edu.unimelb.archivetool.gui.ocr.OCRInterface
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.extension.isNotNull
 import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
 import io.nacular.doodle.application.Modules.Companion.FontModule
@@ -81,5 +80,5 @@ interface OCRPreviewInteraction : Interaction {
     ): Map<JobRelativePath, JobFile>
 
     override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean =
-        file.second.let { it.vertexes.isNotNull() && !it.approved }
+        file.second.vertexes?.values?.all { box -> box.metadata != null } ?: false
 }

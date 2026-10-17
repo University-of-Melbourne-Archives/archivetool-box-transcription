@@ -25,12 +25,12 @@ import io.nacular.doodle.layout.constraints.constrain
 import io.nacular.doodle.theme.Theme
 import io.nacular.doodle.theme.ThemeManager
 import io.nacular.doodle.utils.TextAlignment
+import kotlin.collections.set
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlin.collections.set
 
 class OCRInterface(
     jobsIn: Map<JobRelativePath, JobFile?>,
@@ -46,8 +46,7 @@ class OCRInterface(
 ) : Application {
     // -- Job data ------------------------------------------------------------
     private val jobs: MutableMap<JobRelativePath, JobFile> =
-        jobsIn.mapNotNull { (path, file) -> file?.let { path to it } }
-            .toMap(mutableMapOf())
+        jobsIn.mapNotNull { (path, file) -> file?.let { path to it } }.toMap(mutableMapOf())
 
     private val paths: List<JobRelativePath> = jobs.keys.toList()
 
@@ -78,9 +77,7 @@ class OCRInterface(
                 size = Size(1100.0, 1000.0)
             }
 
-            mainWindowCloseBehavior = {
-                runBlocking { close() }
-            }
+            mainWindowCloseBehavior = { runBlocking { close() } }
         }
 
         themeManager.selected = theme
@@ -142,7 +139,9 @@ class OCRInterface(
                 PushButton("Previous").apply { fired += { moveIndex(currentIndex - 1) } },
                 PushButton("Next").apply { fired += { moveIndex(currentIndex + 1) } },
                 PushButton("Save").apply { fired += { save() } },
-                PushButton("Finish").apply { fired += {CoroutineScope(Dispatchers.Default).launch { close() }} },
+                PushButton("Finish").apply {
+                    fired += { CoroutineScope(Dispatchers.Default).launch { close() } }
+                },
             )
 
         val buttonWidthTable = 108.0
@@ -252,11 +251,7 @@ class OCRInterface(
         val job = currentJob
 
         table.cellTexts =
-            listOf(
-                formatTitleCell(job),
-                job?.description ?: "",
-                job?.dateRange?.CSVString ?: "",
-            )
+            listOf(formatTitleCell(job), job?.description ?: "", job?.dateRange?.CSVString ?: "")
     }
 
     // Column - Node Title: "<Record Set ID> Unit <%04d Unit Number>"

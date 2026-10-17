@@ -8,12 +8,18 @@ plugins {
 }
 
 dependencies {
-    // Project "app" depends on project "lib".
-    // (Project paths are separated with ":", so ":lib"
-    //		refers to the top-level "lib" project.)
+    // Core processing library
     implementation(project(":lib"))
 
+    // CLI framework
     implementation(libs.bundles.clikt)
+
+    // Switchboard dependencies
+    implementation(libs.kotlinReflect)
+    implementation(libs.kotlinxSerialization)
+    implementation("io.github.kelvindev15:Kotlin2PlantUML:3.0.16")
+
+    // CLI tests
     testImplementation(kotlin("test"))
 }
 

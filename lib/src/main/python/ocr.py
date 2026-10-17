@@ -4,6 +4,7 @@ import re
 from openai import OpenAI, APIConnectionError, DefaultHttpxClient
 import ssl, certifi
 
+
 def executeOCR(imagePath, base_url, api_key, model):
     """Perform OCR to read printed and handwritten texts from an image using Gemini model
     via OpenAI's library.
@@ -22,7 +23,11 @@ def executeOCR(imagePath, base_url, api_key, model):
         b64 = base64.b64encode(f.read()).decode("utf-8")
 
     sslctx = ssl.create_default_context(cadata=certifi.contents())
-    client = OpenAI(api_key=api_key, base_url=base_url, http_client=DefaultHttpxClient(verify=sslctx, timeout=60))
+    client = OpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        http_client=DefaultHttpxClient(verify=sslctx, timeout=60),
+    )
 
     try:
         response = client.chat.completions.create(
@@ -87,7 +92,9 @@ def processOutputText(extractedText):
         outputDict["Date ranges"] = dateRangeMatch[len("Date ranges: ") :]
         # Remove date ranges to prevent dupes in description
         extractedText = re.sub(dateRangePattern, "", extractedText)
-        extractedText = extractedText.replace(dateRangeMatch[len("Date ranges: ") :], "")
+        extractedText = extractedText.replace(
+            dateRangeMatch[len("Date ranges: ") :], ""
+        )
 
     # Identify format of ID string(s)
     # - {4 digit year}.{4 digit} ID string (e.g. 1964.0009)

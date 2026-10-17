@@ -1,50 +1,30 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.pythoninterop.PythonModule
-import au.edu.unimelb.archivetool.pythoninterop.PythonToJvmConverter
-import au.edu.unimelb.archivetool.pythoninterop.extensions.PolyglotIterable.Companion.asIterable
-import au.edu.unimelb.archivetool.pythoninterop.extensions.PolyglotMap.Companion.asMap
-import au.edu.unimelb.archivetool.pythoninterop.extensions.invoke
-import au.edu.unimelb.archivetool.pythoninterop.extensions.withStringKeys
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation
-import au.edu.unimelb.archivetool.pythoninterop.injectables.Logger as LoggerInjectable
-import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
-import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.error.expect
-import au.edu.unimelb.archivetool.util.extension.asFileAttribute
-import au.edu.unimelb.archivetool.util.extension.mapEntries
 import au.edu.unimelb.archivetool.util.file.Image
-import au.edu.unimelb.archivetool.util.file.copyFromResources
 import au.edu.unimelb.archivetool.util.logging.Log
-import au.edu.unimelb.archivetool.util.math.geometry.Quad
-import au.edu.unimelb.archivetool.util.wrap.YOLO
+import au.edu.unimelb.archivetool.util.wrap.CV
 import java.nio.file.Path
-import java.nio.file.attribute.PosixFilePermissions
-import kotlin.io.path.Path
-import kotlin.io.path.createTempDirectory
-import kotlin.io.path.pathString
-import org.graalvm.polyglot.Value
 
 class KotlinCreatePreviewInteraction : CreatePreviewInteraction {
     override fun mayRequireConversion(): Boolean = true
 
-    override fun supported(): Image.FileType.Supported = YOLO.formatRequirements
+    override fun supported(): Image.FileType.Supported = CV.formatRequirements
 
     override fun createPreview(
         files: Set<JobRelativePath>,
         weights: Path?,
         rejectConfidenceThreshold: Double,
     ): Map<JobRelativePath, JobFile> =
-        files.map {
-            BoxSegmentation.getBoxes(
-                it,
-                modelPath = weights,
-                conf = rejectConfidenceThreshold,
-            )
-        }.toMap()
+        files
+            .map {
+                BoxSegmentation.getBoxes(it, modelPath = weights, conf = rejectConfidenceThreshold)
+            }
+            .toMap()
 }
+
 /*
 //TODO: This needs work.
 class PythonCreatePreviewInteraction : CreatePreviewInteraction {

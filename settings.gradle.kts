@@ -24,4 +24,8 @@ include(":app")
 include(":gui")
 include(":lib")
 
+if ((providers.gradleProperty("enablePython").orNull ?: "false").toBoolean()) {
+    include(":python")
+}
+
 rootProject.name = "archivetool"

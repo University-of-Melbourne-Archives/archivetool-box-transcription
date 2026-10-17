@@ -20,7 +20,6 @@ import io.nacular.doodle.theme.ThemeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class SegmentationInterface(
@@ -44,7 +43,7 @@ class SegmentationInterface(
             onImageChanged = { index, total ->
                 fileCounter.text = "%03d/%03d".format(index + 1, total)
             },
-            kill = {display.children.clear()}
+            kill = { display.children.clear() },
         )
 
     init {
@@ -54,7 +53,7 @@ class SegmentationInterface(
                 size = Size(1100.0, 1000.0)
             }
 
-            mainWindowCloseBehavior = {runBlocking { viewport.close() }}
+            mainWindowCloseBehavior = { runBlocking { viewport.close() } }
         }
 
         themeManager.selected = theme
@@ -72,9 +71,7 @@ class SegmentationInterface(
                 PushButton("Confirm").apply { fired += { viewport.confirm() } },
                 PushButton("Create").apply { fired += { viewport.create() } },
                 PushButton("Delete").apply { fired += { viewport.delete() } },
-                PushButton("Finish").apply {
-                    fired += { windows.main.close() }
-                },
+                PushButton("Finish").apply { fired += { windows.main.close() } },
             )
 
         val buttonWidth = 90.0

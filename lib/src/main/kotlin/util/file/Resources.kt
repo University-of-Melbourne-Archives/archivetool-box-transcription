@@ -8,7 +8,6 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermissions
-import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createFile
 import kotlin.io.path.createParentDirectories
 
@@ -20,10 +19,15 @@ fun copyFromResources(
     val attributes = perms.asFileAttribute()
     val path = destinationDirectory.resolve(resourcePath).createParentDirectories(attributes)
 
-    val input = {}.javaClass.getResourceAsStream("/$resourcePath").expect("Resource not found: /$resourcePath")
+    val input =
+        {}.javaClass
+            .getResourceAsStream("/$resourcePath")
+            .expect("Resource not found: /$resourcePath")
 
     input.use {
-        path.tryOrNull<Path, Unit, java.nio.file.FileAlreadyExistsException> { createFile(attributes) }
+        path.tryOrNull<Path, Unit, java.nio.file.FileAlreadyExistsException> {
+            createFile(attributes)
+        }
         Files.copy(it, path, StandardCopyOption.REPLACE_EXISTING)
         Files.setPosixFilePermissions(path, perms)
     }
