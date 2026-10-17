@@ -1,254 +1,106 @@
-# ArchiveTool CLI User Guide
+# ArchiveTool CLI — Usage and Demo Guide
 
-ArchiveTool processes archive images through preview generation, review, image processing, OCR, OCR review, and CSV export.
+The Kotlin CLI uses **Clikt** to parse commands and delegates all archive processing to the **Switchboard**. The CLI does **not** implement segmentation, OCR, human review or job-state persistence.
 
-> **Note:** ArchiveTool is still under development. Some backend stages may not yet be fully available in the current build.
+## Build and verify (Windows PowerShell)
 
-## Quick Start
+From the repository root, after merging Switchboard through Git:
 
-Process a directory of archive images and write the result to a CSV file:
-
-```bash
-archivetool run -i <input-directory> -o <output.csv>
+```powershell
+.\gradlew.bat :app:classes
+.\gradlew.bat :app:test
+.\gradlew.bat :app:run --args="--help"
+.\gradlew.bat ktfmtCheck
 ```
 
-Example:
+Gradle automatically resolves any missing dependencies when online. `:app:test` validates command parsing and helper functions; it **does not** prove that the full image pipeline works.
 
-```bash
-archivetool run -i ./photos -o ./result.csv
+## Full workflow
+
+```powershell
+.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"'
 ```
 
-If `-i` is omitted, ArchiveTool uses the current working directory.
+Run `-i` is optional and defaults to the **process working directory**. Using an absolute path is recommended for demos. The `-o` CSV output path is required.
 
-## Command Summary
-
-| Command | Purpose |
-| --- | --- |
-| `archivetool run` | Run the complete ArchiveTool workflow |
-| `archivetool preview create` | Create detection previews for input images |
-| `archivetool preview review` | Open the preview review stage |
-| `archivetool ocr create` | Prepare approved images and generate OCR results |
-| `archivetool ocr review` | Open the OCR review stage |
-| `archivetool status` | Show the status of a job |
-| `archivetool finalise` | Export the completed job to CSV |
-| `archivetool --help` | Show general CLI help |
-
-## `run`
-
-Runs the complete workflow for an input directory.
-
-The workflow order is:
+Processing order:
 
 ```text
-preview creation -> preview review -> image processing -> OCR -> OCR review -> CSV export
+createPreview -> reviewSegmentationPreview -> manipulateImages
+              -> createOCR -> reviewOCRPreview -> generateExport
 ```
 
-```bash
-archivetool run [-i <input-directory>] -o <output.csv> [--resume] [-A <0-100>]
-```
+`run` also supports:
 
-Options:
-
-- `-i, --input-directory <directory>`  
-  Directory containing the input images. Defaults to the current working directory.
-
-- `-o, --output <output.csv>`  
-  CSV output path. Required.
-
-- `--resume`  
-  Allow ArchiveTool to continue using an existing job in the input directory.
-
-- `-A, --auto-approve-threshold <0-100>`  
-  Auto-approval threshold expressed as a percentage.
-
-Examples:
-
-```bash
-archivetool run -i ./photos -o ./result.csv
-```
-
-```bash
-archivetool run -i ./photos -o ./result.csv -A 95
-```
-
-```bash
-archivetool run -i ./photos -o ./result.csv --resume
-```
-
-## `preview create`
-
-Creates preview data for images in an input directory.
-
-```bash
-archivetool preview create [-i <input-directory>]
-```
-
-Options:
-
-- `-i, --input-directory <directory>`  
-  Directory containing the input images. Defaults to the current working directory.
+- `--resume`: allow Switchboard to reuse an existing job state. Actual stage-resumption behaviour depends on the backend implementation.
+- `-A, --auto-approve-threshold <0-100>`: validate an integer percentage, convert it to 0.0–1.0 and pass it to segmentation review. **The backend must actually honour the threshold**; the CLI does not decide which images are approved.
 
 Example:
 
-```bash
-archivetool preview create -i ./photos
+```powershell
+.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv" --resume -A 95'
 ```
 
-Or, when already inside the image directory:
+## Command reference
 
-```bash
-archivetool preview create
+| Command | Arguments/options | Switchboard action |
+| --- | --- | --- |
+| `run` | `[-i DIR] -o FILE [--resume] [-A 0-100]` | All six stages in order |
+| `preview create` | `[-i DIR]` | `createPreview` |
+| `preview review` | `[-A 0-100]` | `reviewSegmentationPreview` |
+| `ocr create` | none | `manipulateImages`, then `createOCR` |
+| `ocr review` | none | `reviewOCRPreview` |
+| `finalise` | `-o FILE` (required) | `generateExport` **only** |
+| `status` | `[JOB_DIR]` | `getStatus` (backend implementation may be incomplete) |
+
+`finalize` is an alias for `finalise`. The `-v` / `-q` root options control logging verbosity.
+
+### Important working-directory rule for staged commands
+
+`preview review`, `ocr create`, `ocr review` and `finalise` use the **current process working directory** as the job root; unlike `run`, they do not accept an `-i` option. `status` accepts an optional positional job directory.
+
+When invoking through `:app:run`, the working directory can be determined by Gradle's JavaExec configuration, **not necessarily the PowerShell directory**. For an accurate staged demo, use the application launcher from the job directory.
+
+First create the launch scripts from the repository root:
+
+```powershell
+.\gradlew.bat :app:installDist
 ```
 
-## `preview review`
+Then change into the photo directory and invoke the generated launcher using its absolute path (adjust both paths):
 
-Opens the preview review stage for the job in the current working directory.
-
-```bash
-archivetool preview review [-A <0-100>]
+```powershell
+Set-Location "C:\Archive Photos\Batch 01"
+& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" preview create
+& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" preview review
+& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" ocr create
+& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" ocr review
+& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" finalise -o "C:\Archive Exports\result.csv"
 ```
 
-Options:
+The default Gradle application distribution name is `app` unless the project changes its application name.
 
-- `-A, --auto-approve-threshold <0-100>`  
-  Auto-approval threshold expressed as a percentage.
+Job state and intermediate files are under the input directory (for example `.archivetool_generated/job.json`). Do not use that internal directory as the job root.
 
-Example:
+## OCR configuration
 
-```bash
-archivetool preview review -A 95
+The latest supplied Switchboard snapshot uses an online OCR implementation through an OpenAI-compatible SDK with a Google Gemini endpoint. Configure the **actual backend API key** before a real end-to-end demo. In PowerShell, set a key for the current session without committing it to Git:
+
+```powershell
+$env:ARCHIVETOOL_API_KEY = "<insert-key-locally>"
 ```
 
-`preview review` does not take a job-directory argument. Run it from the job's input-photo directory.
+The default implementation requires internet access. The Java SDK is a **Gradle dependency**, not a separate program that the CLI user installs.
 
-## `ocr create`
+## What is and is not verified
 
-Prepares approved images and generates OCR results for the job in the current working directory.
+**CLI code:** command routing, validation, path normalisation, percentage conversion and the intended Switchboard call order are represented in source and parser/unit tests.
 
-```bash
-archivetool ocr create
-```
+**Backend:** the latest provided snapshot still has potential demo blockers that must be checked against Amy's next commit:
 
-This command runs the image-manipulation stage first, then calls the Switchboard OCR generation stage. Run it after segmentation review is complete.
+- `getStatus()` was unfinished in the last reviewed backend snapshot; do not rely on `status` for a demo until Amy completes it.
+- The segmentation auto-approval threshold is forwarded by the CLI, but must be verified in the backend GUI.
+- Structured OCR metadata conversion and real-image CSV content need an end-to-end check.
+- `--resume` depends on persisted Switchboard state and stage eligibility, which parser tests do not exercise.
 
-## `ocr review`
-
-Opens the OCR review stage for the job in the current working directory.
-
-```bash
-archivetool ocr review
-```
-
-`ocr review` calls the Switchboard OCR review stage directly. Run it after OCR results have been generated.
-
-## `status`
-
-Shows the status of an ArchiveTool job.
-
-```bash
-archivetool status [<job-directory>]
-```
-
-`<job-directory>` is the input-photo directory used for the job.
-
-If no directory is supplied, the current working directory is used.
-
-Examples:
-
-```bash
-archivetool status
-```
-
-```bash
-archivetool status ./photos
-```
-
-## `finalise`
-
-Exports the completed job to CSV from the current working directory.
-
-```bash
-archivetool finalise -o <output.csv>
-```
-
-Options:
-
-- `-o, --output <output.csv>`  
-  CSV output path. Required.
-
-Example:
-
-```bash
-archivetool finalise -o ./result.csv
-```
-
-`finalise` does not take a job-directory argument. Run it from the job's input-photo directory.
-
-## Job Directories
-
-The **job directory** is the directory containing the original input images.
-
-For example:
-
-```text
-batch01/
-├── IMG001.jpg
-├── IMG002.jpg
-└── .archivetool_generated/
-    └── job.json
-```
-
-Use:
-
-```text
-batch01/
-```
-
-as the job directory.
-
-Do **not** pass `.archivetool_generated/` or `job.json` as the job directory. ArchiveTool manages its internal job-state files automatically.
-
-## Paths with Spaces
-
-Wrap paths containing spaces in quotes.
-
-Example:
-
-```bash
-archivetool run -i "C:\\Archive Photos\\Batch 01" -o "C:\\Archive Exports\\result.csv"
-```
-
-## Help
-
-Show general help:
-
-```bash
-archivetool --help
-```
-
-Show help for a command:
-
-```bash
-archivetool run --help
-archivetool preview --help
-archivetool preview create --help
-archivetool preview review --help
-archivetool ocr --help
-archivetool ocr create --help
-archivetool ocr review --help
-archivetool status --help
-archivetool finalise --help
-```
-
-## Current Development Notes
-
-The command-line interface is implemented, but some processing stages are still being integrated with the backend.
-
-In particular:
-
-- preview creation is still being completed in the Switchboard/Detection integration;
-- status output is still under development;
-- auto-approval behaviour may change while the review integration is finalised;
-- the packaged `archivetool` launcher and installation instructions are not yet final.
-
-The CLI syntax in this guide should be updated if the public Switchboard interface changes before release.
+Demo checklist: build and tests pass; API key and connectivity checked; a small real input batch opens segmentation/OCR review as intended; CSV fields populated; previous working Git commit available as fallback.

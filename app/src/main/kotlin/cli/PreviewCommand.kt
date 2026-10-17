@@ -5,21 +5,11 @@ import au.edu.unimelb.archivetool.app.cli.preview.PreviewCreateCommand
 import au.edu.unimelb.archivetool.app.cli.preview.PreviewReviewCommand
 import com.github.ajalt.clikt.core.Context
 
+/** Groups segmentation preview creation and human review commands. */
 class PreviewCommand :
-    Command(
-        // This command is called "preview".
-        name = "preview",
+    Command(name = "preview", subcommands = setOf(PreviewCreateCommand(), PreviewReviewCommand())) {
+    override fun help(context: Context) = "Generate and review box-detection previews."
 
-        // Register "create" under "preview".
-        subcommands = setOf(PreviewCreateCommand(), PreviewReviewCommand()),
-    ) {
-    // Text shown by: archivetool preview --help
-    override fun help(context: Context): String =
-        """
-        Generate and manage box detection previews
-        """
-            .trimIndent()
-
-    // The actual work is performed by its subcommands.
+    // Work is performed by the registered subcommands.
     override fun run() = Unit
 }

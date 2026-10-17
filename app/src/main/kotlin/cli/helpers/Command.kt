@@ -5,25 +5,15 @@ import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.installMordantMarkdown
 import com.github.ajalt.clikt.core.subcommands
 
-abstract class Command(
-    // The name used for this command in the terminal.
-    val name: String? = null,
-
-    // The child commands registered under this command.
-    val subcommands: Set<CliktCommand> = setOf(),
-
-    // All custom commands inherit Clikt's base command class.
-) : CliktCommand(name) {
-
-    // Runs automatically whenever a Command object is created.
+/**
+ * Shared Clikt setup: register subcommands, enable Markdown help, and use the project's consistent
+ * help layout. Does not execute backend operations.
+ */
+abstract class Command(val name: String? = null, val subcommands: Set<CliktCommand> = emptySet()) :
+    CliktCommand(name) {
     init {
-        // Register the supplied child commands with Clikt.
         (this as CliktCommand).subcommands(subcommands.toList())
-
-        // Allow Markdown formatting in help text.
         installMordantMarkdown()
-
-        // Use the project's custom --help layout.
         context { helpFormatter = { CustomHelpFormatter(it) } }
     }
 }

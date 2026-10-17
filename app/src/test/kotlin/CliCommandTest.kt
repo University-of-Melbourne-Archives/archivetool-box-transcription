@@ -1,6 +1,10 @@
 package au.edu.unimelb.archivetool.app.cli
 
+import au.edu.unimelb.archivetool.app.cli.helpers.asApprovalFraction
+import au.edu.unimelb.archivetool.app.cli.helpers.currentJobRoot
+import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import com.github.ajalt.clikt.testing.test
+import kotlin.io.path.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -105,7 +109,7 @@ class CliCommandTest {
         val result = BaseCommand().test("ocr create --help")
 
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "generate OCR results")
+        assertContains(result.output, "OCR")
         assertFalse(result.output.contains("Job Directory"))
     }
 
@@ -141,5 +145,91 @@ class CliCommandTest {
         assertEquals(0, result.statusCode)
         assertContains(result.output, "<job directory>")
         assertContains(result.output, "input-photo directory")
+    }
+
+    @Test
+    fun `run rejects an auto approve threshold below zero`() {
+        val result = BaseCommand().test("run -o result.csv -A -1")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `run rejects a non numeric threshold`() {
+        val result = BaseCommand().test("run -o result.csv -A invalid")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `run rejects a missing input directory`() {
+        val result = BaseCommand().test("run -i __archivetool_missing_input_folder__ -o result.csv")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `preview review rejects a negative threshold`() {
+        val result = BaseCommand().test("preview review -A -1")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `ocr create does not accept removed job directory flag`() {
+        val result = BaseCommand().test("ocr create --job-directory unused")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `ocr review does not accept removed job directory flag`() {
+        val result = BaseCommand().test("ocr review --job-directory unused")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `finalise does not accept an input directory flag`() {
+        val result = BaseCommand().test("finalise -o result.csv --input-directory photos")
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `run help describes the staged workflow`() {
+        val result = BaseCommand().test("run --help")
+        assertEquals(0, result.statusCode)
+        assertContains(result.output, "workflow")
+    }
+
+    @Test
+    fun `omitted approval threshold uses the existing one hundred percent default`() {
+        assertEquals(1.0, (null as Int?).asApprovalFraction())
+    }
+
+    @Test
+    fun `approval threshold converts percentages to fractions`() {
+        assertEquals(0.0, 0.asApprovalFraction())
+        assertEquals(0.95, 95.asApprovalFraction())
+        assertEquals(1.0, 100.asApprovalFraction())
+    }
+
+    @Test
+    fun `CLI input paths are normalized to absolute paths`() {
+        val input = Path(".", "photos", "..", "photos")
+        assertEquals(input.toAbsolutePath().normalize(), input.normalizedAbsolute())
+    }
+
+    @Test
+    fun `current job root uses the current process directory`() {
+        assertEquals(Path(".").toAbsolutePath().normalize(), currentJobRoot())
+    }
+
+    @Test
+    fun `status help does not promise an implemented backend`() {
+        val result = BaseCommand().test("status --help")
+        assertEquals(0, result.statusCode)
+        assertContains(result.output, "Switchboard")
+    }
+
+    @Test
+    fun `finalise help describes export without OCR processing`() {
+        val result = BaseCommand().test("finalise --help")
+        assertEquals(0, result.statusCode)
+        assertContains(result.output, "Export")
     }
 }

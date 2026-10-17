@@ -14,8 +14,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
-// Root command: archivetool
-// Registers the main top-level commands.
+/** Root command, logging policy, aliases, and tab completion. */
 class BaseCommand :
     Command(
         name = "archivetool",
@@ -23,7 +22,6 @@ class BaseCommand :
             setOf(RunCommand(), PreviewCommand(), OCRCommand(), StatusCommand(), FinaliseCommand()),
     ) {
     init {
-        // Adds a command for generating terminal tab-completion scripts.
         subcommands(
             CompletionCommand(
                 name = "completions",
@@ -32,18 +30,9 @@ class BaseCommand :
         )
     }
 
-    // Allows both British and American spelling:
-    // finalise = finalize
+    // Keep the alternative spelling as a backward-compatible alias.
     override fun aliases(): Map<String, List<String>> = mapOf("finalize" to listOf("finalise"))
 
-    // Controls how much logging is shown:
-    //
-    // default → Info
-    // -v      → Debug
-    // -vv     → Trace
-    // -q      → Warn
-    // -qq     → Error
-    // -qqq    → No logging
     val logLevel by
         mutuallyExclusiveOptions(
                 option(
@@ -76,17 +65,10 @@ class BaseCommand :
                         }
                     },
             )
-            // -v and -q cannot be used together.
             .single()
-
-            // Use normal Info logging when neither option is supplied.
             .default(Optional.of(LogLevel.Info))
 
     override fun run() {
-        // Register terminal logging using the selected level.
-        //
-        // If the selected value is empty (-qqq),
-        // no terminal log consumer is registered.
         logLevel.getOrNull()?.let { Log.registerConsumer(StderrConsumer(maxLogLevel = it)) }
     }
 }

@@ -1,6 +1,7 @@
 package au.edu.unimelb.archivetool.app.cli.preview
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
+import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import au.edu.unimelb.archivetool.switchboard.Switchboard
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.default
@@ -14,16 +15,16 @@ class PreviewCreateCommand : Command(name = "create") {
         """
         Create previews from a directory of archive images.
 
-        Job state and intermediate files are managed by the Switchboard.
+        Switchboard manages job state and intermediate files.
         """
             .trimIndent()
 
-    val inputDirectory by
+    private val inputDirectory by
         option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
             .path(mustExist = true, canBeFile = false, mustBeReadable = true)
             .default(Path("."), defaultForHelp = "current working directory")
 
     override fun run() {
-        Switchboard.createPreview(inputDirectory.toAbsolutePath().normalize())
+        Switchboard.createPreview(inputDirectory.normalizedAbsolute())
     }
 }

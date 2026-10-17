@@ -1,6 +1,8 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
+import au.edu.unimelb.archivetool.app.cli.helpers.asApprovalFraction
+import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
 import com.github.ajalt.clikt.core.Context
@@ -20,42 +22,47 @@ class RunCommand : Command(name = "run") {
         Run the complete archive processing workflow.
 
         Processes archive images and writes the final CSV output.
-        Use --resume to permit an existing job state in the input directory.
+        Use --resume to allow the Switchboard to load an existing job state.
         """
             .trimIndent()
 
-    val inputDirectory by
+    private val inputDirectory by
         option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
             .path(mustExist = true, canBeFile = false, mustBeReadable = true)
             .default(Path("."), defaultForHelp = "current working directory")
 
-    val outputPath by
+    private val outputPath by
         option("-o", "--output", help = "Path for the generated CSV file.")
             .path(mustExist = false, canBeDir = false)
             .required()
 
-    val resume by
+    private val resume by
         option("--resume", help = "Permit and reuse an existing job state in the input directory.")
             .flag(default = false)
 
-    val autoApproveThreshold by
+    private val autoApproveThreshold by
         option(
                 "-A",
                 "--auto-approve-threshold",
                 metavar = "threshold",
-                help = "Skip review for images whose boxes all meet <threshold>% confidence.",
+                help =
+                    "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
             )
             .int()
             .restrictTo(0, 100)
 
+    /**
+     * Coordinate the six published Switchboard stages in their required order. Segmentation, image
+     * processing, OCR, review and job-state persistence are deliberately owned by Switchboard
+     * rather than reimplemented by the CLI.
+     */
     override fun run() {
-        val jobRoot = inputDirectory.toAbsolutePath().normalize()
-        val threshold = autoApproveThreshold?.toDouble()?.div(100.0) ?: 1.0
+        val jobRoot = inputDirectory.normalizedAbsolute()
+        val threshold = autoApproveThreshold.asApprovalFraction()
         val switchboard =
-            Switchboard.with(
-                CSVFileExportInteraction(outputPath.toAbsolutePath().normalize())
-            )
+            Switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
 
+        // Existing state may be reused only when --resume is explicitly supplied.
         switchboard.createPreview(jobRoot, permitExisting = resume)
         switchboard.reviewSegmentationPreview(jobRoot, threshold)
         switchboard.manipulateImages(jobRoot)
