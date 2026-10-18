@@ -70,16 +70,20 @@ object BoxSegmentation {
     /**
      * Segments an image into Box & Sticker polygons and returns detections as quadrilaterals, keyed
      * by image file name.
+     *
+     * Boxes whose visible part is centred within [edgeMargin] (a fraction of the image width or
+     * height) of a side are dropped, as they are mostly out of frame. 0.0 disables this.
      */
     fun getBoxes(
         imagePath: JobRelativePath,
         modelPath: Path? = null,
         conf: Double = 0.5,
+        edgeMargin: Double = 0.1,
     ): Pair<JobRelativePath, JobFile> {
         val modelPath = modelPath ?: copyModelFromResourcesIfNotExists(DEFAULT_MODEL_RESOURCE)
 
         val dets =
-            runModel(imagePath, modelPath, conf)
+            runModel(imagePath, modelPath, conf, edgeMargin)
                 .filter { it.polygon.vertices.size >= 3 }
                 .suppressOverlaps()
         val vertexes = mutableMapOf<String, ArchiveBox>()
@@ -191,6 +195,7 @@ object BoxSegmentation {
         imagePath: JobRelativePath,
         modelPath: Path,
         conf: Double,
+        edgeMargin: Double,
     ): List<Detection> {
         val model = loadModel(modelPath)
         val inH = model.inH
@@ -264,6 +269,13 @@ object BoxSegmentation {
             val y1 = ((preds[o + 1] - lb.top) / lb.r).coerceIn(0.0, h.toDouble())
             val y2 = ((preds[o + 3] - lb.top) / lb.r).coerceIn(0.0, h.toDouble())
 
+            // The box is clamped to the image, so a box cut off by a side is centred near it
+            val label = model.names.getValue(preds[o + 5].toInt())
+            val cx = (x1 + x2) / 2 / w
+            val cy = (y1 + y2) / 2 / h
+            if (label == BOX_CLASS && listOf(cx, cy).any { it < edgeMargin || it > 1 - edgeMargin })
+                continue
+
             // Mask logits are the detection's coefficients applied to the shared prototypes;
             // upsampled to full image resolution, equivalent to retina_masks=True
             val logits = FloatArray(mh * mw)
@@ -307,7 +319,7 @@ object BoxSegmentation {
             val largest = contours.largest
             out +=
                 Detection(
-                    model.names.getValue(preds[o + 5].toInt()),
+                    label,
                     score.toDouble(),
                     Polygon.create(largest),
                 )
