@@ -6,8 +6,6 @@ import kotlinx.coroutines.sync.withLock
 
 // Implementation inspired by Allen B. Downey's wonderful Little Book of Semaphores:
 //                                          https://greenteapress.com/wp/semaphores/
-// This file is available under the AGPL license of the larger work, or CC BY-NC-SA 4.0 at your
-// option.
 class Lightswitch() {
     private val counter: AtomicInteger = AtomicInteger(0)
     private val mutex: Mutex = Mutex()
