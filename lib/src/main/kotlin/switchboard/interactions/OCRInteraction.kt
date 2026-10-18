@@ -15,7 +15,6 @@ import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.wrap.OpenAI
 import kotlin.collections.mapIndexed
-import kotlin.io.path.pathString
 
 class KotlinOCRInteraction : OCRInteraction {
     override fun mayRequireConversion(): Boolean = true
@@ -32,17 +31,16 @@ class KotlinOCRInteraction : OCRInteraction {
         (container ?: ServiceContainer(settings)).inner
 
     fun executeOCR(path: JobRelativePath, api: OpenAIAPIData): String {
-        return getService(api).executeOCR(path.absolute.pathString)
+        return getService(api).executeOCR(path)
     }
 
     fun processOutputText(transcript: String, api: OpenAIAPIData): BoxMetadata? {
-        var output: BoxMetadata? = null
         try {
-            output = getService(api).processOutputText(transcript).toBoxMetadata()
+            return getService(api).processOutputText(transcript).toBoxMetadata()
         } catch (e: Exception) {
             Log.trace("OCR::processOutputText threw: $e\n${e.printStackTrace()}")
         }
-        return output
+        return null
         // NOTE: I think failing and returning a nullable here is fine.
         // Some labels will not have
         //    .expect("OCR::processOutputText failed or returned either null or a non-string
