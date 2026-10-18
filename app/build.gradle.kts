@@ -16,6 +16,8 @@ dependencies {
     implementation("io.github.kelvindev15:Kotlin2PlantUML:3.0.16")
 }
 
+tasks.withType<CreateStartScripts> { applicationName = "archivetool" }
+
 application {
     // Define the Fully Qualified Name for the application main class
     // (Note that Kotlin compiles `App.kt` to a class with FQN `com.example.app.AppKt`.)
@@ -23,4 +25,15 @@ application {
 
     // Enable Bytecode JIT; See lib/build.gradle.kts
     applicationDefaultJvmArgs = listOf("-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI")
+}
+
+distributions {
+    main {
+        distributionBaseName = "archivetool-cli"
+        contents {
+            into("") { from("../README.md") }
+            into("") { from("../LICENSE") }
+            into("") { from("../THIRD_PARTY.md") }
+        }
+    }
 }
