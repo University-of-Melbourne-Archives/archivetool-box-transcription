@@ -10,7 +10,6 @@ import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import au.edu.unimelb.archivetool.util.os.Platform
 import kotlin.io.path.exists
 import kotlin.io.path.inputStream
-import kotlin.io.path.notExists
 import kotlin.io.path.outputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -34,15 +33,13 @@ class JSONConfigInteraction : ConfigInteraction {
 
         val hasNoApiKeyInEnv = System.getenv(API_KEY_ENV_VAR) == null
 
-        Log.error(
-            "Could not find config file! Without this, we will not be able to perform OCR."
-        )
+        Log.error("Could not find config file! Without this, we will not be able to perform OCR.")
         filePath.outputStream().use {
             @OptIn(ExperimentalSerializationApi::class) json.encodeToStream(Config(), it)
         }
         Log.info(
             "Writing a default configuration to $filePath.\n" +
-            "You will need to either ${
+                "You will need to either ${
                 if (hasNoApiKeyInEnv) {
                     "set"
                 } else {
