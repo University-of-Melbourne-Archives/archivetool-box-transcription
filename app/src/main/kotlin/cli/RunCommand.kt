@@ -22,7 +22,7 @@ class RunCommand : Command(name = "run") {
         Run the complete archive processing workflow.
 
         Processes archive images and writes the final CSV output.
-        Use --resume to allow the Switchboard to load an existing job state.
+        An existing job state is reused by default; use --no-resume to disable reuse.
         """
             .trimIndent()
 
@@ -36,8 +36,8 @@ class RunCommand : Command(name = "run") {
             .path(mustExist = false, canBeDir = false)
             .required()
 
-    private val resume by
-        option("--resume", help = "Permit and reuse an existing job state in the input directory.")
+    private val noResume by
+        option("--no-resume", help = "Do not reuse existing job state in the input directory.")
             .flag(default = false)
 
     private val autoApproveThreshold by
@@ -45,25 +45,26 @@ class RunCommand : Command(name = "run") {
                 "-A",
                 "--auto-approve-threshold",
                 metavar = "threshold",
-                help =
-                    "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
+                help = "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
             )
             .int()
             .restrictTo(0, 100)
 
     /**
-     * Coordinate the six published Switchboard stages in their required order. Segmentation, image
-     * processing, OCR, review and job-state persistence are deliberately owned by Switchboard
-     * rather than reimplemented by the CLI.
+     * Coordinate the six published Switchboard stages in their required order.
+     * Segmentation, image processing, OCR, review and job-state persistence are
+     * deliberately owned by Switchboard rather than reimplemented by the CLI.
      */
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
         val threshold = autoApproveThreshold.asApprovalFraction()
         val switchboard =
-            Switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
+            Switchboard.with(
+                CSVFileExportInteraction(outputPath.normalizedAbsolute())
+            )
 
-        // Existing state may be reused only when --resume is explicitly supplied.
-        switchboard.createPreview(jobRoot, permitExisting = resume)
+        // Resume by default; the opt-out flag prevents reuse of existing job state.
+        switchboard.createPreview(jobRoot, permitExisting = !noResume)
         switchboard.reviewSegmentationPreview(jobRoot, threshold)
         switchboard.manipulateImages(jobRoot)
         switchboard.createOCR(jobRoot)

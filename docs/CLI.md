@@ -32,21 +32,29 @@ createPreview -> reviewSegmentationPreview -> manipulateImages
 
 `run` also supports:
 
-- `--resume`: allow Switchboard to reuse an existing job state. Actual stage-resumption behaviour depends on the backend implementation.
+- Resume is **enabled by default**: Switchboard may reuse an existing job state. Use `--no-resume` to opt out. Whether completed work is skipped depends on backend stage eligibility. If job state already exists, opting out may make Switchboard reject creating a new job; it does not delete or reset existing data.
 - `-A, --auto-approve-threshold <0-100>`: validate an integer percentage, convert it to 0.0–1.0 and pass it to segmentation review. **The backend must actually honour the threshold**; the CLI does not decide which images are approved.
 
 Example:
 
 ```powershell
-.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv" --resume -A 95'
+.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv" -A 95'
 ```
+
+To request a new job instead of reusing an existing one:
+
+```powershell
+.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv" --no-resume'
+```
+
+`preview create` also resumes by default; pass `--no-resume` to disable state reuse. This option does **not** erase an existing job.
 
 ## Command reference
 
 | Command | Arguments/options | Switchboard action |
 | --- | --- | --- |
-| `run` | `[-i DIR] -o FILE [--resume] [-A 0-100]` | All six stages in order |
-| `preview create` | `[-i DIR]` | `createPreview` |
+| `run` | `[-i DIR] -o FILE [--no-resume] [-A 0-100]` | All six stages in order |
+| `preview create` | `[-i DIR] [--no-resume]` | `createPreview` |
 | `preview review` | `[-A 0-100]` | `reviewSegmentationPreview` |
 | `ocr create` | none | `manipulateImages`, then `createOCR` |
 | `ocr review` | none | `reviewOCRPreview` |
@@ -101,6 +109,6 @@ The default implementation requires internet access. The Java SDK is a **Gradle 
 - `getStatus()` was unfinished in the last reviewed backend snapshot; do not rely on `status` for a demo until Amy completes it.
 - The segmentation auto-approval threshold is forwarded by the CLI, but must be verified in the backend GUI.
 - Structured OCR metadata conversion and real-image CSV content need an end-to-end check.
-- `--resume` depends on persisted Switchboard state and stage eligibility, which parser tests do not exercise.
+- Default resume depends on persisted Switchboard state and stage eligibility, which parser tests do not exercise.
 
 Demo checklist: build and tests pass; API key and connectivity checked; a small real input batch opens segmentation/OCR review as intended; CSV fields populated; previous working Git commit available as fallback.

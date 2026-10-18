@@ -4,11 +4,11 @@ import au.edu.unimelb.archivetool.app.cli.helpers.asApprovalFraction
 import au.edu.unimelb.archivetool.app.cli.helpers.currentJobRoot
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import com.github.ajalt.clikt.testing.test
-import kotlin.io.path.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.io.path.Path
 
 class CliCommandTest {
 
@@ -31,7 +31,8 @@ class CliCommandTest {
         assertEquals(0, result.statusCode)
         assertContains(result.output, "--input-directory")
         assertContains(result.output, "--output")
-        assertContains(result.output, "--resume")
+        assertContains(result.output, "--no-resume")
+        assertFalse(result.output.contains("--resume"))
         assertContains(result.output, "--auto-approve-threshold")
         assertFalse(result.output.contains("--job-directory"))
     }
@@ -67,6 +68,30 @@ class CliCommandTest {
         assertEquals(0, result.statusCode)
         assertContains(result.output, "--input-directory")
         assertContains(result.output, "current working directory")
+        assertContains(result.output, "--no-resume")
+        assertFalse(result.output.contains("--resume"))
+    }
+
+    @Test
+    fun `run rejects the removed resume option`() {
+        val result = BaseCommand().test("run -o result.csv --resume")
+
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `preview create rejects the removed resume option`() {
+        val result = BaseCommand().test("preview create --resume")
+
+        assertEquals(1, result.statusCode)
+    }
+
+    @Test
+    fun `run accepts no resume before checking required output`() {
+        val result = BaseCommand().test("run --no-resume")
+
+        assertEquals(1, result.statusCode)
+        assertContains(result.output, "--output")
     }
 
     @Test
