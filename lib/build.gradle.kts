@@ -16,16 +16,12 @@ dependencies {
     // (`gradle/libs.versions.toml`).
     implementation(libs.bundles.kotlinEcosystem)
     implementation(libs.javacv)
+    implementation(libs.onnx)
+    implementation(libs.openai)
     implementation(libs.csv)
     api("io.nacular.doodle:desktop-jvm-${osTarget()}:$doodleVersion")
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
-
-    // Segmentation Model Dependencies
-    implementation("com.microsoft.onnxruntime:onnxruntime:1.22.0")
-
-    // For OpenAI API (Java)
-    implementation("com.openai:openai-java:4.81.0")
 }
 
 fun osTarget(): String {

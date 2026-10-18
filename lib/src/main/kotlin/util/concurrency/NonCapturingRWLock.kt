@@ -8,8 +8,6 @@ const val MAX_UNLOCK_ATTEMPTS = 1000
 // Implementation inspired by the Writer-priority reader-writer problem
 // in Allen B. Downey's wonderful Little Book of Semaphores:
 // https://greenteapress.com/wp/semaphores/
-// This file is available under the AGPL license of the larger work, or CC BY-NC-SA 4.0 at your
-// option.
 class NonCapturingRWLock {
     typealias Unlocker = suspend () -> Unit
 

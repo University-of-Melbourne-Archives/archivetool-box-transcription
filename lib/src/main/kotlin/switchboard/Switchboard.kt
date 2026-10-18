@@ -205,22 +205,16 @@ open class AbstractSwitchboard(
     fun manipulateImages(directory: Path) {
         val state: JobState? = job.read(directory)
         state!!.validFilesSingleWithProgressBar(manip, true) { interaction, file ->
-            interaction.manipulate(
-                mapOf(file)
-            )
+            interaction.manipulate(mapOf(file))
         }
     }
 
     fun createOCR(directory: Path) {
         val state: JobState? = job.read(directory)
         state!!.validFilesSingleWithProgressBar(ocr, true) { interaction, file ->
-            interaction.generateOCR(
-                mapOf(file),
-                config.getConfig(),
-            )
+            interaction.generateOCR(mapOf(file), config.getConfig())
         }
     }
-
 
     fun reviewOCRPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
@@ -247,32 +241,39 @@ open class AbstractSwitchboard(
         )
     }
 
-    fun <T: Interaction> JobState.validFilesChunkedWithProgressBar(
+    fun <T : Interaction> JobState.validFilesChunkedWithProgressBar(
         type: T,
         nullsAreValid: Boolean = false,
-        runInteraction: (interaction: T, chunk: Set<Pair<JobRelativePath, JobFile>>) ->  Map<JobRelativePath, JobFile>
+        runInteraction:
+            (interaction: T, chunk: Set<Pair<JobRelativePath, JobFile>>) -> Map<
+                    JobRelativePath,
+                    JobFile,
+                >,
     ) {
-        val valid = validFiles(type, nullsAreValid).also {
-            it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-        }.expect("Could not load list of valid files.")
+        val valid =
+            validFiles(type, nullsAreValid)
+                .also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
+                .expect("Could not load list of valid files.")
 
         val chunkCountSuffix: String
-        val (chunks, chunkSize) = if (valid.size < MIN_CHUNKABLE_SIZE) {
-            chunkCountSuffix = ""
-            listOf(valid.map { (k, v) -> k to v }.toSet()) to valid.size
-        } else {
-            chunkCountSuffix = "s"
-            val size = if (valid.size / TARGET_CHUNK_SIZE < MIN_CHUNK_COUNT) {
-                valid.size / MIN_CHUNK_COUNT
+        val (chunks, chunkSize) =
+            if (valid.size < MIN_CHUNKABLE_SIZE) {
+                chunkCountSuffix = ""
+                listOf(valid.map { (k, v) -> k to v }.toSet()) to valid.size
             } else {
-                valid.size / TARGET_CHUNK_SIZE
+                chunkCountSuffix = "s"
+                val size =
+                    if (valid.size / TARGET_CHUNK_SIZE < MIN_CHUNK_COUNT) {
+                        valid.size / MIN_CHUNK_COUNT
+                    } else {
+                        valid.size / TARGET_CHUNK_SIZE
+                    }
+                valid.entries.chunked(size) { l -> l.map { (k, v) -> k to v }.toSet() } to size
             }
-            valid.entries.chunked(size) { l ->
-                l.map { (k, v) -> k to v }.toSet()
-            } to size
-        }
 
-        Log.debug("${valid.size} valid files for $type, breaking into ${chunks.size} chunk$chunkCountSuffix of $chunkSize")
+        Log.debug(
+            "${valid.size} valid files for $type, breaking into ${chunks.size} chunk$chunkCountSuffix of $chunkSize"
+        )
 
         withProgressBar(valid.size) {
             for (chunk in chunks) {
@@ -284,25 +285,28 @@ open class AbstractSwitchboard(
         }
     }
 
-    fun <T: Interaction> JobState.validFilesSingleWithProgressBar(
+    fun <T : Interaction> JobState.validFilesSingleWithProgressBar(
         type: T,
         nullsAreValid: Boolean = false,
-        runInteraction: (interaction: T, file: Pair<JobRelativePath, JobFile>) -> Map<JobRelativePath, JobFile>
+        runInteraction:
+            (interaction: T, file: Pair<JobRelativePath, JobFile>) -> Map<JobRelativePath, JobFile>,
     ) {
-        val valid = validFiles(type, nullsAreValid).also {
-            it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-        }.expect("Could not load list of valid files.")
+        val valid =
+            validFiles(type, nullsAreValid)
+                .also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
+                .expect("Could not load list of valid files.")
 
         Log.debug("${valid.size} valid files for $type, passing individually")
 
-
         withProgressBar(valid.size) {
-            valid.map { (k, v) -> k to v }.forEachIndexed { i, file ->
-                val toUpdate = runInteraction(type, file)
+            valid
+                .map { (k, v) -> k to v }
+                .forEachIndexed { i, file ->
+                    val toUpdate = runInteraction(type, file)
 
-                update(toUpdate)
-                setProgress(i)
-            }
+                    update(toUpdate)
+                    setProgress(i)
+                }
         }
     }
 

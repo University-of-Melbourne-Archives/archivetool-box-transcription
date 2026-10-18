@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
+import au.edu.unimelb.archivetool.ocr.OCRResult
 import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.DateRange.Companion.tightestBounds
 import au.edu.unimelb.archivetool.util.extension.counted
@@ -34,4 +35,10 @@ data class BoxMetadata(
     }
 }
 
-fun HashMap<String, String>.toBoxMetadata(): BoxMetadata = TODO()
+fun OCRResult.toBoxMetadata(): BoxMetadata =
+    this.run {
+        val id = RecordSetID.fromOCROutput(idStrings.toList())
+        val dateRange = dateRanges?.let { DateRange.fromOCRoutput(it) }
+        val unitNumber = unitNumber?.let { "\\d{1,4}".toRegex().find(it)?.value?.toInt() }
+        BoxMetadata(id, unitNumber, dateRange, description)
+    }
