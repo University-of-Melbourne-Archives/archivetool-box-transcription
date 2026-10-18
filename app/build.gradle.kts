@@ -8,12 +8,10 @@ plugins {
 }
 
 dependencies {
-    // Project "app" depends on project "utils". (Project paths are separated with ":", so ":utils"
-    // refers to the top-level "utils" project.)
     implementation(project(":lib"))
     implementation(libs.kotlinReflect)
     implementation(libs.kotlinxSerialization)
-    implementation("io.github.kelvindev15:Kotlin2PlantUML:3.0.16")
+    implementation(libs.kotlin2plantuml)
 }
 
 tasks.withType<CreateStartScripts> { applicationName = "archivetool" }
@@ -23,8 +21,9 @@ application {
     // (Note that Kotlin compiles `App.kt` to a class with FQN `com.example.app.AppKt`.)
     mainClass = "au.edu.unimelb.archivetool.app.AppKt"
 
-    // Enable Bytecode JIT; See lib/build.gradle.kts
-    applicationDefaultJvmArgs = listOf("-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI")
+    // Enable Bytecode JIT; See python/build.gradle.kts
+    if ((providers.gradleProperty("enablePython").orNull ?: "false").toBoolean())
+        applicationDefaultJvmArgs = listOf("-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI")
 }
 
 distributions {
