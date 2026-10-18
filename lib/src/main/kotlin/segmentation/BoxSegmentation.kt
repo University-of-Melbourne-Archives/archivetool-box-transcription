@@ -23,6 +23,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.pathString
 import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
 import org.bytedeco.javacpp.FloatPointer
@@ -77,7 +78,10 @@ object BoxSegmentation {
     ): Pair<JobRelativePath, JobFile> {
         val modelPath = modelPath ?: copyModelFromResourcesIfNotExists(DEFAULT_MODEL_RESOURCE)
 
-        val dets = runModel(imagePath, modelPath, conf).filter { it.polygon.vertices.size >= 3 }
+        val dets =
+            runModel(imagePath, modelPath, conf)
+                .filter { it.polygon.vertices.size >= 3 }
+                .suppressOverlaps()
         val vertexes = mutableMapOf<String, ArchiveBox>()
 
         // Key every box as box-N in confidence order
@@ -111,6 +115,28 @@ object BoxSegmentation {
 
         return imagePath to JobFile(vertexes)
     }
+
+    /** Intersection over union of two polygons' axis-aligned bounding boxes. */
+    private fun iou(a: Polygon, b: Polygon): Double {
+        val w = (min(a.xMax, b.xMax) - max(a.xMin, b.xMin)).coerceAtLeast(0)
+        val h = (min(a.yMax, b.yMax) - max(a.yMin, b.yMin)).coerceAtLeast(0)
+        val inter = w.toDouble() * h
+        fun area(p: Polygon) = (p.xMax - p.xMin).toDouble() * (p.yMax - p.yMin)
+        return inter / (area(a) + area(b) - inter)
+    }
+
+    /**
+     * Greedy non-maximum suppression: of any same-class detections overlapping by more than
+     * [iouThreshold], only the most confident is kept. The end2end model skips NMS, so duplicates
+     * can otherwise get through.
+     */
+    private fun List<Detection>.suppressOverlaps(iouThreshold: Double = 0.5): List<Detection> =
+        sortedByDescending { it.score }
+            .fold(listOf()) { kept, d ->
+                if (kept.any { it.label == d.label && iou(it.polygon, d.polygon) > iouThreshold })
+                    kept
+                else kept + d
+            }
 
     /** Loads an ONNX model once per path, with the class names and input size stored at export. */
     private fun loadModel(modelPath: Path): Model =
