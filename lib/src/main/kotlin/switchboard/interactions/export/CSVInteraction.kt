@@ -7,7 +7,6 @@ import au.edu.unimelb.archivetool.switchboard.interactions.export.CSV.Companion.
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.util.extension.with4IgnoredParameters
 import com.jsoizo.kotlincsv.writer.CsvWriter
 import com.jsoizo.kotlincsv.writer.writeToFile
 import java.nio.file.Path
@@ -63,12 +62,13 @@ interface CSV {
 
         fun String.CSVSafe(): String = replace('\n', ';')
 
-        fun Map<JobRelativePath, JobFile>.toCSV(impl: CSV): Sequence<List<String>> = generateCSV(this, impl)
+        fun Map<JobRelativePath, JobFile>.toCSV(impl: CSV): Sequence<List<String>> =
+            generateCSV(this, impl)
 
         // Path to file, File Internal Descriptor, vertex set ID.
         // Row is ignored if null.
         private typealias FieldComputeFun =
-                    (path: JobRelativePath, file: JobFile, boxId: String, box: ArchiveBox) -> String?
+            (path: JobRelativePath, file: JobFile, boxId: String, box: ArchiveBox) -> String?
 
         data class Field(val name: String, val compute: FieldComputeFun) {
             constructor(pair: Pair<String, FieldComputeFun>) : this(pair.first, pair.second)
@@ -84,13 +84,13 @@ interface CSV {
                     value: Pair<Pair<JobRelativePath, JobFile>, Pair<String, ArchiveBox>>
                 ): List<String>? =
                     map {
-                        it.compute(
-                            value.first.first,
-                            value.first.second,
-                            value.second.first,
-                            value.second.second,
-                        )
-                    }
+                            it.compute(
+                                value.first.first,
+                                value.first.second,
+                                value.second.first,
+                                value.second.second,
+                            )
+                        }
                         .takeUnless { l -> l.any { it == null } }
                         ?.map { it!!.CSVSafe() }
             }

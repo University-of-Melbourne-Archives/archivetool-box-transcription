@@ -3,7 +3,7 @@ package au.edu.unimelb.archivetool.switchboard.interactions.export
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSV.Companion.Field
 import au.edu.unimelb.archivetool.util.extension.with4IgnoredParameters
 
-object UoMCSV: CSV {
+object UoMCSV : CSV {
     // The fields required for import into our Collection Management System.
     // Node ID     - Internal database key required to import the entry; cannot be inferred from
     // images of a box.
@@ -23,14 +23,14 @@ object UoMCSV: CSV {
             "Node ID" to { "?????" }.with4IgnoredParameters(),
             "Node Type" to { "Item" }.with4IgnoredParameters(),
             "Node Title" to
-                    { _, _, _, box ->
-                        box.metadata?.id?.CSVString(box.metadata.unitNumber ?: 0)
-                    },
+                { _, _, _, box ->
+                    box.metadata?.id?.CSVString(box.metadata.unitNumber ?: 0)
+                },
             "Description" to
-                    { _, _, _, box ->
-                        // TODO: Also transcribe any non-primary labels.
-                        box.metadata?.description ?: ""
-                    },
+                { _, _, _, box ->
+                    // TODO: Also transcribe any non-primary labels.
+                    box.metadata?.description ?: ""
+                },
             "Date Range" to { _, _, _, box -> box.metadata?.dateRange?.CSVString ?: "" },
         )
     // Additional Fields, anything not required for the CMS, but useful for manual review.

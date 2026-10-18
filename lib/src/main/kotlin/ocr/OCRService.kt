@@ -75,7 +75,8 @@ class OCRService(private val settings: OpenAIAPIData) {
         // [STEP 1]: Identify date range(s)
         extractedText
             .let { extractedText ->
-                val dateRangePattern = "Date ranges: (.+)".toRegex(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
+                val dateRangePattern =
+                    "Date ranges: (.+)".toRegex(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
                 val dateRangeMatch = dateRangePattern.find(extractedText)
 
                 // Only extract the actual date(s) after the "Date ranges: " string
