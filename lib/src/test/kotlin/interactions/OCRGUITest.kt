@@ -1,5 +1,6 @@
 package interactions
 
+import SemiManual
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRGUIInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
@@ -17,6 +18,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class OCRGUITest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -40,6 +42,11 @@ class OCRGUITest {
         )
     }
 
+    @SemiManual(
+        "Manually Interact with the GUI.",
+        lastSucceeded = "bfb9ca7fe545ce26860539588340ef886e373927",
+    )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `try review interaction`() {
         val files =
