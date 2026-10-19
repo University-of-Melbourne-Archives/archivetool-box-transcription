@@ -6,6 +6,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
 import au.edu.unimelb.archivetool.util.extension.PairExt.map
 import au.edu.unimelb.archivetool.util.extension.isNotNull
 import au.edu.unimelb.archivetool.util.extension.noop
+import au.edu.unimelb.archivetool.util.file.Image
 import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -117,15 +118,12 @@ abstract class JobState(
                     // Don't bother indexing non-images or files we can't read.
                     // Though we still need to store them as null to prevent rechecking them all the
                     // time
-                    it.isReadable() && it.isImage()
+                    it.isReadable() && file.isImage()
                 }
                 ?.let { JobFile() }
     }
 
-    // TODO Better detection than just filename checks.
-    private fun Path.isImage(): Boolean {
-        return setOf("jpg", "png").contains(extension)
-    }
+    private fun JobRelativePath.isImage(): Boolean = Image.FileType.detect(this).isNotNull()
 
     // Expects File Names relative to root dir.
     internal fun defaultIgnore(file: Path): Boolean {

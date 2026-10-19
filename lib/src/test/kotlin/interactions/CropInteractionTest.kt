@@ -16,6 +16,7 @@ import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 // TODO: Test cropping multiple sections.
 class CropInteractionTest {
@@ -44,6 +45,7 @@ class CropInteractionTest {
         "Check that the crop is generated for the correct bounds.",
         lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5",
     )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `try crop interaction`() {
         val files =

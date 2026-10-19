@@ -162,7 +162,7 @@ open class AbstractSwitchboard(
         val inFiles =
             state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }
 
-        status.getStatus(inFiles)
+        status.getStatus(directory, inFiles)
     }
 
     fun createPreview(

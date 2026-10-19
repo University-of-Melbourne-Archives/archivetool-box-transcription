@@ -17,6 +17,7 @@ import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class CLAHEInteractionTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -44,6 +45,7 @@ class CLAHEInteractionTest {
         "Check that the directory has properly thresholded images.",
         lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5",
     )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `try clahe interaction with no crop`() {
         // @OptIn(ExperimentalPathApi::class)
@@ -79,6 +81,7 @@ class CLAHEInteractionTest {
         "Check that the .archivetool_generated directory has images with the threshold and the right bounds.",
         lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5",
     )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `try clahe interaction with crops`() {
         val files =

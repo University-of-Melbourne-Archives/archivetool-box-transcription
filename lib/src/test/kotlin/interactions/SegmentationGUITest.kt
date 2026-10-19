@@ -14,7 +14,9 @@ import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class SegmentationGUITest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -42,7 +44,8 @@ class SegmentationGUITest {
         "Manually Interact with the GUI.",
         lastSucceeded = "bfb9ca7fe545ce26860539588340ef886e373927",
     )
-    //@Test
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
+    @Test
     fun `try review interaction`() {
         val files =
             mapOf(
@@ -111,6 +114,10 @@ class SegmentationGUITest {
                 )
                 .mapKeys { JobRelativePath(directory, it.key) }
                 .toMutableMap()
-        println(SegmentationGUIInteraction().review(files).mapValues { (_, v) -> Json.encodeToString(v) })
+        println(
+            SegmentationGUIInteraction().review(files).mapValues { (_, v) ->
+                Json.encodeToString(v)
+            }
+        )
     }
 }
