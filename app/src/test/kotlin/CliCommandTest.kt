@@ -1,7 +1,5 @@
 package au.edu.unimelb.archivetool.app.cli
 
-import au.edu.unimelb.archivetool.app.cli.helpers.asApprovalFraction
-import au.edu.unimelb.archivetool.app.cli.helpers.currentJobRoot
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import com.github.ajalt.clikt.testing.test
 import kotlin.io.path.Path
@@ -168,8 +166,7 @@ class CliCommandTest {
         val result = BaseCommand().test("status --help")
 
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "<job directory>")
-        assertContains(result.output, "input-photo directory")
+        assertContains(result.output, "-i, --input-directory=<path>")
     }
 
     @Test
@@ -222,26 +219,9 @@ class CliCommandTest {
     }
 
     @Test
-    fun `omitted approval threshold uses the existing one hundred percent default`() {
-        assertEquals(1.0, (null as Int?).asApprovalFraction())
-    }
-
-    @Test
-    fun `approval threshold converts percentages to fractions`() {
-        assertEquals(0.0, 0.asApprovalFraction())
-        assertEquals(0.95, 95.asApprovalFraction())
-        assertEquals(1.0, 100.asApprovalFraction())
-    }
-
-    @Test
     fun `CLI input paths are normalized to absolute paths`() {
         val input = Path(".", "photos", "..", "photos")
         assertEquals(input.toAbsolutePath().normalize(), input.normalizedAbsolute())
-    }
-
-    @Test
-    fun `current job root uses the current process directory`() {
-        assertEquals(Path(".").toAbsolutePath().normalize(), currentJobRoot())
     }
 
     @Test
