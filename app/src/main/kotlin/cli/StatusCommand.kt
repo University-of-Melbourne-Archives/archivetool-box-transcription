@@ -1,7 +1,7 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
-import au.edu.unimelb.archivetool.app.cli.helpers.jobDirectory
+import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import au.edu.unimelb.archivetool.switchboard.Switchboard
 import com.github.ajalt.clikt.core.Context
@@ -16,9 +16,9 @@ class StatusCommand : Command(name = "status") {
         """
             .trimIndent()
 
-    private val jobDir by jobDirectory()
+    private val inputDirectory by inputDirectory()
 
     override fun run() {
-        Switchboard.getStatus(jobDir.normalizedAbsolute())
+        Switchboard.getStatus(inputDirectory.normalizedAbsolute())
     }
 }

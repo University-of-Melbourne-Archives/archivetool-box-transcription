@@ -2,7 +2,9 @@ package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.countedTransform
+import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import com.github.ajalt.clikt.completion.CompletionCommand
@@ -69,6 +71,6 @@ class BaseCommand :
             .default(Optional.of(LogLevel.Info))
 
     override fun run() {
-        logLevel.getOrNull()?.let { Log.registerConsumer(StderrConsumer(maxLogLevel = it)) }
+        Switchboard.init(logLevel.getOrNull()?.let { setOf(StderrConsumer(maxLogLevel = it)) } ?: emptySet())
     }
 }

@@ -1,7 +1,7 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
-import au.edu.unimelb.archivetool.app.cli.helpers.currentJobRoot
+import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
@@ -20,6 +20,8 @@ class FinaliseCommand : Command(name = "finalise") {
         """
             .trimIndent()
 
+    private val inputDirectory by inputDirectory()
+
     private val outputPath by
         option("-o", "--output", help = "Path for the generated CSV file.")
             .path(mustExist = false, canBeDir = false)
@@ -27,7 +29,7 @@ class FinaliseCommand : Command(name = "finalise") {
 
     // Export previously processed data; do not rerun segmentation or OCR.
     override fun run() {
-        val jobRoot = currentJobRoot()
+        val jobRoot = inputDirectory.normalizedAbsolute()
         Switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
             .generateExport(jobRoot)
     }
