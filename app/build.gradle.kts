@@ -8,17 +8,26 @@ plugins {
 }
 
 dependencies {
+    // Image processing and workflow orchestration
     implementation(project(":lib"))
+
+    // Command-line interface
+    implementation(libs.bundles.clikt)
+
+    // Switchboard support
     implementation(libs.kotlinReflect)
     implementation(libs.kotlinxSerialization)
     implementation(libs.kotlin2plantuml)
+
+    // CLI unit tests
+    testImplementation(kotlin("test"))
 }
 
 tasks.withType<CreateStartScripts> { applicationName = "archivetool" }
 
 application {
     // Define the Fully Qualified Name for the application main class
-    // (Note that Kotlin compiles `App.kt` to a class with FQN `com.example.app.AppKt`.)
+    // App.kt is compiled to au.edu.unimelb.archivetool.app.AppKt.
     mainClass = "au.edu.unimelb.archivetool.app.AppKt"
 
     // Enable Bytecode JIT; See python/build.gradle.kts
