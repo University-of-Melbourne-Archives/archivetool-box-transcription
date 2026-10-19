@@ -38,7 +38,7 @@ class StringStatusInteraction : StatusInteraction {
             } ?: false && jobFile.approved
         }
         val canExport = files?.count { (_, it) ->
-            it.vertexes?.values?.all(ArchiveBox::isNotNull) ?: false
+            it.vertexes?.values?.all { it.metadata.isNotNull() } ?: false
         }
 
         fun StringBuilder.appendLineIfPositive(count: Int?, line: (Int) -> String) =
