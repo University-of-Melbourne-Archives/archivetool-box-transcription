@@ -6,6 +6,7 @@ import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.createTempFile
@@ -14,6 +15,7 @@ import kotlin.io.path.pathString
 import kotlin.io.path.writeText
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Test
 
 class SwitchboardEndToEnd {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -42,7 +44,8 @@ class SwitchboardEndToEnd {
         "Manually Interact with the GUI.",
         lastSucceeded = "bfb9ca7fe545ce26860539588340ef886e373927",
     )
-    //@Test
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
+    @Test
     fun `try run end2end`() {
         directory.resolve(GENERATED_PATH).deleteRecursively()
 

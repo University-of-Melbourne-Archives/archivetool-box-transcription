@@ -1,5 +1,6 @@
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.getBoxes
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.test.Test
@@ -10,6 +11,7 @@ class BoxSegmentationTest {
         "Manually check the output: It is not deterministic.",
         lastSucceeded = "6803f319b1091d69b1b021c34630f14adde516da",
     )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `test_model_detections`() {
         val image =

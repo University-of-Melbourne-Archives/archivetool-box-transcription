@@ -12,6 +12,7 @@ import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -44,6 +45,7 @@ class CropInteractionTest {
         "Check that the crop is generated for the correct bounds.",
         lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5",
     )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `try crop interaction`() {
         val files =

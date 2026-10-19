@@ -11,6 +11,7 @@ import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -42,6 +43,7 @@ class FlattenInteractionTest {
         "Check that the flattened images are generated for the correct bounds.",
         lastSucceeded = "16c9faa6b6529c966a75bf2ae455e34c33accde5",
     )
+    @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `try flatten interaction`() {
         val files =
