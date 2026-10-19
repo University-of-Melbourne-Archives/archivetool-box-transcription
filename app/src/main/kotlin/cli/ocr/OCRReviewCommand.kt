@@ -10,6 +10,7 @@ class OCRReviewCommand : Command(name = "review") {
 
     override fun help(context: Context): String =
         "Open OCR results for review in the current working directory."
+
     private val inputDirectory by inputDirectory()
 
     override fun run() {

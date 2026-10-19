@@ -4,11 +4,11 @@ import au.edu.unimelb.archivetool.app.cli.helpers.asApprovalFraction
 import au.edu.unimelb.archivetool.app.cli.helpers.currentJobRoot
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import com.github.ajalt.clikt.testing.test
+import kotlin.io.path.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.io.path.Path
 
 class CliCommandTest {
 

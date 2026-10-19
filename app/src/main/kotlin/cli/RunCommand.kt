@@ -41,23 +41,22 @@ class RunCommand : Command(name = "run") {
                 "-A",
                 "--auto-approve-threshold",
                 metavar = "threshold",
-                help = "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
+                help =
+                    "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
             )
             .int()
             .restrictTo(0, 100)
 
     /**
-     * Coordinate the six published Switchboard stages in their required order.
-     * Segmentation, image processing, OCR, review and job-state persistence are
-     * deliberately owned by Switchboard rather than reimplemented by the CLI.
+     * Coordinate the six published Switchboard stages in their required order. Segmentation, image
+     * processing, OCR, review and job-state persistence are deliberately owned by Switchboard
+     * rather than reimplemented by the CLI.
      */
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
         val threshold = autoApproveThreshold?.percentToFraction() ?: 1.0
         val switchboard =
-            Switchboard.with(
-                CSVFileExportInteraction(outputPath.normalizedAbsolute())
-            )
+            Switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
 
         // Resume by default; the opt-out flag prevents reuse of existing job state.
         switchboard.createPreview(jobRoot, permitExisting = !noResume)
