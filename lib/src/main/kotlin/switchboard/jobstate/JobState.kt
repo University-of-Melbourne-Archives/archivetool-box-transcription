@@ -84,7 +84,7 @@ abstract class JobState(
                 .map { JobRelativePath(directory, it) }
 
         val missingFiles = currentFiles.filter { !files.keys.contains(it.relative) }
-        if (!initial) {
+        if (!initial && missingFiles.count() > 0) {
             val deletedFiles =
                 files.keys.filter { f -> !currentFiles.map { it.relative }.contains(f) }
 
