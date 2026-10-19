@@ -14,7 +14,7 @@ dependencies {
     // Command-line interface
     implementation(libs.bundles.clikt)
 
-    // Switchboard support
+    // UML Generation Script
     implementation(libs.kotlinReflect)
     implementation(libs.kotlinxSerialization)
     implementation(libs.kotlin2plantuml)

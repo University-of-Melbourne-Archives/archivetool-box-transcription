@@ -21,11 +21,9 @@ kotlinxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-j
 kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinxCoroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutines" }
 kotlinxCoroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
-
 # Clikt CLI parser and Markdown help formatter
 clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref = "clikt" }
-
 # GraalPy Polyglot for Python Runtime in Python subproject.
 polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" }
 polyglot-python = { module = "org.graalvm.polyglot:python", version.ref = "polyglot" }
@@ -42,7 +40,6 @@ kotlin2plantuml = { module = "io.github.kelvindev15:Kotlin2PlantUML", version = 
 
 [bundles]
 kotlinEcosystem = ["kotlinReflect", "kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines", "kotlinxCoroutinesSwing"]
-kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
 clikt = ["clikt", "clikt-markdown"]
 polyglot = ["polyglot", "polyglot-python"]
 
