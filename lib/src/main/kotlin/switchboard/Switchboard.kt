@@ -305,8 +305,9 @@ open class AbstractSwitchboard(
                     val toUpdate = runInteraction(type, file)
 
                     update(toUpdate)
-                    setProgress(i)
+                    setProgress(i + 1)
                 }
+            finish()
         }
     }
 

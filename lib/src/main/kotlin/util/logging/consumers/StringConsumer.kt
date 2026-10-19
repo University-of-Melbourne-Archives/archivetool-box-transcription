@@ -9,15 +9,19 @@ class StringConsumer(
     override val settings: ConsumerSettings = ConsumerSettings(),
 ) : LogConsumer {
     private val stringBuilder = StringBuilder()
+    private var justReset = false
 
     override fun recordLogEntry(logEntry: String) {
+        if (justReset) {
+            justReset = false
+            stringBuilder.clear()
+        }
         stringBuilder.append(logEntry)
     }
 
     fun getLog(): String {
-        val out = stringBuilder.toString()
-        stringBuilder.clear()
-        return out
+        justReset = true
+        return stringBuilder.toString()
     }
 
     override fun toString(): String = getLog()

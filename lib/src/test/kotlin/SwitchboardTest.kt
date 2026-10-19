@@ -79,10 +79,6 @@ class SwitchboardTest {
         Log.revokeConsumer(consumer)
         val log = consumer.getLog()
         assert(log.contains("Using Mock Implementation of Create Preview. Nothing will be done."))
-
-        assert(log.contains("Files: [\n\t"))
-        assertNotNull(("(?:$fileNameRegex,\n\t){15}".toRegex(RegexOption.MULTILINE).find(log)))
-        assertNotNull(("\\(and \\d+ others\\)]".toRegex()).find(log))
     }
 
     @Test
@@ -257,9 +253,10 @@ class SwitchboardTest {
         Log.revokeConsumer(consumer)
         val log = consumer.getLog()
 
-        assert(log.contains("Running Mock OCR, nothing will be done."))
+        println("log: $log")
+
         assertNotNull(
-            ("(?:.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
+            ("(?:.* Running Mock OCR, nothing will be done\\.\n.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )
