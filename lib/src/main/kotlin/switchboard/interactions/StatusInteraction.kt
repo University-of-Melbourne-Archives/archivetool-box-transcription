@@ -3,11 +3,9 @@ package au.edu.unimelb.archivetool.switchboard.interactions
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
 import au.edu.unimelb.archivetool.util.extension.isNotNull
 import au.edu.unimelb.archivetool.util.extension.isNull
-import au.edu.unimelb.archivetool.util.extension.orNull
 import java.nio.file.Path
 
 class StdoutStatusInteraction : StatusInteraction {
@@ -17,6 +15,7 @@ class StdoutStatusInteraction : StatusInteraction {
 
 class StringStatusInteraction : StatusInteraction {
     var result: String = ""
+
     override fun getStatus(directory: Path, files: Map<JobRelativePath, JobFile>?) {
         if (files.isNull()) {
             if (MemoryJobStateInteraction().companion.present(directory)) {
@@ -29,15 +28,18 @@ class StringStatusInteraction : StatusInteraction {
 
         val untouched = files?.count { (_, it) -> it.vertexes.isNullOrEmpty() && !it.approved }
         val segReview = files?.count { (_, it) -> it.vertexes.isNotNull() && !it.approved }
-        val canOcr    = files?.count { (_, jobFile) -> jobFile.vertexes?.values?.run {
-            isNotEmpty() &&
+        val canOcr = files?.count { (_, jobFile) ->
+            jobFile.vertexes?.values?.run {
+                isNotEmpty() &&
                     any { box ->
                         box.metadata == null ||
-                                box.keyedBoundaries.values.any { it.rawMetadata == null }
+                            box.keyedBoundaries.values.any { it.rawMetadata == null }
                     }
-        } ?: false && jobFile.approved }
+            } ?: false && jobFile.approved
+        }
         val canExport = files?.count { (_, it) ->
-            it.vertexes?.values?.all(ArchiveBox::isNotNull) ?: false }
+            it.vertexes?.values?.all(ArchiveBox::isNotNull) ?: false
+        }
 
         fun StringBuilder.appendLineIfPositive(count: Int?, line: (Int) -> String) =
             count?.takeIf { it > 0 }?.let { appendLine(line(it)) }
@@ -45,9 +47,7 @@ class StringStatusInteraction : StatusInteraction {
         result = buildString {
             appendLine("There are ${files?.size} valid files in directory $directory.")
             appendLine("Of these files:")
-            appendLineIfPositive(untouched) {
-                "- $it files have not been processed"
-            }
+            appendLineIfPositive(untouched) { "- $it files have not been processed" }
             appendLineIfPositive(segReview) {
                 "- $it files have been segmented into boxes and are ready for Manual Review"
             }
@@ -55,10 +55,9 @@ class StringStatusInteraction : StatusInteraction {
                 "- $it files have been segmented and are ready to be transcribed"
             }
             // TODO: Maybe we should label reviewed files?
-            appendLineIfPositive(canExport){
+            appendLineIfPositive(canExport) {
                 "- $it files have been transcribed, and are ready to review or export"
             }
-
         }
     }
 }
