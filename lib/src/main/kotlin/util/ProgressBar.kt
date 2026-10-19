@@ -105,14 +105,17 @@ abstract class ProgressBar(val totalItems: Int?, starterProgress: Int = 1) {
         redraw()
         val oneShot = MutableStateFlow<Boolean?>(null)
         val scope = ProgressBarScope(oneShot)
-        val job = CoroutineScope(Dispatchers.Main).launch { try {
-            scope.operation()
-            scope.finish()
-        } catch (e: Exception) {
-            Log.error("Operation Threw $e")
-            scope.cancel()
-            throw e
-        } }
+        val job =
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    scope.operation()
+                    scope.finish()
+                } catch (e: Exception) {
+                    Log.error("Operation Threw $e")
+                    scope.cancel()
+                    throw e
+                }
+            }
         runBlocking {
             oneShot.filterNotNull().first().let {
                 when (it) {
