@@ -8,10 +8,12 @@ import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
+import kotlin.io.path.createTempFile
 import kotlin.io.path.deleteRecursively
+import kotlin.io.path.pathString
+import kotlin.io.path.writeText
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Test
 
 class SwitchboardEndToEnd {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -56,5 +58,6 @@ class SwitchboardEndToEnd {
         sw.generateExport(directory)
 
         Log.info(csv.string)
+        Log.debug("Wrote CSV file to: ${createTempFile(suffix = ".csv").apply { writeText(csv.string) }.pathString}")
     }
 }
