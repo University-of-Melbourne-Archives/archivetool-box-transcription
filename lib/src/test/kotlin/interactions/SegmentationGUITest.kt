@@ -14,9 +14,9 @@ import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
-import kotlin.test.Test
 
 class SegmentationGUITest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -114,6 +114,10 @@ class SegmentationGUITest {
                 )
                 .mapKeys { JobRelativePath(directory, it.key) }
                 .toMutableMap()
-        println(SegmentationGUIInteraction().review(files).mapValues { (_, v) -> Json.encodeToString(v) })
+        println(
+            SegmentationGUIInteraction().review(files).mapValues { (_, v) ->
+                Json.encodeToString(v)
+            }
+        )
     }
 }

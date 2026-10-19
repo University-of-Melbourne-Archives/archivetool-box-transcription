@@ -11,11 +11,11 @@ import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class FlattenInteractionTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)

@@ -6,7 +6,6 @@ import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.createTempFile
@@ -16,6 +15,7 @@ import kotlin.io.path.writeText
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class SwitchboardEndToEnd {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -61,6 +61,8 @@ class SwitchboardEndToEnd {
         sw.generateExport(directory)
 
         Log.info(csv.string)
-        Log.debug("Wrote CSV file to: ${createTempFile(suffix = ".csv").apply { writeText(csv.string) }.pathString}")
+        Log.debug(
+            "Wrote CSV file to: ${createTempFile(suffix = ".csv").apply { writeText(csv.string) }.pathString}"
+        )
     }
 }
