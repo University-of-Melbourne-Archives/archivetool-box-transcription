@@ -417,6 +417,9 @@ class OCRInterface(
     suspend fun close() {
         loadJob?.cancel()
         outputMetadata()
+
+        kotlinx.coroutines.delay(100)
+
         returnFlow?.close()
 
         // Deletes the temp files
