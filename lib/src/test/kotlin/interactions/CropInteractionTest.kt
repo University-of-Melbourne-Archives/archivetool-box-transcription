@@ -17,6 +17,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
+import kotlin.io.path.toPath
 
 // TODO: Test cropping multiple sections.
 class CropInteractionTest {
@@ -33,15 +34,11 @@ class CropInteractionTest {
     }
 
     val directory by lazy {
-        Path(
-            {}.javaClass
-                .getResource("/SwitchboardTest")
-                .expect("Test couldn't find test folder")
-                .path
-                .let { path ->
-                    path.takeIf { it.matches("^/[A-Z]:".toRegex()) }?.removePrefix("/") ?: path
-                }
-        )
+        {}.javaClass
+            .getResource("/SwitchboardTest")
+            .expect("Test couldn't find test folder")
+            .toURI()
+            .toPath()
     }
 
     @SemiManual(

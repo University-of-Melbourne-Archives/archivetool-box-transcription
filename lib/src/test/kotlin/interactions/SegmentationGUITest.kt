@@ -17,6 +17,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
+import kotlin.io.path.toPath
 
 class SegmentationGUITest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -32,15 +33,11 @@ class SegmentationGUITest {
     }
 
     val directory by lazy {
-        Path(
-            {}.javaClass
-                .getResource("/SwitchboardTest")
-                .expect("Test couldn't find test folder")
-                .path
-                .let { path ->
-                    path.takeIf { it.matches("^/[A-Z]:".toRegex()) }?.removePrefix("/") ?: path
-                }
-        )
+        {}.javaClass
+            .getResource("/SwitchboardTest")
+            .expect("Test couldn't find test folder")
+            .toURI()
+            .toPath()
     }
 
     @SemiManual(

@@ -126,9 +126,29 @@ fun main() {
         )
 
     val f = createTempDirectory().resolve("archivetool.plantuml")
-    f.writeText(uml)
+    val basef = f.resolveSibling("archivetool.base.plantuml")
+    basef.writeText(uml)
 
-    println("Wrote ${runs.size} packages to $f")
+    println("Wrote ${runs.size} packages to $basef")
+
+    println("Applying Manual Patches:")
+    Log.info("")
+
+    val patched = uml.let { uml ->
+        println("- Replace aggregation of Interaction subclasses with injection of interaction.")
+        val pat = "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard\"1\" --> \"1\" "
+        uml.lineSequence()
+            .filter { !it.contains(pat) }.toMutableList()
+            .apply {
+                val end = last { it.isNotEmpty() }
+                add("au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard #-- au_edu_unimelb_archivetool_switchboard_interactions_Interaction : < injected into")
+                addLast(end)
+            }
+            .joinToString("\n", postfix = "\n")
+    }
+
+    f.writeText(patched)
+    println("Wrote patched plantuml to $f")
 }
 
 private fun KClass<*>.normalisedQualifiedName(): String =

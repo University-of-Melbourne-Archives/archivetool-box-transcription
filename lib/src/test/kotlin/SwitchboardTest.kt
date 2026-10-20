@@ -23,6 +23,7 @@ import kotlin.test.assertNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
+import kotlin.io.path.toPath
 
 class SwitchboardTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -44,15 +45,11 @@ class SwitchboardTest {
     val cacheLock = Mutex()
 
     val directory by lazy {
-        Path(
-            {}.javaClass
-                .getResource("/SwitchboardTest")
-                .expect("Test couldn't find test folder")
-                .path
-                .let { path ->
-                    path.takeIf { it.matches("^/[A-Z]:".toRegex()) }?.removePrefix("/") ?: path
-                }
-        )
+        {}.javaClass
+            .getResource("/SwitchboardTest")
+            .expect("Test couldn't find test folder")
+            .toURI()
+            .toPath()
     }
 
     val fileNameRegex = "PXL_\\d{8}_\\d{9}(\\.clahe)?\\.jpg"
