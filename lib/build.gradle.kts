@@ -11,7 +11,9 @@ plugins {
 
 // SAFETY: If this is incorrectly typed, we don't want to compile anyway.
 @Suppress("UNCHECKED_CAST")
-val doodle: DependencyHandlerScope.() -> Unit = extensions.extraProperties["au.edu.unimelb.archivetool.doodleDependency"] as DependencyHandlerScope.() -> Unit
+val doodle: DependencyHandlerScope.() -> Unit =
+    extensions.extraProperties["au.edu.unimelb.archivetool.doodleDependency"]
+        as DependencyHandlerScope.() -> Unit
 
 dependencies {
     implementation(libs.bundles.kotlinEcosystem)
