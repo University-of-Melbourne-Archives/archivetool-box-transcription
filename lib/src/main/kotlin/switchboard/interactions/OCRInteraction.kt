@@ -36,6 +36,7 @@ class KotlinOCRInteraction : OCRInteraction {
 
     fun processOutputText(transcript: String, api: OpenAIAPIData): BoxMetadata? {
         try {
+            Log.trace("Transcribed as $transcript")
             return getService(api).processOutputText(transcript).toBoxMetadata()
         } catch (e: Exception) {
             Log.trace("OCR::processOutputText threw: $e\n${e.printStackTrace()}")
