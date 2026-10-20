@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.gui.ocr
 
+import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
@@ -8,6 +9,9 @@ import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.DateRange
 import au.edu.unimelb.archivetool.util.MonoColour
 import au.edu.unimelb.archivetool.util.MutableWaitFlow
+import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
+import au.edu.unimelb.archivetool.util.wrap.CV
+import au.edu.unimelb.archivetool.util.wrap.CV.writeImage
 import io.nacular.doodle.application.Application
 import io.nacular.doodle.controls.PopupManager
 import io.nacular.doodle.controls.buttons.PushButton
@@ -25,9 +29,14 @@ import io.nacular.doodle.layout.constraints.constrain
 import io.nacular.doodle.theme.Theme
 import io.nacular.doodle.theme.ThemeManager
 import io.nacular.doodle.utils.TextAlignment
+import java.nio.file.Path
 import kotlin.collections.set
+import kotlin.io.path.createTempFile
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.exists
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -48,21 +57,27 @@ class OCRInterface(
     private val jobs: MutableMap<JobRelativePath, JobFile> =
         jobsIn.mapNotNull { (path, file) -> file?.let { path to it } }.toMap(mutableMapOf())
 
-    private val paths: List<JobRelativePath> = jobs.keys.toList()
+    // Has an entry for every ArchiveBox for all the JobFile and is in file order then box order
+    private data class BoxReference(val path: JobRelativePath, val key: String)
+
+    private val boxes: List<BoxReference> = jobs.flatMap { (path, file) ->
+        file.vertexes?.keys.orEmpty().map { key -> BoxReference(path, key) }
+    }
 
     private var currentIndex = 0
 
-    private val currentPath: JobRelativePath
-        get() = paths[currentIndex]
+    private val currentReference: BoxReference?
+        get() = boxes.getOrNull(currentIndex)
 
-    private val currentFile: JobFile
-        get() = jobs.getValue(currentPath)
-
-    private val currentBoxKey: String?
-        get() = currentFile.vertexes?.keys?.firstOrNull()
+    private val currentBox: ArchiveBox?
+        get() = currentReference?.let { jobs[it.path]?.vertexes?.get(it.key) }
 
     private val currentJob: BoxMetadata?
-        get() = currentBoxKey?.let { currentFile.vertexes?.get(it)?.metadata }
+        get() = currentBox?.metadata
+
+    // Processed images (cropped, flattened, and greyscale) are stored as temp files
+    private val processedImages = mutableMapOf<BoxReference, Path>()
+    private var loadJob: Job? = null
 
     // -- Views ---------------------------------------------------------------
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -225,24 +240,69 @@ class OCRInterface(
             }
 
         // Initial state
-        if (paths.isNotEmpty()) {
+        if (boxes.isNotEmpty()) {
             displayCurrent()
         }
     }
 
     private fun moveIndex(index: Int) {
-        if (index !in paths.indices || index == currentIndex) {
-            return
-        }
-
+        if (index !in boxes.indices || index == currentIndex) return
         currentIndex = index
         displayCurrent()
     }
 
     private fun displayCurrent() {
-        viewport.loadImage(currentPath)
-        fileCounter.text = "%03d/%03d".format(currentIndex + 1, paths.size)
+        val reference = currentReference ?: return
+        fileCounter.text = "%03d/%03d".format(currentIndex + 1, boxes.size)
         displayJobText()
+
+        // Allocates loading only to the most recently requested image
+        loadJob?.cancel()
+        loadJob = appScope.launch {
+            val processed = processedImageFor(reference)
+
+            if (reference == currentReference) {
+                viewport.loadImage(processed)
+            }
+        }
+    }
+
+    // Crops to the box segmentation boundary, flattens, and then applies greyscale to the image
+    // returns temp file
+    private fun processedImageFor(ref: BoxReference): Path {
+        // Get temp file
+        val cachedImage = processedImages[ref]
+        if (cachedImage != null && cachedImage.exists()) {
+            return cachedImage
+        }
+
+        val box = jobs.getValue(ref.path).vertexes!!.getValue(ref.key)
+        val boundaryQuadrilateral = box.boxBoundary.points
+        val bounds = boundaryQuadrilateral.bestBoundingBox()
+
+        // The size we are projecting to
+        val outRect = Rectangle.create(0, 0, bounds.width, bounds.height)
+
+        val source = CV.readImage(ref.path.absolute)
+        val warped =
+            CV.PerspectiveTransformMatrix.create(boundaryQuadrilateral, outRect).use {
+                CV.perspectiveWarp(source, it)
+            }
+        val grey = CV.bgr2grayc1(warped)
+
+        val tempFile = createTempFile(prefix = "ocr-box-", suffix = ".png")
+
+        // For if GUI is exited without calling close()
+        tempFile.toFile().deleteOnExit()
+
+        grey.writeImage(tempFile)
+
+        source.release()
+        warped.release()
+        grey.release()
+
+        processedImages[ref] = tempFile
+        return tempFile
     }
 
     // -- Review Table --------------------------------------------------------
@@ -301,7 +361,7 @@ class OCRInterface(
     // -- Saving --------------------------------------------------------------
 
     private fun save() {
-        if (paths.isEmpty()) {
+        if (boxes.isEmpty()) {
             return
         }
 
@@ -338,22 +398,31 @@ class OCRInterface(
                 description = descriptionText,
             )
 
-        val key = currentBoxKey
-        val vertexes = currentFile.vertexes
-        if (key == null || vertexes == null) {
-            showErrors(listOf("This file has no boxes to save data to."))
+        val reference = currentReference
+        val vertexes = reference?.let { jobs[it.path]?.vertexes }
+
+        if (reference == null || vertexes == null) {
+            showErrors(
+                listOf("This file does not have a corresponding location for save to occur.")
+            )
             return
         }
 
-        vertexes[key] = vertexes.getValue(key).copy(metadata = updatedJob)
+        // Saves changes
+        vertexes[reference.key] = vertexes.getValue(reference.key).copy(metadata = updatedJob)
 
         displayJobText()
     }
 
     suspend fun close() {
+        loadJob?.cancel()
         outputMetadata()
         returnFlow?.close()
 
+        // Deletes the temp files
+        processedImages.values.forEach { it.deleteIfExists() }
+
+        processedImages.clear()
         display.children.clear()
     }
 

@@ -1,7 +1,6 @@
 package au.edu.unimelb.archivetool.gui.ocr
 
 import au.edu.unimelb.archivetool.gui.segmentation.Coord.ViewportSpaceCoord
-import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.Colour
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import io.nacular.doodle.core.View
@@ -95,24 +94,19 @@ class ImageViewport(
 
     // -- Image loading -------------------------------------------------------
 
-    fun loadImage(path: JobRelativePath) {
+    fun loadImage(path: Path) {
         image = null
-
         imageWidth = 0.0
         imageHeight = 0.0
-
         didInitialFit = false
-
         rerender()
 
         appScope.launch {
-            val loaded = imageLoader.load(path.absolute.toDataUri()) ?: return@launch
-
+            val loaded = imageLoader.load(path.toDataUri()) ?: return@launch
             image = loaded
             imageWidth = loaded.size.width
             imageHeight = loaded.size.height
             onImageLoaded(imageWidth, imageHeight)
-
             rerender()
         }
     }

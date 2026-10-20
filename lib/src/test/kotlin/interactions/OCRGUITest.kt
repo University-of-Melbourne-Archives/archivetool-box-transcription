@@ -63,7 +63,7 @@ class OCRGUITest {
                                                         Quad.create(
                                                             100 to 100,
                                                             900 to 100,
-                                                            900 to 1200,
+                                                            900 to 1900,
                                                             100 to 1200,
                                                         ),
                                                     confidence = 0.9,
@@ -106,7 +106,55 @@ class OCRGUITest {
                                                             "Moore; Western Province; Victoria Cross;   \n" +
                                                             "H. Jones (Sth Africa) & Durban Branch  ",
                                                 ),
-                                        )
+                                        ),
+                                    "box-2" to
+                                        ArchiveBox(
+                                            boxBoundary =
+                                                Boundary(
+                                                    points =
+                                                        Quad.create(
+                                                            100 to 100,
+                                                            900 to 100,
+                                                            900 to 1900,
+                                                            100 to 1900,
+                                                        ),
+                                                    confidence = 0.9,
+                                                ),
+                                            labelBoundaries =
+                                                listOf(
+                                                    Boundary(
+                                                        points =
+                                                            Quad.create(
+                                                                200 to 200,
+                                                                800 to 200,
+                                                                800 to 700,
+                                                                200 to 700,
+                                                            ),
+                                                        confidence = 0.9,
+                                                    )
+                                                ),
+                                            metadata =
+                                                BoxMetadata(
+                                                    RecordSetID.OldID("1976.0276"),
+                                                    1071,
+                                                    null,
+                                                    description =
+                                                        "THIS IS THE SECOND BOX   \n" +
+                                                            "Cannery; Kirkpatrick; Thompson & Hills;   \n" +
+                                                            "Dunedin Jam Co.; Oakleaf; W.D. Peacock;   \n" +
+                                                            "H. Jones & Co. (Adel); 1930 F.W. Moore;   \n" +
+                                                            "Peacock Jam Co.; Henry Jones (Sth   \n" +
+                                                            "Africa) & Durban Branch; Western   \n" +
+                                                            "Province; Kirkpatrick; Thompson & Hills;   \n" +
+                                                            "Oakleaf; H. Jones & (Adel); Victoria Cross;   \n" +
+                                                            "J.E. Barnard; Geelong & W.D. Pres. Co.;   \n" +
+                                                            "1931 Bendigo Pres. Co.; Peacock Jam; S.   \n" +
+                                                            "Kirkpatrick; Nielson Fruit growing & Dev.;   \n" +
+                                                            "Thompson & Hills; H.J. (Adelaide); F.W.   \n" +
+                                                            "Moore; Western Province; Victoria Cross;   \n" +
+                                                            "H. Jones (Sth Africa) & Durban Branch  ",
+                                                ),
+                                        ),
                                 )
                         ),
                     Path("PXL_20251127_230207837.jpg") to
