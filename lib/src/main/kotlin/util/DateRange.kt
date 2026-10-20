@@ -84,20 +84,12 @@ data class DateRange(val range: LocalDateRange) {
             if (dateRange.contains("None")) return null
             val ranges = dateRange.split(", ")
             return ranges
-                .map { it.split('!', limit = 1).let { it[0] to it.getOrNull(1) } }
+                .map { it.split('!', limit = 2).let { it[0] to it.getOrNull(1) } }
                 .map { (start, end) ->
                     val startDate =
-                        try {
-                            LocalDate.parse(start)
-                        } catch (e: DateTimeParseException) {
-                            LocalDate.parse("$start-01-01")
-                        }
+                            LocalDate.parse(start.takeIf { it.matches("^[12][90]\\d{2}-\\d+".toRegex()) } ?: "$start-01-01")
                     val endDate = end?.let {
-                        try {
-                            LocalDate.parse(end)
-                        } catch (e: DateTimeParseException) {
-                            LocalDate.parse("$end-12-31")
-                        }
+                        LocalDate.parse(end.takeIf { it.matches("^[12][90]\\d{2}-\\d+".toRegex()) } ?: "$start-12-31")
                     }
 
                     DateRange(startDate, endDate)
