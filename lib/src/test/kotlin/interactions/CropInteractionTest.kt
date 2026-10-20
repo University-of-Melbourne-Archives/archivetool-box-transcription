@@ -38,6 +38,9 @@ class CropInteractionTest {
                 .getResource("/SwitchboardTest")
                 .expect("Test couldn't find test folder")
                 .path
+                .let { path ->
+                    path.takeIf { it.matches("^/[A-Z]:".toRegex()) }?.removePrefix("/") ?: path
+                }
         )
     }
 
