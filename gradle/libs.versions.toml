@@ -50,3 +50,5 @@ kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", 
 ktfmtGradlePlugin = { id = "com.ncorti.ktfmt.gradle",  version = "0.26.0" }
 # Package Management and Bindgen for GraalPy Polyglot
 graalpy = { id = "org.graalvm.python", version.ref = "polyglot" }
+# JavaCPP Platform setup - Uses different version to JavaCV because the newer version just doesn't exist?
+javacppPlatform = { id = "org.bytedeco.gradle-javacpp-platform", version = "1.5.10" }

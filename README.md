@@ -110,6 +110,22 @@ As much of possible of the shared build logic is extracted to a convention plugi
 
 This project uses a version catalog (see `gradle/libs.versions.toml`) to declare and version dependencies, wherever possible.
 
+### Only Bundling Platform-Specific Native JARs
+
+If you are only building for a single system, you may want to set the `archivetool.platform` to `<platform>-<arch>` 
+in order to only bundle binaries for your platform into the JAR. This will save a little bit on space and load times but 
+will mean that the program will crash at runtime on an unsupported platform.
+Additionally, you can add a `-gpu` suffix to enable some CUDA support, if you have a nvidia GPU.
+Alternatively, you can set this value to `host`, and archivetool will detect platform based on the system you are compiling on.
+
+You can set this value on the command-line with `-Parchivetool.platform=linux-x86_64` or by creating a file called 
+`local.properties` next to the `gradle.properties`, with the contents:
+```properties
+archivetool.platform=linux-x86_64
+```
+
+Leaving the property empty or as an unsupported value will simply import every platform.
+
 ### Python Implementations
 When we were experimenting with our Machine Learning models, they were scripted using Python.
 This worked using GraalPy and a lot of interoperation code.
@@ -118,7 +134,7 @@ However, some of the packages required patches and fresh compilation, which was 
 Additionally, we have reimplemented the code in Kotlin, so it is redundant.
 
 If you wish to compile the interoperation code, along with the original Python implementations of certain interactions, 
-set `enablePython` to `true` in [`gradle.properties`](gradle.properties).
+set `archivetool.python` to `true` in [`gradle.properties`](gradle.properties).
 
 This does not replace the Kotlin implementations by default, 
 and `Switchboard` will still use the Kotlin implementations unless you tell it otherwise. 

@@ -30,4 +30,4 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
     - name: Run Tests and Format Check with Gradle
-      run: ./gradlew check -Djavacpp.platform=linux-x86_64
+      run: ./gradlew check -Parchivetool.platform=linux-x86_64
