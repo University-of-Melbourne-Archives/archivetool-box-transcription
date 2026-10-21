@@ -8,7 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.MonoColour
-import au.edu.unimelb.archivetool.util.extension.asFileAttribute
+import au.edu.unimelb.archivetool.util.extension.asFileAttributes
 import au.edu.unimelb.archivetool.util.file.copyFromResources
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
@@ -42,7 +42,7 @@ object BoxSegmentation {
     val modelDirectory by lazy {
         createTempDirectory(
             "archivetool-models",
-            PosixFilePermissions.fromString("rwxrwxr--").asFileAttribute(),
+            *PosixFilePermissions.fromString("rwxrwxr--").asFileAttributes(),
         )
     }
 
