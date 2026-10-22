@@ -304,7 +304,7 @@ object UmlCombiner {
 
     private val identifierRegex = Regex("""\w+""")
     private val unitReturnRegex = Regex("""(\(.*\)): Unit""")
-    private val functionNRegex = Regex("""Function(?<n>\d+)<(?<types>\w+(?:, \w+)*)>""")
+    private val functionNRegex = Regex("""Function(?<n>\d+)<(?<types>\w+\??(?:, \w+\??)*)>""")
 
     private fun nameGroup(group: String) = """["]?(?<$group>[\w.]+)["]?"""
 
@@ -368,11 +368,14 @@ object UmlCombiner {
             .replace("@enduml", "")
             .let { unitReturnRegex.replace(it) { m -> m.groupValues[1] } }
             .let {
-                functionNRegex.replace(it) { m ->
-                    val params = m.groups["n"]!!.value.toInt()
-                    val types = m.groups["types"]!!.value.split(", ")
-                    "(${types.take(params).joinToString()}) -> ${types.last()}"
-                }
+                val matches = functionNRegex.findAll(it)
+                if (matches.any()) {
+                    matches.fold(it) { s, match ->
+                        val params = match.groups["n"]!!.value.toInt()
+                        val types = match.groups["types"]!!.value.split(", ")
+                        s.replace(match.value, "(${types.take(params).joinToString()}) -> ${types.last()}")
+                    } + " {field}"
+                } else it
             }
 
     private fun String.toRelation(): Relation? {
