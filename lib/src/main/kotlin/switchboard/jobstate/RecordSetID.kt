@@ -1,7 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
 import au.edu.unimelb.archivetool.util.extension.counted
-import au.edu.unimelb.archivetool.util.logging.Log
 import kotlin.reflect.full.companionObjectInstance
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

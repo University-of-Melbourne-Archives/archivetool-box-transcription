@@ -25,15 +25,22 @@ class SegmentationGUIInteraction : SegmentationPreviewInteraction, GUIInteractio
     ): Map<JobRelativePath, JobFile> {
         Log.info("Running ReviewGUIInteraction")
         return runBlocking {
-            fun isAuto(file: Map.Entry<JobRelativePath, JobFile?>): Boolean = (file.value?.minConfidence ?: -1.0) > autoApproveThreshold
+            fun isAuto(file: Map.Entry<JobRelativePath, JobFile?>): Boolean =
+                (file.value?.minConfidence ?: -1.0) > autoApproveThreshold
             val auto = files.filter(::isAuto).mapValues { (_, v) -> v!!.copy(approved = true) }
             (applicationWithResult<SegmentationInterface, Map<JobRelativePath, JobFile>>(
                 mapOf(),
                 listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule),
             ) {
                 SegmentationInterface(
-                    // Least confident files first, so the ones most likely to need fixing are reviewed first
-                    jobs = files.filterNot(::isAuto).entries.sortedBy { it.value?.minConfidence ?: -999.0 }.associate { it.toPair() },
+                    // Least confident files first, so the ones most likely to need fixing are
+                    // reviewed first
+                    jobs =
+                        files
+                            .filterNot(::isAuto)
+                            .entries
+                            .sortedBy { it.value?.minConfidence ?: -999.0 }
+                            .associate { it.toPair() },
                     display = instance(),
                     windows = instance(),
                     themeManager = instance(),

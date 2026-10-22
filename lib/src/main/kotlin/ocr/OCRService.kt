@@ -39,7 +39,10 @@ class OCRService(private val settings: OpenAIAPIData) {
         val efforts = setOf("none", "minimal", "low", "medium", "high", "xhigh", "max")
         ChatCompletionCreateParams.builder()
             .model(settings.model)
-            .reasoningEffort(settings.effort.takeIf {efforts.contains(it)}?.let { ReasoningEffort.of(it) } ?: ReasoningEffort.LOW)
+            .reasoningEffort(
+                settings.effort.takeIf { efforts.contains(it) }?.let { ReasoningEffort.of(it) }
+                    ?: ReasoningEffort.LOW
+            )
     }
 
     fun params(imageBase64Url: String): ChatCompletionCreateParams =

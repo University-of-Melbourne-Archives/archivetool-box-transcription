@@ -317,12 +317,7 @@ object BoxSegmentation {
 
             // Largest contour only, so stray specks of mask don't drag the convex hull around
             val largest = contours.largest
-            out +=
-                Detection(
-                    label,
-                    score.toDouble(),
-                    Polygon.create(largest),
-                )
+            out += Detection(label, score.toDouble(), Polygon.create(largest))
         }
         return out
     }

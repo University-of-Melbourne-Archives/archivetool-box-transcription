@@ -13,11 +13,11 @@ import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import kotlin.io.path.Path
+import kotlin.io.path.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
-import kotlin.io.path.toPath
 
 // TODO: Test cropping multiple sections.
 class CropInteractionTest {

@@ -3,6 +3,7 @@ import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import io.github.kelvindev15.kotlin2plantuml.plantuml.ClassDiagram
 import io.github.kelvindev15.kotlin2plantuml.plantuml.Configuration
 import io.github.kelvindev15.kotlin2plantuml.utils.ReflectUtils.Companion.isInterface
+import kotlin.collections.filter
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeText
 import kotlin.reflect.KCallable
@@ -17,7 +18,6 @@ import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaMethod
 import kotlin.reflect.jvm.jvmErasure
 import kotlinx.serialization.Serializable
-import kotlin.collections.filter
 
 fun main() {
     Log.registerConsumer(StdoutConsumer())
@@ -95,12 +95,13 @@ fun main() {
                                             },
                                         isSerializable =
                                             kClass.annotations.any { it is Serializable },
-                                        visibility = when (kClass.visibility) {
-                                            KVisibility.PROTECTED -> "#"
-                                            KVisibility.INTERNAL -> "~"
-                                            KVisibility.PRIVATE -> "-"
-                                            else -> ""
-                                        }
+                                        visibility =
+                                            when (kClass.visibility) {
+                                                KVisibility.PROTECTED -> "#"
+                                                KVisibility.INTERNAL -> "~"
+                                                KVisibility.PRIVATE -> "-"
+                                                else -> ""
+                                            },
                                     )
                                 },
                             uml =
@@ -142,8 +143,16 @@ fun main() {
 
     val patched = uml.let { uml ->
         val end = "@enduml"
-        uml.lineSequence().filter { !it.contains(end) }
-            .patchHideMethodUses().patchInteractionDI().patchLogConsumerDupeProps().patchMissingCLIInheritances().patchRemoveCompanionMemberProperty().patchAddConfigJson().patchAddUoMCSV().patchAddJobJson()
+        uml.lineSequence()
+            .filter { !it.contains(end) }
+            .patchHideMethodUses()
+            .patchInteractionDI()
+            .patchLogConsumerDupeProps()
+            .patchMissingCLIInheritances()
+            .patchRemoveCompanionMemberProperty()
+            .patchAddConfigJson()
+            .patchAddUoMCSV()
+            .patchAddJobJson()
             .let { it + end }
             .joinToString("\n", postfix = "\n")
     }
@@ -188,13 +197,15 @@ private fun KClass<*>.synthesiseCompanionSupertypes(): List<UmlCombiner.Relation
 private fun Sequence<String>.patchInteractionDI(): Sequence<String> {
     println("- Replace aggregation of Interaction subclasses with injection of interaction.")
     val pat = "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard\"1\" --> \"1\" "
-    return filter { !it.contains(pat) } + "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard #-- au_edu_unimelb_archivetool_switchboard_interactions_Interaction : < injected into"
+    return filter { !it.contains(pat) } +
+        "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard #-- au_edu_unimelb_archivetool_switchboard_interactions_Interaction : < injected into"
 }
 
 private fun Sequence<String>.patchLogConsumerDupeProps(): Sequence<String> {
     println("- Remove duplicated properties on LogConsumers with properties on the superclass.")
     return filter {
-        !(it.contains("LogLevel : maxLogLevel") || it.contains("ConsumerSettings : settings")) || it.contains("au_edu_unimelb_archivetool_util_logging_LogConsumer")
+        !(it.contains("LogLevel : maxLogLevel") || it.contains("ConsumerSettings : settings")) ||
+            it.contains("au_edu_unimelb_archivetool_util_logging_LogConsumer")
     }
 }
 
@@ -216,24 +227,28 @@ I genuinely have no clue why these aren't detected but it may be something to do
 */
 private fun Sequence<String>.patchMissingCLIInheritances(): Sequence<String> {
     println("- Remove inherited methods from CLI and add missing inheritances.")
-    return this.filterNot { it.contains("+run()") || it.contains("+help(context: Context): String") } + sequenceOf(
-        "BaseCommand",
-        "FinaliseCommand",
-        "InfoCommand",
-        "OCRCommand",
-        "PreviewCommand",
-        "RunCommand",
-        "StatusCommand",
-        "ocr_OCRCreateCommand",
-        "ocr_OCRReviewCommand",
-        "preview_PreviewCreateCommand",
-        "preview_PreviewReviewCommand",
-    ).map {
-        "au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_$it"
-    }
+    return this.filterNot {
+        it.contains("+run()") || it.contains("+help(context: Context): String")
+    } +
+        sequenceOf(
+                "BaseCommand",
+                "FinaliseCommand",
+                "InfoCommand",
+                "OCRCommand",
+                "PreviewCommand",
+                "RunCommand",
+                "StatusCommand",
+                "ocr_OCRCreateCommand",
+                "ocr_OCRReviewCommand",
+                "preview_PreviewCreateCommand",
+                "preview_PreviewReviewCommand",
+            )
+            .map {
+                "au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_$it"
+            }
 }
 
-//todo do we have tthe jobstateinteraction inheritance borken???
+// todo do we have tthe jobstateinteraction inheritance borken???
 private fun Sequence<String>.patchRemoveCompanionMemberProperty(): Sequence<String> {
     println("- Remove 'companion' member from JobStateInteraction and subtypes.")
     return this.filterNot { it.contains(": companion") }
@@ -242,32 +257,40 @@ private fun Sequence<String>.patchRemoveCompanionMemberProperty(): Sequence<Stri
 private fun Sequence<String>.patchHideMethodUses(): Sequence<String> {
     println("- Hide the 'uses' method associations that I am no longer using.")
     val useLines = this.filter { it.endsWith(" : uses") }
-    val deadExts = useLines.filter { it.contains("ext_") }.flatMap {
-        "(ext_(?:[_]|[a-z]|[A-Z])+) : uses".toRegex()
-            .findAll(it)
-            .mapNotNull { match -> match.groupValues.getOrNull(1) }
-            .filterNot { alias -> this.any { line -> line.startsWith("$alias <|-- ") } }
-    }.distinct()
+    val deadExts =
+        useLines
+            .filter { it.contains("ext_") }
+            .flatMap {
+                "(ext_(?:[_]|[a-z]|[A-Z])+) : uses"
+                    .toRegex()
+                    .findAll(it)
+                    .mapNotNull { match -> match.groupValues.getOrNull(1) }
+                    .filterNot { alias -> this.any { line -> line.startsWith("$alias <|-- ") } }
+            }
+            .distinct()
     return this.filterNot { line -> useLines.contains(line) || deadExts.any { line.contains(it) } }
 }
 
 private fun Sequence<String>.patchAddConfigJson(): Sequence<String> {
-    println("- Add a relationship for Config reading the json file, and between Config and ConfigInteraction")
+    println(
+        "- Add a relationship for Config reading the json file, and between Config and ConfigInteraction"
+    )
     val jsonShape = buildString {
         appendLine("json \".config/archivetool/config.json\" as config_json {")
         appendLine("\t\"ocr_api\": {")
         appendLine("\t\"base_url\": \"https://generativelanguage.googleapis.com/v1beta/openai/\",")
         appendLine("\t\"api_key\": \"\",")
         appendLine("\t\"model\": \"gemini-3-flash-preview\",")
-		appendLine("\t\"effort\": \"low\"")
+        appendLine("\t\"effort\": \"low\"")
         appendLine("\t}")
         appendLine("}")
     }
-    val assocs = sequenceOf(
-        "au_edu_unimelb_archivetool_config_Config <-- au_edu_unimelb_archivetool_switchboard_interactions_ConfigInteraction : reads",
-        "config_json <-- au_edu_unimelb_archivetool_config_Config : reads/generates",
-        "au_edu_unimelb_archivetool_switchboard_interactions_InitInteraction <-- au_edu_unimelb_archivetool_switchboard_interactions_ConfigInteraction : generates"
-    )
+    val assocs =
+        sequenceOf(
+            "au_edu_unimelb_archivetool_config_Config <-- au_edu_unimelb_archivetool_switchboard_interactions_ConfigInteraction : reads",
+            "config_json <-- au_edu_unimelb_archivetool_config_Config : reads/generates",
+            "au_edu_unimelb_archivetool_switchboard_interactions_InitInteraction <-- au_edu_unimelb_archivetool_switchboard_interactions_ConfigInteraction : generates",
+        )
     val note = buildString {
         appendLine("note top of config_json")
         appendLine("Approximately represents the arguments given to an Open-AI compatible API.")
@@ -275,36 +298,47 @@ private fun Sequence<String>.patchAddConfigJson(): Sequence<String> {
     }
     return this + jsonShape + assocs + note
 }
+
 private fun Sequence<String>.patchAddUoMCSV(): Sequence<String> {
     println("- Add Table representing CSV output")
     val table = buildString {
         appendLine("object \"\" as output_csv {")
         appendLine("= \"\"output.csv\"\"\n")
-        appendLine("<#transparent,#black>|= Node ID |= Node Type |= Node Title |= Description |= Date Range|")
-        appendLine("<#transparent,#black>| ????? | Item | \"\"<id number> Unit <unit number>\"\" | \"\"<remaining transcription>\"\" | \"\"<year range>;<start date>;<end date>\"\"|")
+        appendLine(
+            "<#transparent,#black>|= Node ID |= Node Type |= Node Title |= Description |= Date Range|"
+        )
+        appendLine(
+            "<#transparent,#black>| ????? | Item | \"\"<id number> Unit <unit number>\"\" | \"\"<remaining transcription>\"\" | \"\"<year range>;<start date>;<end date>\"\"|"
+        )
         appendLine("}")
     }
-    val assoc = "output_csv <-- au_edu_unimelb_archivetool_switchboard_interactions_export_UoMCSV : generates"
+    val assoc =
+        "output_csv <-- au_edu_unimelb_archivetool_switchboard_interactions_export_UoMCSV : generates"
 
-    return this.filterNot { it.contains("au_edu_unimelb_archivetool_switchboard_interactions_export_CSV_Companion o-- ") } + table + assoc
+    return this.filterNot {
+        it.contains("au_edu_unimelb_archivetool_switchboard_interactions_export_CSV_Companion o-- ")
+    } + table + assoc
 }
 
 private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
     println("- Add a relationship for job state management")
     val jsonShape = buildString {
         appendLine("json \".archivetool_generated/job.json\" as job_json {")
-        val metaJson = """
-        {
-            "id[]?": ["string"],
-            "unitNumber?": "number",
-            "dateRange?": {
-                "startDate": "ISO8601 date string",
-                "endDate?": "ISO8601 date string"
-            },
-            "description": "string"
-        }
-        """.trimIndent()
-        val boundaryJson = """
+        val metaJson =
+            """
+            {
+                "id[]?": ["string"],
+                "unitNumber?": "number",
+                "dateRange?": {
+                    "startDate": "ISO8601 date string",
+                    "endDate?": "ISO8601 date string"
+                },
+                "description": "string"
+            }
+            """
+                .trimIndent()
+        val boundaryJson =
+            """
             {
                 "points[4]": [
                     {"x": "number", "y": "number"}
@@ -312,8 +346,10 @@ private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
                 "confidence": "number",
                 "rawMetadata?": $metaJson
             }
-        """.trimIndent()
-        appendLine("""
+        """
+                .trimIndent()
+        appendLine(
+            """
         "<path>*": {
             "vertexes?": {
                 "<box-id>*": {
@@ -323,12 +359,15 @@ private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
                 }
             }
         }
-        """.trimIndent())
+        """
+                .trimIndent()
+        )
         appendLine("}")
     }
-    val assocs = sequenceOf(
-        "job_json <-- au_edu_unimelb_archivetool_switchboard_jobstate_json_JSONJobState : reads/generates",
-    )
+    val assocs =
+        sequenceOf(
+            "job_json <-- au_edu_unimelb_archivetool_switchboard_jobstate_json_JSONJobState : reads/generates"
+        )
     val note = buildString {
         appendLine("note top of job_json")
         appendLine("Internal representation of processing results and state.")

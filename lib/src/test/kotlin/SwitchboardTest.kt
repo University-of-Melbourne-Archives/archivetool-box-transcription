@@ -15,7 +15,7 @@ import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StringConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.collections.mutableMapOf
-import kotlin.io.path.Path
+import kotlin.io.path.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -23,7 +23,6 @@ import kotlin.test.assertNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
-import kotlin.io.path.toPath
 
 class SwitchboardTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
