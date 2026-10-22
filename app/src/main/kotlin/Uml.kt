@@ -143,7 +143,7 @@ fun main() {
     val patched = uml.let { uml ->
         val end = "@enduml"
         uml.lineSequence().filter { !it.contains(end) }
-            .patchHideMethodUses().patchInteractionDI().patchLogConsumerDupeProps().patchMissingCLIInheritances().patchRemoveCompanionMemberProperty().patchAddConfigJson().patchAddUoMCSV()
+            .patchHideMethodUses().patchInteractionDI().patchLogConsumerDupeProps().patchMissingCLIInheritances().patchRemoveCompanionMemberProperty().patchAddConfigJson().patchAddUoMCSV().patchAddJobJson()
             .let { it + end }
             .joinToString("\n", postfix = "\n")
     }
@@ -254,7 +254,7 @@ private fun Sequence<String>.patchHideMethodUses(): Sequence<String> {
 private fun Sequence<String>.patchAddConfigJson(): Sequence<String> {
     println("- Add a relationship for Config reading the json file, and between Config and ConfigInteraction")
     val jsonShape = buildString {
-        appendLine("json \"\$CONFIG_PATH/archivetool/config.json\" as config_json {")
+        appendLine("json \".config/archivetool/config.json\" as config_json {")
         appendLine("\t\"ocr_api\": {")
         appendLine("\t\"base_url\": \"https://generativelanguage.googleapis.com/v1beta/openai/\",")
         appendLine("\t\"api_key\": \"\",")
@@ -289,6 +289,53 @@ private fun Sequence<String>.patchAddUoMCSV(): Sequence<String> {
     return this.filterNot { it.contains("au_edu_unimelb_archivetool_switchboard_interactions_export_CSV_Companion o-- ") } + table + assoc
 }
 
+private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
+    println("- Add a relationship for job state management")
+    val jsonShape = buildString {
+        appendLine("json \".archivetool_generated/job.json\" as job_json {")
+        val metaJson = """
+        {
+            "id[]?": ["string"],
+            "unitNumber?": "number",
+            "dateRange?": {
+                "startDate": "ISO8601 date string",
+                "endDate?": "ISO8601 date string"
+            },
+            "description": "string"
+        }
+        """.trimIndent()
+        val boundaryJson = """
+            {
+                "points[4]": [
+                    {"x": "number", "y": "number"}
+                ],
+                "confidence": "number",
+                "rawMetadata?": $metaJson
+            }
+        """.trimIndent()
+        appendLine("""
+        "<path>*": {
+            "vertexes?": {
+                "<box-id>*": {
+                    "box": $boundaryJson,
+                    "sticker[]": [$boundaryJson],
+                    "meta?": $metaJson
+                }
+            }
+        }
+        """.trimIndent())
+        appendLine("}")
+    }
+    val assocs = sequenceOf(
+        "job_json <-- au_edu_unimelb_archivetool_switchboard_jobstate_json_JSONJobState : reads/generates",
+    )
+    val note = buildString {
+        appendLine("note top of job_json")
+        appendLine("Internal representation of processing results and state.")
+        appendLine("end note")
+    }
+    return this + jsonShape + assocs + note
+}
 
 /**
  * `KCallable` has no `isSynthetic`. The backing Java member does, and kotlin-reflect exposes it
