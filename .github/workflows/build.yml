@@ -37,7 +37,7 @@ jobs:
       - name: Build a Multi-Platform Distribution with Gradle
         run: ./gradlew app:distTar -x check -x test # Tests and Checks happen in the other workflow.
       - name: Copy Distribution out of Build Directory
-        run: cp ./app/build/distributions /tmp/dist && cd /tmp/dist
+        run: cp -r ./app/build/distributions /tmp/dist && cd /tmp/dist
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
