@@ -38,19 +38,19 @@ jobs:
         run: ./gradlew app:distTar -x check -x test # Tests and Checks happen in the other workflow.
       - name: Copy Distribution out of Build Directory
         run: cp -r ./app/build/distributions /tmp/dist && cd /tmp/dist
+      - name: Compress TAR distribution
+        run: gzip -9vk archivetool-cli.tar
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-         name: archivetool-cli-zip
          path: /tmp/dist/archivetool-cli.zip
-         compression-level: 9
+         archive: false
          retention-days: 1
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: archivetool-cli-tar
-          path: /tmp/dist/archivetool-cli.tar
-          compression-level: 9
+          path: /tmp/dist/archivetool-cli.tar.gz
+          archive: false
           retention-days: 1
 
   create_release:
