@@ -1014,16 +1014,3 @@ Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved
 
 Copyright (c) 2018, 2023, Oracle and/or its affiliates
 ```
-
-# Non-Library Works referenced for this Project
-The following works are not libraries or tooling, 
-but certain portions of this project's source code may be considered a derivative work of the following works.
-This list is best-effort only, and only reflects works that comprises a substantial portion of the software.
-## Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
-Some Concurrency Utilities are implemented in a way heavily inspired by 
-[Allen B. Downey's "Little Book of Semaphores", Version 2.2.1](https://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf)
-Which is available at https://greenteapress.com/wp/semaphores/.
-
-Files that could be considered a derivative of this work are labelled as such in their frontmatter, 
-and are available under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-in addition to the AGPLv3 License of the larger work, at your option.

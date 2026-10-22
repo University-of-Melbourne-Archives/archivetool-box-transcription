@@ -1,14 +1,19 @@
-import au.edu.unimelb.archivetool.logging.Log
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogLevel
-import au.edu.unimelb.archivetool.logging.consumers.StdoutConsumer
-import au.edu.unimelb.archivetool.logging.consumers.StringConsumer
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
+import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
+import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
+import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
+import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.ConcreteJobState
-import au.edu.unimelb.archivetool.util.geometry.Rectangle
+import au.edu.unimelb.archivetool.util.DateRange
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
+import au.edu.unimelb.archivetool.util.logging.consumers.StringConsumer
+import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.collections.mutableMapOf
 import kotlin.io.path.Path
 import kotlin.test.AfterTest
@@ -17,6 +22,8 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
+import kotlin.io.path.toPath
 
 class SwitchboardTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -32,21 +39,20 @@ class SwitchboardTest {
     }
 
     val cache by lazy {
-        JobStateCache.getCache<JobStateVariant.Memory, ConcreteJobState>(JobStateVariant.Memory)
+        JobStateCache.getCacheOld<JobStateVariant.Memory, ConcreteJobState>(JobStateVariant.Memory)
     }
 
     val cacheLock = Mutex()
 
     val directory by lazy {
-        Path(
-            {}.javaClass
-                .getResource("/SwitchboardTest")
-                .expect("Test couldn't find test folder")
-                .path
-        )
+        {}.javaClass
+            .getResource("/SwitchboardTest")
+            .expect("Test couldn't find test folder")
+            .toURI()
+            .toPath()
     }
 
-    val fileNameRegex = "PXL_\\d{8}_\\d{9}\\.jpg"
+    val fileNameRegex = "PXL_\\d{8}_\\d{9}(\\.clahe)?\\.jpg"
 
     @Test
     fun `call init interaction`() {
@@ -65,23 +71,14 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("createPreview")
-        cache.remove(directory)
+        cache.withWriteLock { it.remove(directory) }
 
-        MockSwitchboard.createPreview(
-            directory,
-            permitExisting = false,
-            // We don't need weights as we are only calling the mock variant.
-            weights = Path("."),
-        )
+        MockSwitchboard.createPreview(directory, permitExisting = false)
 
         cacheLock.unlock("createPreview")
         Log.revokeConsumer(consumer)
         val log = consumer.getLog()
         assert(log.contains("Using Mock Implementation of Create Preview. Nothing will be done."))
-
-        assert(log.contains("Files: [\n\t"))
-        assertNotNull(("(?:$fileNameRegex,\n\t){15}".toRegex(RegexOption.MULTILINE).find(log)))
-        assertNotNull(("\\(and \\d+ others\\)]".toRegex()).find(log))
     }
 
     @Test
@@ -90,6 +87,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("reviewPreview")
+        val cacheGuard = cache.writeLock()
+        val cache = cacheGuard.value
 
         // TODO setup so that we can have a specific number of files go over auto-approval.
         cache.put(
@@ -99,16 +98,26 @@ class SwitchboardTest {
                 starterState =
                     baseFiles
                         .mapValues {
+                            if (it.value.vertexes == null) {
+                                JobFile(approved = false, vertexes = mutableMapOf())
+                            } else {
+                                it.value
+                            }
+                        }
+                        .mapValues {
                             it.value.apply {
-                                crops["crop-1"] =
-                                    JobFile.BoxCrop(
-                                        Rectangle.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                        confidence = 1.0,
-                                    )
-                                crops["crop-2"] =
-                                    JobFile.LabelCrop(
-                                        Rectangle.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
-                                        confidence = 0.5,
+                                vertexes!!["box-1"] =
+                                    ArchiveBox(
+                                        Boundary(
+                                            Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                            confidence = 1.0,
+                                        ),
+                                        listOf(
+                                            Boundary(
+                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                confidence = 0.5,
+                                            )
+                                        ),
                                     )
                             }
                         }
@@ -116,7 +125,9 @@ class SwitchboardTest {
             ),
         )
 
-        MockSwitchboard.reviewPreview(directory)
+        cacheGuard.release()
+
+        MockSwitchboard.reviewSegmentationPreview(directory)
 
         cacheLock.unlock("reviewPreview")
         Log.revokeConsumer(consumer)
@@ -135,6 +146,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("imageManip")
+        val cacheGuard = cache.writeLock()
+        val cache = cacheGuard.value
 
         cache.put(
             directory,
@@ -146,28 +159,26 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    crops =
+                                    vertexes =
                                         mutableMapOf(
-                                            "crop-1" to
-                                                JobFile.BoxCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
+                                            "box-1" to
+                                                ArchiveBox(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 1.0,
                                                     ),
-                                                    confidence = 1.0,
-                                                ),
-                                            "crop-2" to
-                                                JobFile.LabelCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                        )
                                                     ),
-                                                    confidence = 0.5,
-                                                ),
+                                                )
                                         ),
                                 )
                             }
@@ -175,6 +186,8 @@ class SwitchboardTest {
                         .toMutableMap(),
             ),
         )
+
+        cacheGuard.release()
 
         MockSwitchboard.manipulateImages(directory)
 
@@ -191,6 +204,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("ocr")
+        val cacheGuard = cache.writeLock()
+        val cache = cacheGuard.value
 
         cache.put(
             directory,
@@ -202,28 +217,26 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    crops =
+                                    vertexes =
                                         mutableMapOf(
-                                            "crop-1" to
-                                                JobFile.BoxCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
+                                            "box-1" to
+                                                ArchiveBox(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 1.0,
                                                     ),
-                                                    confidence = 1.0,
-                                                ),
-                                            "crop-2" to
-                                                JobFile.LabelCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                        )
                                                     ),
-                                                    confidence = 0.5,
-                                                ),
+                                                )
                                         ),
                                 )
                             }
@@ -232,15 +245,18 @@ class SwitchboardTest {
             ),
         )
 
+        cacheGuard.release()
+
         MockSwitchboard.createOCR(directory)
 
         cacheLock.unlock("ocr")
         Log.revokeConsumer(consumer)
         val log = consumer.getLog()
 
-        assert(log.contains("Running Mock OCR, nothing will be done."))
+        println("log: $log")
+
         assertNotNull(
-            ("(?:.*Transcribing $fileNameRegex::crop-[12]\n){55}"
+            ("(?:.* Running Mock OCR, nothing will be done\\.\n.*Transcribing $fileNameRegex::box-1-box\n.*Transcribing $fileNameRegex::box-1-label-1\n){55}"
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )
@@ -252,6 +268,8 @@ class SwitchboardTest {
         Log.registerConsumer(consumer)
 
         cacheLock.lock("export")
+        val cacheGuard = cache.writeLock()
+        val cache = cacheGuard.value
 
         cache.put(
             directory,
@@ -263,30 +281,61 @@ class SwitchboardTest {
                             it.value.run {
                                 JobFile(
                                     approved = true,
-                                    crops =
+                                    vertexes =
                                         mutableMapOf(
-                                            "crop-1" to
-                                                JobFile.BoxCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
+                                            "box-1" to
+                                                ArchiveBox(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 1.0,
+                                                        rawMetadata =
+                                                            BoxMetadata(
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                description = "test1",
+                                                            ),
                                                     ),
-                                                    confidence = 1.0,
-                                                    transcription = "test1",
-                                                ),
-                                            "crop-2" to
-                                                JobFile.LabelCrop(
-                                                    Rectangle.create(
-                                                        0 to 0,
-                                                        1 to 0,
-                                                        1 to 1,
-                                                        0 to 1,
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                            rawMetadata =
+                                                                BoxMetadata(
+                                                                    RecordSetID.OldID("1976.0276"),
+                                                                    1,
+                                                                    DateRange(
+                                                                        LocalDate(
+                                                                            year = 1971,
+                                                                            month = 1,
+                                                                            day = 1,
+                                                                        ),
+                                                                        null,
+                                                                    ),
+                                                                    description = "test2",
+                                                                ),
+                                                        )
                                                     ),
-                                                    confidence = 0.5,
-                                                    transcription = "test2",
-                                                ),
+                                                    metadata =
+                                                        BoxMetadata(
+                                                            RecordSetID.OldID("1976.0276"),
+                                                            1,
+                                                            DateRange(
+                                                                LocalDate(
+                                                                    year = 1971,
+                                                                    month = 1,
+                                                                    day = 1,
+                                                                ),
+                                                                null,
+                                                            ),
+                                                            description = "test1;test2",
+                                                        ),
+                                                )
                                         ),
                                 )
                             }
@@ -295,6 +344,8 @@ class SwitchboardTest {
             ),
         )
 
+        cacheGuard.release()
+
         MockSwitchboard.generateExport(directory)
 
         cacheLock.unlock("export")
@@ -302,7 +353,7 @@ class SwitchboardTest {
         val log = consumer.getLog()
 
         assertNotNull(
-            ("(?:${fileNameRegex}::crop-[12]: test[12];;){55}"
+            ("(?:${fileNameRegex}::box-1: BoxMetadata\\(id=OldID\\(id=1976\\.0276\\), unitNumber=1, dateRange=DateRange\\(startDate=1971-01-01, endDate=null\\), description=test1;test2\\);;){55}"
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )

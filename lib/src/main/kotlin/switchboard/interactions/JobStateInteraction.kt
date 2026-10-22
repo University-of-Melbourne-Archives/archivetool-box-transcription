@@ -1,6 +1,7 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import java.nio.file.Path
 
@@ -18,7 +19,7 @@ interface JobStateInteraction : Interaction {
     fun write(folder: Path)
 
     // This is an interaction that doesn't need files.
-    override fun isEligible(file: Pair<Path, JobFile>): Boolean = false
+    override fun isEligible(file: Pair<JobRelativePath, JobFile>): Boolean = false
 
     val companion: JobStateInteractionCompanion
 }

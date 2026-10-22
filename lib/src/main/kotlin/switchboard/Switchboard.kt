@@ -1,37 +1,55 @@
 package au.edu.unimelb.archivetool.switchboard
 
-import au.edu.unimelb.archivetool.logging.Log.expect
-import au.edu.unimelb.archivetool.logging.LogConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.*
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVExportInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.CLAHEInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.imagemanip.FlattenInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobState
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONJobStateInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
+import au.edu.unimelb.archivetool.util.ProgressBar.Companion.withProgressBar
+import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.orNull
+import au.edu.unimelb.archivetool.util.logging.Log
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import java.nio.file.Path
+import kotlin.collections.toSet
+import kotlin.io.path.Path
 
 // Implements a switchboard with default options.
 // You should never use this in its global scope,
 // rather assigning it to a `AbstractSwitchboard` val.
 // You can swap out a given interaction using `.with` or create an AbstractSwitchboard yourself.
 // You can also make additional switchboard types, like a `MockSwitchboard` or something.
+// Also note: Config Creation Interactions are composed internally in the constructor.
 object Switchboard :
     AbstractSwitchboard(
         LogInitInteraction(),
+        JSONConfigInteraction(),
         JSONJobStateInteraction(),
         StdoutStatusInteraction(),
-        PythonCreatePreviewInteraction(),
-        ReviewGUIInteraction(),
-        ImageManipulationInteraction.compose(FlattenInteraction(), MonochromifyInteraction()),
-        PythonOCRInteraction(),
-        CSVExportInteraction(),
+        KotlinCreatePreviewInteraction(),
+        SegmentationGUIInteraction(),
+        OCRGUIInteraction(),
+        ImageManipulationInteraction.compose(FlattenInteraction(), CLAHEInteraction()),
+        KotlinOCRInteraction(),
+        CSVExportInteraction(
+            Path("/")
+        ), // TODO: Flag if the export destination is not set. We should set this to a default in the
+        // CLI before getting here.
     )
 
 object MockSwitchboard :
     AbstractSwitchboard(
         MockInitInteraction(),
+        MockConfigInteraction(),
         MemoryJobStateInteraction(),
         StdoutStatusInteraction(),
         MockCreatePreviewInteraction(),
-        MockReviewInteraction(),
+        MockSegmentationReviewInteraction(),
+        MockOCRReviewInteraction(),
         MockImageManipulationInteraction(),
         MockOCRInteraction(),
         LogExportInteraction(),
@@ -41,59 +59,59 @@ object MockSwitchboard :
 // Currently just takes one interaction per command,
 // but will later also take stuff for things like Job data format parsing, or initial setup things.
 open class AbstractSwitchboard(
-    _init: InitInteraction,
+    var _init: InitInteraction,
+    _config: ConfigInteraction,
     _job: JobStateInteraction,
     _status: StatusInteraction,
     _createPreview: CreatePreviewInteraction,
-    _reviewPreview: ReviewPreviewInteraction,
+    _segmentationReviewPreview: SegmentationPreviewInteraction,
+    _ocrReviewPreview: OCRPreviewInteraction,
     _manip: ImageManipulationInteraction,
     _ocr: OCRInteraction,
     _export: ExportInteraction,
 ) {
-    var init: InitInteraction
+    var init: InitInteraction =
+        _config.createInteraction()?.let { InitInteraction.compose(it, _init) } ?: _init
         private set
 
-    var job: JobStateInteraction
+    var config: ConfigInteraction = _config
         private set
 
-    var status: StatusInteraction
+    var job: JobStateInteraction = _job
         private set
 
-    var createPreview: CreatePreviewInteraction
+    var status: StatusInteraction = _status
         private set
 
-    var reviewPreview: ReviewPreviewInteraction
+    var createPreview: CreatePreviewInteraction = _createPreview
         private set
 
-    var manip: ImageManipulationInteraction
+    var segmentationPreview: SegmentationPreviewInteraction = _segmentationReviewPreview
         private set
 
-    var ocr: OCRInteraction
+    var ocrPreview: OCRPreviewInteraction = _ocrReviewPreview
         private set
 
-    var export: ExportInteraction
+    var manip: ImageManipulationInteraction = _manip
         private set
 
-    init {
-        init = _init
-        job = _job
-        status = _status
-        createPreview = _createPreview
-        reviewPreview = _reviewPreview
-        manip = _manip
-        ocr = _ocr
-        export = _export
-    }
+    var ocr: OCRInteraction = _ocr
+        private set
+
+    var export: ExportInteraction = _export
+        private set
 
     // Copy Constructor
     constructor(
         sw: AbstractSwitchboard
     ) : this(
         sw.init,
+        sw.config,
         sw.job,
         sw.status,
         sw.createPreview,
-        sw.reviewPreview,
+        sw.segmentationPreview,
+        sw.ocrPreview,
         sw.manip,
         sw.ocr,
         sw.export,
@@ -109,13 +127,24 @@ open class AbstractSwitchboard(
     // Allows for on-the-fly swapping of interactions.
     fun swap(swapFor: Interaction) {
         when (swapFor) {
+            is ConfigInteraction -> {
+                config = swapFor
+                init =
+                    config.createInteraction()?.let { InitInteraction.compose(it, _init) } ?: _init
+            }
             is CreatePreviewInteraction -> createPreview = swapFor
             is ImageManipulationInteraction -> manip = swapFor
             is ExportInteraction -> export = swapFor
-            is InitInteraction -> init = swapFor
+            is InitInteraction -> {
+                _init = swapFor
+                init =
+                    config.createInteraction()?.let { InitInteraction.compose(it, swapFor) }
+                        ?: swapFor
+            }
             is JobStateInteraction -> job = swapFor
             is OCRInteraction -> ocr = swapFor
-            is ReviewPreviewInteraction -> reviewPreview = swapFor
+            is SegmentationPreviewInteraction -> segmentationPreview = swapFor
+            is OCRPreviewInteraction -> ocrPreview = swapFor
             is StatusInteraction -> status = swapFor
         }
     }
@@ -126,14 +155,20 @@ open class AbstractSwitchboard(
         init.init(logConsumers)
     }
 
-    fun getStatus() {
-        status.getStatus()
+    fun getStatus(directory: Path) {
+        val state: JobState? =
+            job.companion.present(directory).orNull()?.let { job.read(directory) }
+
+        val inFiles =
+            state?.validFiles(status, allowNulls = true)?.also { it.takeUnless { it.isEmpty() } }
+
+        status.getStatus(directory, inFiles)
     }
 
     fun createPreview(
         directory: Path,
         permitExisting: Boolean = false,
-        weights: Path = TODO("Put a default Weight Path here."),
+        weights: Path? = null,
         rejectThreshold: Double = 0.05,
     ) {
         val state: JobState? =
@@ -143,60 +178,57 @@ open class AbstractSwitchboard(
                 job.create(directory)
             }
 
-        val inFiles =
-            state?.validFiles(createPreview, allowNulls = true)?.also {
-                it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-            }
-
-        val toUpdate =
-            createPreview.createPreview(
-                inFiles?.keys.expect("Could not load list of valid files."),
+        state!!.validFilesChunkedWithProgressBar(createPreview, true) { interaction, chunk ->
+            interaction.createPreview(
+                chunk.map(Pair<JobRelativePath, *>::first).toSet(),
                 weights,
                 rejectThreshold,
             )
-
-        state?.update(toUpdate)
+        }
     }
 
-    fun reviewPreview(directory: Path) {
+    fun reviewSegmentationPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
         val state: JobState? = job.read(directory)
         val toUpdate =
-            reviewPreview.review(
+            segmentationPreview.review(
                 state
-                    ?.validFiles(reviewPreview)
+                    ?.validFiles(segmentationPreview)
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
-                    .expect("Could not load list of valid files.")
+                    .expect("Could not load list of valid files."),
+                autoApproveThreshold,
             )
         state?.update(toUpdate)
     }
 
     fun manipulateImages(directory: Path) {
         val state: JobState? = job.read(directory)
-        val toUpdate =
-            manip.manipulate(
-                state
-                    ?.validFiles(manip)
-                    ?.also {
-                        it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
-                    }
-                    .expect("Could not load list of valid files.")
-            )
-        state?.update(toUpdate)
+        state!!.validFilesSingleWithProgressBar(manip, true) { interaction, file ->
+            interaction.manipulate(mapOf(file))
+        }
     }
 
     fun createOCR(directory: Path) {
         val state: JobState? = job.read(directory)
+        state!!.validFilesSingleWithProgressBar(ocr, true) { interaction, file ->
+            interaction.generateOCR(mapOf(file), config.getConfig())
+        }
+    }
+
+    fun reviewOCRPreview(directory: Path, autoApproveThreshold: Double = 1.0) {
+        val state: JobState? = job.read(directory)
         val toUpdate =
-            ocr.generateOCR(
+            ocrPreview.review(
                 state
-                    ?.validFiles(ocr)
+                    ?.validFiles(ocrPreview)
                     ?.also {
                         it.takeUnless { it.isEmpty() }.expect("No valid files for this step.")
                     }
-                    .expect("Could not load list of valid files.")
+                    .expect("Could not load list of valid files."),
+                autoApproveThreshold,
             )
+        state?.update(toUpdate)
     }
 
     fun generateExport(directory: Path) {
@@ -207,5 +239,80 @@ open class AbstractSwitchboard(
                 ?.also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
                 .expect("Could not load list of valid files.")
         )
+    }
+
+    fun <T : Interaction> JobState.validFilesChunkedWithProgressBar(
+        type: T,
+        nullsAreValid: Boolean = false,
+        runInteraction:
+            (interaction: T, chunk: Set<Pair<JobRelativePath, JobFile>>) -> Map<
+                    JobRelativePath,
+                    JobFile,
+                >,
+    ) {
+        val valid =
+            validFiles(type, nullsAreValid)
+                .also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
+                .expect("Could not load list of valid files.")
+
+        val chunkCountSuffix: String
+        val (chunks, chunkSize) =
+            if (valid.size < MIN_CHUNKABLE_SIZE) {
+                chunkCountSuffix = ""
+                listOf(valid.map { (k, v) -> k to v }.toSet()) to valid.size
+            } else {
+                chunkCountSuffix = "s"
+                val size =
+                    if (valid.size / TARGET_CHUNK_SIZE < MIN_CHUNK_COUNT) {
+                        valid.size / MIN_CHUNK_COUNT
+                    } else {
+                        valid.size / TARGET_CHUNK_SIZE
+                    }
+                valid.entries.chunked(size) { l -> l.map { (k, v) -> k to v }.toSet() } to size
+            }
+
+        Log.debug(
+            "${valid.size} valid files for $type, breaking into ${chunks.size} chunk$chunkCountSuffix of $chunkSize"
+        )
+
+        withProgressBar(valid.size) {
+            for (chunk in chunks) {
+                val toUpdate = runInteraction(type, chunk)
+
+                update(toUpdate)
+                increment(chunkSize)
+            }
+        }
+    }
+
+    fun <T : Interaction> JobState.validFilesSingleWithProgressBar(
+        type: T,
+        nullsAreValid: Boolean = false,
+        runInteraction:
+            (interaction: T, file: Pair<JobRelativePath, JobFile>) -> Map<JobRelativePath, JobFile>,
+    ) {
+        val valid =
+            validFiles(type, nullsAreValid)
+                .also { it.takeUnless { it.isEmpty() }.expect("No valid files for this step.") }
+                .expect("Could not load list of valid files.")
+
+        Log.debug("${valid.size} valid files for $type, passing individually")
+
+        withProgressBar(valid.size) {
+            valid
+                .map { (k, v) -> k to v }
+                .forEachIndexed { i, file ->
+                    val toUpdate = runInteraction(type, file)
+
+                    update(toUpdate)
+                    setProgress(i + 1)
+                }
+        }
+    }
+
+    companion object {
+        const val TARGET_CHUNK_SIZE = 10
+        const val MIN_CHUNK_COUNT = 5
+        const val MIN_CHUNKABLE_SIZE = 30
     }
 }

@@ -16,13 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Setup Java
       uses: actions/setup-java@v5
       with:
         distribution: 'graalvm'
         java-version: 21
+    - uses: actions/setup-python@v7
+      with:
+        python-version: 'graalpy-25.0'
+    - name: Install Black Autoformatter
+      run: pip install black
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
     - name: Run Tests and Format Check with Gradle
-      run: ./gradlew check
+      run: ./gradlew check -Parchivetool.platform=linux-x86_64
