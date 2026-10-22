@@ -30,7 +30,8 @@ class SegmentationGUIInteraction : SegmentationPreviewInteraction, GUIInteractio
                 listOf(basicLabelBehavior(), basicButtonBehavior(), PointerModule, ImageModule),
             ) {
                 SegmentationInterface(
-                    jobs = files,
+                    // Least confident files first, so the ones most likely to need fixing are reviewed first
+                    jobs = files.entries.sortedBy { it.value?.minConfidence ?: -999.0 }.associate { it.toPair() },
                     display = instance(),
                     windows = instance(),
                     themeManager = instance(),
