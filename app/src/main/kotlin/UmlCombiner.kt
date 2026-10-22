@@ -235,6 +235,7 @@ object UmlCombiner {
         return buildString {
             appendLine("@startuml")
             appendLine("!pragma layout elk")
+            appendLine("allowmixing")
             appendLine("top to bottom direction")
             appendLine("hide empty members")
             // appendLine("hide circle")
