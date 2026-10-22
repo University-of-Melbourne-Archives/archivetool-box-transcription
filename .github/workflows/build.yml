@@ -39,7 +39,7 @@ jobs:
       - name: Copy Distribution out of Build Directory
         run: cp -r ./app/build/distributions /tmp/dist && cd /tmp/dist
       - name: Compress TAR distribution
-        run: gzip -9vk archivetool-cli.tar
+        run: gzip -9vk /tmp/dist/archivetool-cli.tar
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
