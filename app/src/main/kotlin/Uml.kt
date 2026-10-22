@@ -279,7 +279,7 @@ private fun Sequence<String>.patchAddConfigJson(): Sequence<String> {
         appendLine("json \".config/archivetool/config.json\" as config_json {")
         appendLine("\t\"ocr_api\": {")
         appendLine("\t\"base_url\": \"https://generativelanguage.googleapis.com/v1beta/openai/\",")
-        appendLine("\t\"api_key\": \"\",")
+        appendLine("\t\"api_key\": \"null\",")
         appendLine("\t\"model\": \"gemini-3-flash-preview\",")
         appendLine("\t\"effort\": \"low\"")
         appendLine("\t}")
@@ -296,7 +296,7 @@ private fun Sequence<String>.patchAddConfigJson(): Sequence<String> {
         appendLine("Approximately represents the arguments given to an Open-AI compatible API.")
         appendLine("end note")
     }
-    return this + jsonShape + assocs + note
+    return this + "package \"config\" {"  + jsonShape + assocs + note + "}"
 }
 
 private fun Sequence<String>.patchAddUoMCSV(): Sequence<String> {
@@ -317,7 +317,7 @@ private fun Sequence<String>.patchAddUoMCSV(): Sequence<String> {
 
     return this.filterNot {
         it.contains("au_edu_unimelb_archivetool_switchboard_interactions_export_CSV_Companion o-- ")
-    } + table + assoc
+    } + "package \"switchboard.interactions.export\" {" + table + assoc + "}"
 }
 
 private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
@@ -327,7 +327,7 @@ private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
         val metaJson =
             """
             {
-                "id[]?": ["string"],
+                "id[*]?": ["string"],
                 "unitNumber?": "number",
                 "dateRange?": {
                     "startDate": "ISO8601 date string",
@@ -350,11 +350,11 @@ private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
                 .trimIndent()
         appendLine(
             """
-        "<path>*": {
+        "<path>[*]": {
             "vertexes?": {
-                "<box-id>*": {
+                "<box-id>[*]": {
                     "box": $boundaryJson,
-                    "sticker[]": [$boundaryJson],
+                    "sticker[*]": [$boundaryJson],
                     "meta?": $metaJson
                 }
             }
@@ -373,7 +373,7 @@ private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
         appendLine("Internal representation of processing results and state.")
         appendLine("end note")
     }
-    return this + jsonShape + assocs + note
+    return this + "package \"switchboard.jobstate.json\" {" + jsonShape + assocs + note + "}"
 }
 
 /**
