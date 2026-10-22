@@ -54,7 +54,7 @@ jobs:
           retention-days: 1
 
   create_release:
-    needs: build_multiple_os
+    needs: build
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.job-name != 'build' }}
     steps:
