@@ -21,7 +21,7 @@ class KotlinOCRInteraction : OCRInteraction {
 
     override fun supported(): Image.FileType.Supported = OpenAI.formatRequirements
 
-    private class ServiceContainer(val settings: OpenAIAPIData) {
+    private class ServiceContainer(settings: OpenAIAPIData) {
         val inner by lazy { OCRService(settings) }
     }
 
