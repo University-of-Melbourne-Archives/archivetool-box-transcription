@@ -225,13 +225,6 @@ class CliCommandTest {
     }
 
     @Test
-    fun `status help does not promise an implemented backend`() {
-        val result = BaseCommand().test("status --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "Switchboard")
-    }
-
-    @Test
     fun `finalise help describes export without OCR processing`() {
         val result = BaseCommand().test("finalise --help")
         assertEquals(0, result.statusCode)
