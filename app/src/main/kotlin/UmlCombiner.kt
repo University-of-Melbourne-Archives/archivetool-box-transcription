@@ -18,6 +18,7 @@ data class DeclarationMetadata(
     val companionAssociations: List<UmlCombiner.Relation> = emptyList(),
     val annotations: List<String> = emptyList(),
     val visibility: String = "",
+    val isSealed: Boolean = false,
 )
 
 object UmlCombiner {
@@ -219,12 +220,11 @@ object UmlCombiner {
                         if (owner != null) {
                             val ownerAlias = aliasFor(owner)
                             if (metadata.isInner) {
-                                // Inner classes have a strong ownership/composition relationship
-                                blocks += "$ownerAlias *-- ${version.alias}"
+                                blocks += "$ownerAlias +-- ${version.alias}"
                             } else {
                                 // Non-inner static nested classes use a clean association or
                                 // aggregation link
-                                blocks += "$ownerAlias o-- ${version.alias}"
+                                blocks += "$ownerAlias +.. ${version.alias}"
                             }
                         }
                     }
@@ -244,6 +244,7 @@ object UmlCombiner {
             appendLine("skinparam nodesep 15")
             appendLine("skinparam ranksep 25")
             appendLine("skinparam node {\n\tBackgroundColor #AAAAAA\n}")
+            appendLine("skinparam class {\n\tBackgroundColor<<sealed>> Moccasin\n}")
 
             // Render external classes and external annotations cleanly in their own package
             if (externalClasses.isNotEmpty() || externalAnnotations.isNotEmpty()) {
@@ -673,6 +674,7 @@ object UmlCombiner {
 
         val stereotypes = buildList {
             if (metadata?.isObject == true) add("object")
+            if (metadata?.isSealed == true) add("sealed")
             if (header.groups["kw"]!!.value.endsWith("interface")) add("interface")
             // Include external or custom annotations as stereotypes if present
             metadata?.annotations?.forEach { add("@$it") }
@@ -680,19 +682,21 @@ object UmlCombiner {
 
         val stereotypePrefix =
             stereotypes
-                .filterNot { it == "object" }
+                .filter { it.startsWith("@") }
                 .takeUnless { it.isEmpty() }
-                ?.joinToString("", prefix = "<i>", postfix = "</i>\\n") {
-                    if (it.startsWith("@")) {
-                        "$it "
-                    } else {
-                        "<<$it>> "
-                    }
+                ?.joinToString(" ", prefix = "<i>", postfix = "</i>\\n") {
+                    it
                 } ?: ""
 
         val stereotypeSuffix =
-            if (stereotypes.contains("object")) {
-                "<< (O,#FF7700) object >>"
+            (stereotypes
+                .filterNot { it == "object" }
+                .filterNot { it.startsWith("@") }
+                .takeUnless { it.isEmpty() }
+                ?.joinToString(" ") {
+                        "<<$it>>"
+                } ?: "") + if (stereotypes.contains("object")) {
+                "<< (O${if (!stereotypes.contains("sealed")) {",#FF7700"} else {""}}) object >>"
             } else {
                 ""
             }

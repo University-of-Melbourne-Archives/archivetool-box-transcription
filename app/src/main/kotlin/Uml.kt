@@ -102,6 +102,7 @@ fun main() {
                                                 KVisibility.PRIVATE -> "-"
                                                 else -> ""
                                             },
+                                        isSealed = kClass.isSealed
                                     )
                                 },
                             uml =
