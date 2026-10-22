@@ -52,7 +52,7 @@ data class DateRange(val range: LocalDateRange) {
     val endDateString by lazy { endDate?.format(dateFormatter) }
 
     val CSVString by lazy {
-        yearRange + (endDate?.let { ";$startDateString;$endDateString" } ?: ";;")
+        "$yearRange;$startDateString;" + (endDateString ?: "")
     }
 
     override fun toString(): String {
@@ -84,17 +84,21 @@ data class DateRange(val range: LocalDateRange) {
             if (dateRange.contains("None")) return null
             val ranges = dateRange.split(", ")
             return ranges
-                .map { it.split('!', limit = 2).let { it[0] to it.getOrNull(1) } }
-                .map { (start, end) ->
-                    val startDate =
-                            LocalDate.parse(start.takeIf { it.matches("^[12][90]\\d{2}-\\d+".toRegex()) } ?: "$start-01-01")
-                    val endDate = end?.let {
-                        LocalDate.parse(end.takeIf { it.matches("^[12][90]\\d{2}-\\d+".toRegex()) } ?: "$start-12-31")
-                    }
+                .map { it.split(':', limit = 2).let { it[0] to it.getOrNull(1) } }
+                .runCatching {
+                    map { (start, end) ->
+                        val startDate =
+                            LocalDate.parse(start.takeIf { it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex()) }
+                                ?: "$start-01-01")
+                        val endDate = end?.let {
+                            LocalDate.parse(end.takeIf { it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex()) }
+                                ?: "$start-12-31")
+                        }
 
-                    DateRange(startDate, endDate)
-                }
-                .tightestBounds()
+                        DateRange(startDate, endDate)
+                    }
+                }.getOrNull()
+                ?.tightestBounds()
         }
 
         // Validates a single string with the only valid format being
