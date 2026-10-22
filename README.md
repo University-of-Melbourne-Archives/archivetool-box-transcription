@@ -161,6 +161,27 @@ you will need to write your own DIed implementation as described in [**Alternate
 You can change where the API endpoints are that `archivetool` calls out to at runtime, via `config.json`, which is in the config path[^3].
 It should support a wide range of OpenAI-compatible APIs. 
 
+### Specific Models
+Prism-ML Ternary Bonsai 2 was used locally during development to save on costs and time.  
+This requires a [custom version of llama.cpp](https://github.com/PrismML-Eng/llama.cpp).
+The model was hosted with the following command:
+```shell
+llama-server -hf prism-ml/Ternary-Bonsai-2-27B-gguf:Q2_0 --host 0.0.0.0 --port 5354 --api-key "LOLNOPE" -ngl 999999 -fa auto --image-min-tokens 1024 --temperature 0.7  --top_p 0.80 --top_k 20 --min_p 0.0 --presence-penalty 1.5 --repeat-penalty 1.0 -ctk q4_0 -ctv q4_0 --ctx-size 51200 --reasoning-preserve
+```
+and the following configuration:
+```json
+{
+    "ocr_api": {
+        "base_url": "http://localhost:5354/v1/",
+        "api_key": "LOLNOPE",
+        "model": "prism-ml/Ternary-Bonsai-2-27B-gguf:Q2_0",
+        "effort": "none"
+    }
+}
+```
+On one of the developers' AMD Radeon 9700XT, using AMD HIP, this model ran about twice as fast as the default `gemini-flash-3-preview`, without any notable degradation of results.
+
+#### Prompt
 Additionally, the prompt can be customised in [OCRService.java](lib/src/main/java/au/edu/unimelb/archivetool/ocr/OCRService.java),
 although this file may be moved to a Kotlin implementation that calls the Java library in the future.
 The current prompt is a solid baseline, that leaves a good token-to-performance ratio, 
