@@ -28,7 +28,7 @@ object GitHash : Module {
                         }.standardOutput.asText.get().takeIf {it.isEmpty()} ?: " (dirty working tree)")
                 }
             val outDir = layout.buildDirectory.dir("generated/git")
-            inputs.property("git repo", gitDir)
+            inputs.dir(gitDir)
             outputs.dir(outDir)
             doLast {
                 val f = outDir.get().file("util/Git.generated.kt").asFile
