@@ -709,10 +709,11 @@ object UmlCombiner {
                 display + '"'
             }
         val first =
-            "${metadata?.visibility}${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias $stereotypeSuffix {"
+            "${metadata?.visibility}${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias $stereotypeSuffix"
         val members =
             lines.drop(1).map { line -> if (metadata?.isObject == true) markStatic(line) else line }
-        return (listOf(first) + members).joinToString("\n")
+        if (members.filterNot { it.trim() == "}" }.isEmpty()) {return first + "\n"}
+        return (listOf(first + " {") + members + "").joinToString("\n")
     }
 
     private fun markStatic(line: String): String {
