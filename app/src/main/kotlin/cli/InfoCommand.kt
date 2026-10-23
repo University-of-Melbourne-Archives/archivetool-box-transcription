@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.app.cli
 
+import au.edu.unimelb.archivetool.util.Git
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.util.os.Platform
@@ -29,7 +30,7 @@ class InfoCommand : Command(name = "info") {
 
         println(
             """
-            archivetool -- Archive Digitisation Software
+            archivetool -- Archive Digitisation Software (commit ${Git.HASH})
             Copyright $COPYRIGHT_SYM 2026 The University of Melbourne
     
             This program is free software: you can redistribute it and/or modify
