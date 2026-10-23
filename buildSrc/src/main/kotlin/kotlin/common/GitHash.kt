@@ -25,7 +25,7 @@ object GitHash : Module {
                         .exec {
                             workingDir(rootDir)
                             commandLine("git", "status", "--porcelain")
-                        }.standardOutput.asText.get().takeIf{it.isEmpty()} ?: " (dirty working tree)")
+                        }.standardOutput.asText.get().takeIf {it.isEmpty()} ?: " (dirty working tree)")
                 }
             val outDir = layout.buildDirectory.dir("generated/git")
             inputs.property("git repo", gitDir)
