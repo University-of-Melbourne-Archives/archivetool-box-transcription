@@ -3,12 +3,12 @@ package segmentation
 import SemiManual
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import kotlin.collections.iterator
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.test.Test
 import kotlin.time.Clock
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class BoxSegmentationTest {
     @SemiManual(

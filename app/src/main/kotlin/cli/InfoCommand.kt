@@ -1,8 +1,8 @@
 package au.edu.unimelb.archivetool.app.cli
 
-import au.edu.unimelb.archivetool.util.Git
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.switchboard.Switchboard
+import au.edu.unimelb.archivetool.util.Git
 import au.edu.unimelb.archivetool.util.os.Platform
 import com.github.ajalt.clikt.core.Context
 import kotlin.io.path.notExists

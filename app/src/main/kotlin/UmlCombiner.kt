@@ -684,22 +684,19 @@ object UmlCombiner {
             stereotypes
                 .filter { it.startsWith("@") }
                 .takeUnless { it.isEmpty() }
-                ?.joinToString(" ", prefix = "<i>", postfix = "</i>\\n") {
-                    it
-                } ?: ""
+                ?.joinToString(" ", prefix = "<i>", postfix = "</i>\\n") { it } ?: ""
 
         val stereotypeSuffix =
             (stereotypes
                 .filterNot { it == "object" }
                 .filterNot { it.startsWith("@") }
                 .takeUnless { it.isEmpty() }
-                ?.joinToString(" ") {
-                        "<<$it>>"
-                } ?: "") + if (stereotypes.contains("object")) {
-                "<< (O${if (!stereotypes.contains("sealed")) {",#FF7700"} else {""}}) object >>"
-            } else {
-                ""
-            }
+                ?.joinToString(" ") { "<<$it>>" } ?: "") +
+                if (stereotypes.contains("object")) {
+                    "<< (O${if (!stereotypes.contains("sealed")) {",#FF7700"} else {""}}) object >>"
+                } else {
+                    ""
+                }
 
         val match = "(\\w+)\\s*(<\\w+(?:,\\s*\\w+)*>)".toRegex().find(display)
         val name =
@@ -712,7 +709,9 @@ object UmlCombiner {
             "${metadata?.visibility}${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias $stereotypeSuffix"
         val members =
             lines.drop(1).map { line -> if (metadata?.isObject == true) markStatic(line) else line }
-        if (members.filterNot { it.trim() == "}" }.isEmpty()) {return first + "\n"}
+        if (members.filterNot { it.trim() == "}" }.isEmpty()) {
+            return first + "\n"
+        }
         return (listOf(first + " {") + members + "").joinToString("\n")
     }
 

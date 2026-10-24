@@ -3,22 +3,25 @@ package ocr
 import au.edu.unimelb.archivetool.config.OpenAIAPIData
 import au.edu.unimelb.archivetool.ocr.OCRService
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import kotlin.io.path.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 
 @EnabledIfEnvironmentVariable(named = "ARCHIVETOOL_API_KEY", matches = ".+")
 class OCRLiveExecutionTest {
     private val service = OCRService(OpenAIAPIData())
 
     // - Each image will be tested based on User Stories 6 and 10.
-    // - The `assertContains` tests implicitly covers User Story 6 (Extract text from sticker and spine label),
-    //   since passing them means imply executeOCR() has the ability to extract texts from an isolated image.
-    // - User Story 8 will not be tested since OCR output isn't deterministic, and what constitutes as "irrelevant"
+    // - The `assertContains` tests implicitly covers User Story 6 (Extract text from sticker and
+    // spine label),
+    //   since passing them means imply executeOCR() has the ability to extract texts from an
+    // isolated image.
+    // - User Story 8 will not be tested since OCR output isn't deterministic, and what constitutes
+    // as "irrelevant"
     //   may differ from one person to another.
 
     // Disabled on CI because CI doesn't have an API key set-up.
@@ -37,15 +40,13 @@ class OCRLiveExecutionTest {
         assertContains(output.dateRanges.orEmpty(), "1957-01-01:1959-12-31")
         assertEquals(setOf("1974.0029", "1974.0030", "1997.0138"), output.idStrings)
         assertTrue(
-            output.unitNumber == null ||
-                    output.unitNumber.contains("Unit 1102", ignoreCase = true)
+            output.unitNumber == null || output.unitNumber.contains("Unit 1102", ignoreCase = true)
         )
         assertContains(output.description, "Australian Pulp and Paper Mills Ltd", ignoreCase = true)
         assertContains(output.description, "Materials - paper", ignoreCase = true)
         assertContains(output.description, "to Organization", ignoreCase = true)
         assertContains(output.description, "direct interests", ignoreCase = true)
     }
-
 
     // Disabled on CI because CI doesn't have an API key set-up.
     @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
@@ -72,8 +73,7 @@ class OCRLiveExecutionTest {
         assertContains(output.dateRanges.orEmpty(), "1966-01-01:1975-12-31")
         assertEquals(setOf("UMA-AC-000000056"), output.idStrings)
         assertTrue(
-            output.unitNumber == null ||
-                    output.unitNumber.contains("Unit 0244", ignoreCase = true)
+            output.unitNumber == null || output.unitNumber.contains("Unit 0244", ignoreCase = true)
         )
         assertContains(output.description, "Press cuttings", ignoreCase = true)
         assertContains(output.description, Regex("1966[\\s]?-[\\s]?71"))
@@ -100,8 +100,7 @@ class OCRLiveExecutionTest {
         assertContains(output.dateRanges.orEmpty(), "1957-01-01:1958-12-31")
         assertEquals(setOf("1974.0029", "1974.0030", "1997.0138"), output.idStrings)
         assertTrue(
-            output.unitNumber == null ||
-                    output.unitNumber.contains("Unit 1106", ignoreCase = true)
+            output.unitNumber == null || output.unitNumber.contains("Unit 1106", ignoreCase = true)
         )
         assertContains(output.description, "Ballarat Paper Mills P/L", ignoreCase = true)
         assertContains(output.description, "Queensland", ignoreCase = true)
@@ -124,8 +123,7 @@ class OCRLiveExecutionTest {
         assertContains(output.dateRanges.orEmpty(), "1957-01-01:1959-12-31")
         assertEquals(setOf("1974.0029", "1974.0030", "1997.0138"), output.idStrings)
         assertTrue(
-            output.unitNumber == null ||
-                    output.unitNumber.contains("Unit 1108", ignoreCase = true)
+            output.unitNumber == null || output.unitNumber.contains("Unit 1108", ignoreCase = true)
         )
         assertContains(output.description, "Ballarat Paper Mills Pty Ltd", ignoreCase = true)
         assertContains(output.description, Regex("1.[\\s]?Buildings[\\s]?-[\\s]?General"))
@@ -152,11 +150,9 @@ class OCRLiveExecutionTest {
         )
         assertEquals(setOf("1974.0029", "1974.0030", "1997.0138"), output.idStrings)
         assertTrue(
-            output.unitNumber == null ||
-                    output.unitNumber.contains("Unit 1101", ignoreCase = true)
+            output.unitNumber == null || output.unitNumber.contains("Unit 1101", ignoreCase = true)
         )
         assertContains(output.description, "Ballarat Paper Mills Pty Ltd", ignoreCase = true)
         assertContains(output.description, "Shipping Documents", ignoreCase = true)
     }
-
 }
