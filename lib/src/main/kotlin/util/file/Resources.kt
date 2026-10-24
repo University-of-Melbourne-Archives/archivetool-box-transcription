@@ -1,7 +1,8 @@
 package au.edu.unimelb.archivetool.util.file
 
 import au.edu.unimelb.archivetool.util.error.expect
-import au.edu.unimelb.archivetool.util.extension.asFileAttribute
+import au.edu.unimelb.archivetool.util.extension.asFileAttributes
+import au.edu.unimelb.archivetool.util.extension.posixSupported
 import au.edu.unimelb.archivetool.util.extension.tryOrNull
 import java.nio.file.Files
 import java.nio.file.Path
@@ -16,8 +17,8 @@ fun copyFromResources(
     destinationDirectory: Path,
     perms: Set<PosixFilePermission> = PosixFilePermissions.fromString("rwxrwxr--"),
 ): Path {
-    val attributes = perms.asFileAttribute()
-    val path = destinationDirectory.resolve(resourcePath).createParentDirectories(attributes)
+    val attributes = perms.asFileAttributes()
+    val path = destinationDirectory.resolve(resourcePath).createParentDirectories(*attributes)
 
     val input =
         {}.javaClass
@@ -26,10 +27,10 @@ fun copyFromResources(
 
     input.use {
         path.tryOrNull<Path, Unit, java.nio.file.FileAlreadyExistsException> {
-            createFile(attributes)
+            createFile(*attributes)
         }
         Files.copy(it, path, StandardCopyOption.REPLACE_EXISTING)
-        Files.setPosixFilePermissions(path, perms)
+        if (posixSupported) Files.setPosixFilePermissions(path, perms)
     }
 
     return path

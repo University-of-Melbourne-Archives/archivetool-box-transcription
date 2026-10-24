@@ -31,7 +31,7 @@ application {
     mainClass = "au.edu.unimelb.archivetool.app.AppKt"
 
     // Enable Bytecode JIT; See python/build.gradle.kts
-    if ((providers.gradleProperty("enablePython").orNull ?: "false").toBoolean())
+    if ((providers.gradleProperty("archivetool.python").orNull ?: "false").toBoolean())
         applicationDefaultJvmArgs = listOf("-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI")
 }
 

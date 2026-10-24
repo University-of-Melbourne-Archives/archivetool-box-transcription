@@ -17,6 +17,7 @@ data class DeclarationMetadata(
     val companionMembers: List<String> = emptyList(),
     val companionAssociations: List<UmlCombiner.Relation> = emptyList(),
     val annotations: List<String> = emptyList(),
+    val visibility: String = ""
 )
 
 object UmlCombiner {
@@ -241,10 +242,11 @@ object UmlCombiner {
             appendLine("skinparam defaultFontName Liberation Sans")
             appendLine("skinparam nodesep 15")
             appendLine("skinparam ranksep 25")
+            appendLine("skinparam node {\n\tBackgroundColor #AAAAAA\n}")
 
             // Render external classes and external annotations cleanly in their own package
             if (externalClasses.isNotEmpty() || externalAnnotations.isNotEmpty()) {
-                appendLine("package \"External\" {")
+                appendLine("package \"External\" <<Node>> {")
                 externalClasses.sorted().forEach { ext ->
                     val safeAlias = "ext_${aliasFor(ext)}"
                     val displayName = externalTypeMap[ext] ?: ext
@@ -304,7 +306,7 @@ object UmlCombiner {
 
     private val identifierRegex = Regex("""\w+""")
     private val unitReturnRegex = Regex("""(\(.*\)): Unit""")
-    private val functionNRegex = Regex("""Function(?<n>\d+)<(?<types>\w+(?:, \w+)*)>""")
+    private val functionNRegex = Regex("""Function(?<n>\d+)<(?<types>\w+\??(?:, \w+\??)*)>""")
 
     private fun nameGroup(group: String) = """["]?(?<$group>[\w.]+)["]?"""
 
@@ -368,11 +370,14 @@ object UmlCombiner {
             .replace("@enduml", "")
             .let { unitReturnRegex.replace(it) { m -> m.groupValues[1] } }
             .let {
-                functionNRegex.replace(it) { m ->
-                    val params = m.groups["n"]!!.value.toInt()
-                    val types = m.groups["types"]!!.value.split(", ")
-                    "(${types.take(params).joinToString()}) -> ${types.last()}"
-                }
+                val matches = functionNRegex.findAll(it)
+                if (matches.any()) {
+                    matches.fold(it) { s, match ->
+                        val params = match.groups["n"]!!.value.toInt()
+                        val types = match.groups["types"]!!.value.split(", ")
+                        s.replace(match.value, "(${types.take(params).joinToString()}) -> ${types.last()}")
+                    } + " {field}"
+                } else it
             }
 
     private fun String.toRelation(): Relation? {
@@ -455,11 +460,20 @@ object UmlCombiner {
             }
     }
 
-    private fun edge(owner: String, target: String, multiplicity: String?, label: String): String =
+    private fun edge(owner: String, target: String, multiplicity: String?, label: String? = null, qualifier: String? = null): String =
         buildString {
-            append(owner).append("\"1\"").append(" -->")
-            if (multiplicity != null) append(" \"").append(multiplicity).append('"')
-            append(' ').append(target).append(" : ").append(label)
+            append(owner)
+            qualifier?.let {
+                append(" [$qualifier] ")
+            } ?: append("\"1\"")
+            append(" -->")
+            multiplicity?.let {
+                append(" \"").append(multiplicity).append('"')
+            }
+            append(' ').append(target)
+            label?.let {
+                append(" : ").append(label)
+            }
         }
 
     private val methodRegex = Regex("""^ {4}[+~#-]\w+\((?<params>.*?)\): (?<ret>.+)$""")
@@ -468,7 +482,6 @@ object UmlCombiner {
         ownerAlias: String,
         body: List<String>,
         knownNames: Set<String>,
-        includeMethodUses: Boolean = false,
         externalClasses: MutableSet<String>,
         resolveTarget: (String) -> String?,
         onExternalFound: (String) -> String?,
@@ -490,7 +503,7 @@ object UmlCombiner {
                 if (targets.isNotEmpty()) {
                     val label = attrMatch.groups["name"]!!.value
                     targets.forEach { (target, multiplicity) ->
-                        edges += edge(ownerAlias, target, multiplicity, label)
+                        edges += edge(ownerAlias, target, multiplicity, label = label, qualifier = "$label: $typeStr")
                     }
                     continue
                 }
@@ -498,49 +511,47 @@ object UmlCombiner {
 
             // 2. Process Method Usages safely by parsing parameter types after colons and return
             // types
-            if (includeMethodUses) {
-                val methodMatch = methodRegex.matchEntire(line)
-                if (methodMatch != null) {
-                    val paramsStr = methodMatch.groups["params"]!!.value
-                    val retStr = methodMatch.groups["ret"]!!.value
+            val methodMatch = methodRegex.matchEntire(line)
+            if (methodMatch != null) {
+                val paramsStr = methodMatch.groups["params"]!!.value
+                val retStr = methodMatch.groups["ret"]!!.value
 
-                    // Extract only types (parts coming after colon in parameters, plus the return
-                    // type)
-                    val typeTokens = mutableSetOf<String>()
+                // Extract only types (parts coming after colon in parameters, plus the return
+                // type)
+                val typeTokens = mutableSetOf<String>()
 
-                    // Parse parameters like "job: BoxMetadata, index: Int" -> take "BoxMetadata",
-                    // "Int"
-                    paramsStr.split(',').forEach { param ->
-                        val parts = param.split(':')
-                        if (parts.size > 1) {
-                            identifierRegex.findAll(parts[1]).forEach { typeTokens += it.value }
-                        }
+                // Parse parameters like "job: BoxMetadata, index: Int" -> take "BoxMetadata",
+                // "Int"
+                paramsStr.split(',').forEach { param ->
+                    val parts = param.split(':')
+                    if (parts.size > 1) {
+                        identifierRegex.findAll(parts[1]).forEach { typeTokens += it.value }
                     }
-                    // Parse return type
-                    identifierRegex.findAll(retStr).forEach { typeTokens += it.value }
+                }
+                // Parse return type
+                identifierRegex.findAll(retStr).forEach { typeTokens += it.value }
 
-                    typeTokens
-                        .filter { it !in multiValuedTypes }
-                        .distinct()
-                        .forEach { typeName ->
-                            val targetQualified = resolveTarget(typeName)
-                            val targetAlias =
-                                when {
-                                    targetQualified != null -> aliasFor(targetQualified)
-                                    isAllowedExternal(typeName) -> {
-                                        externalClasses += typeName
-                                        "ext_${aliasFor(typeName)}"
-                                    }
-
-                                    else -> null
+                typeTokens
+                    .filter { it !in multiValuedTypes }
+                    .distinct()
+                    .forEach { typeName ->
+                        val targetQualified = resolveTarget(typeName)
+                        val targetAlias =
+                            when {
+                                targetQualified != null -> aliasFor(targetQualified)
+                                isAllowedExternal(typeName) -> {
+                                    externalClasses += typeName
+                                    "ext_${aliasFor(typeName)}"
                                 }
 
-                            if (targetAlias != null && targetAlias != ownerAlias) {
-                                edges += "$ownerAlias ..> $targetAlias : uses"
+                                else -> null
                             }
+
+                        if (targetAlias != null && targetAlias != ownerAlias) {
+                            edges += $$"$$ownerAlias ..> $$targetAlias : uses"
                         }
+                    }
                 }
-            }
 
             kept += line
         }
@@ -659,14 +670,17 @@ object UmlCombiner {
 
         val stereotypePrefix =
             stereotypes
+                .filterNot { it == "object" }
                 .takeUnless { it.isEmpty() }
                 ?.joinToString("", prefix = "<i>", postfix = "</i>\\n") {
                     if (it.startsWith("@")) {
-                        it
+                        "$it "
                     } else {
-                        "<<$it>>"
+                        "<<$it>> "
                     }
                 } ?: ""
+
+        val stereotypeSuffix = if (stereotypes.contains("object")) {"<< (O,#FF7700) object >>"} else {""}
 
         val match = "(\\w+)\\s*(<\\w+(?:,\\s*\\w+)*>)".toRegex().find(display)
         val name =
@@ -675,7 +689,7 @@ object UmlCombiner {
             } else {
                 display + '"'
             }
-        val first = "${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias {"
+        val first = "${metadata?.visibility}${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias $stereotypeSuffix {"
         val members =
             lines.drop(1).map { line -> if (metadata?.isObject == true) markStatic(line) else line }
         return (listOf(first) + members).joinToString("\n")

@@ -2,6 +2,7 @@
 // `buildSrc` is a Gradle-recognized directory and every plugin there will be easily available in the rest of the build.
 package buildsrc.convention
 
+import buildsrc.convention.kotlin.jvm.Platform
 import buildsrc.convention.kotlin.jvm.Tests
 import buildsrc.convention.kotlin.common.AutoFormat
 import buildsrc.convention.util.Module
@@ -18,5 +19,5 @@ kotlin {
     jvmToolchain(21)
 }
 
-val modules: Set<Module> = setOf(AutoFormat, Tests)
+val modules: Set<Module> = setOf(AutoFormat, Platform, Tests)
 modules.apply(project)

@@ -1,6 +1,5 @@
 package au.edu.unimelb.archivetool.switchboard.interactions
 
-import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.memory.MemoryJobStateInteraction
@@ -38,7 +37,7 @@ class StringStatusInteraction : StatusInteraction {
             } ?: false && jobFile.approved
         }
         val canExport = files?.count { (_, it) ->
-            it.vertexes?.values?.all(ArchiveBox::isNotNull) ?: false
+            it.vertexes?.values?.all { it.metadata.isNotNull() } ?: false
         }
 
         fun StringBuilder.appendLineIfPositive(count: Int?, line: (Int) -> String) =

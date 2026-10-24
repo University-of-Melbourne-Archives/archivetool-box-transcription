@@ -18,6 +18,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
+import kotlin.io.path.toPath
 
 class CLAHEInteractionTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -33,12 +34,11 @@ class CLAHEInteractionTest {
     }
 
     val directory by lazy {
-        Path(
-            {}.javaClass
-                .getResource("/SwitchboardTest")
-                .expect("Test couldn't find test folder")
-                .path
-        )
+        {}.javaClass
+            .getResource("/SwitchboardTest")
+            .expect("Test couldn't find test folder")
+            .toURI()
+            .toPath()
     }
 
     @SemiManual(

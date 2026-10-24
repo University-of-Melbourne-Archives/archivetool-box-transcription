@@ -11,8 +11,6 @@ class StatusCommand : Command(name = "status") {
     override fun help(context: Context): String =
         """
         Request the current status of an archive job.
-
-        Status output requires a Switchboard backend implementation.
         """
             .trimIndent()
 

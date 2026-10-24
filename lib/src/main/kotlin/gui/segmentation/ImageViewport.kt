@@ -358,16 +358,16 @@ class ImageViewport(
 
         val centre =
             Coord.ImageSpaceCoord((imageWidth / 2).roundToInt(), (imageHeight / 2).roundToInt())
-        val boxWidth = 600
-        val boxHeight = 1100
+        val boxWidth = (imageHeight / 4.26).roundToInt()
+        val boxHeight = (imageHeight / 2.35).roundToInt()
         val boxTop = (centre.y - boxHeight / 2)
         val boxLeft = (centre.x - boxWidth / 2)
 
         val box = Rectangle.create(boxLeft, boxTop, boxWidth, boxHeight)
 
-        val labelWidth = 500
-        val labelHeight = 170
-        val labelTop = boxTop + 35
+        val labelWidth = (imageHeight / 5.2).roundToInt()
+        val labelHeight = (imageHeight / 17).roundToInt()
+        val labelTop = boxTop + (boxHeight / 31.4).roundToInt()
         val labelLeft = (centre.x - labelWidth / 2)
         val label = Rectangle.create(labelLeft, labelTop, labelWidth, labelHeight)
 

@@ -1,5 +1,6 @@
 package au.edu.unimelb.archivetool.util
 
+import au.edu.unimelb.archivetool.util.extension.isNotNull
 import au.edu.unimelb.archivetool.util.logging.ConsumerSettings
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.LogConsumer
@@ -11,8 +12,13 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 // TODO: We should really have a TUI-sytle implementation of this, and add a gui one if we ever
 // write a full gui
@@ -64,8 +70,8 @@ class CLIProgressBar(totalItems: Int?, starterProgress: Int = 1) :
                     if (lastLog == l) {
                         append("\r")
                     } else {
-                        append('\u000c')
-                        appendLine(logConsumer!!.toString())
+                        appendLine('\u000c')
+                        // appendLine(logConsumer!!.toString())
                         lastLog = l
                     }
                 }
@@ -97,13 +103,41 @@ abstract class ProgressBar(val totalItems: Int?, starterProgress: Int = 1) {
 
     open fun run(operation: ProgressBarScope.() -> Unit) {
         redraw()
-        val scope = ProgressBarScope()
-        scope.operation()
+        val oneShot = MutableStateFlow<Boolean?>(null)
+        val scope = ProgressBarScope(oneShot)
+        val job =
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    scope.operation()
+                    scope.finish()
+                } catch (e: Exception) {
+                    Log.error("Operation Threw $e")
+                    scope.cancel()
+                    throw e
+                }
+            }
+        runBlocking {
+            oneShot.filterNotNull().first().let {
+                when (it) {
+                    true -> {
+                        if (totalItems.isNotNull()) progress = totalItems!!
+                        redraw()
+                        Log.info("Finished successfully.")
+                        job.join()
+                    }
+                    false -> {
+                        redraw()
+                        Log.error("Operation was cancelled.")
+                        job.cancelAndJoin()
+                    }
+                }
+            }
+        }
     }
 
     protected abstract fun redraw()
 
-    inner class ProgressBarScope {
+    inner class ProgressBarScope(private val oneShot: MutableStateFlow<Boolean?>) {
         fun increment(n: Int = 1): Unit {
             progress += n
             totalItems
@@ -120,9 +154,13 @@ abstract class ProgressBar(val totalItems: Int?, starterProgress: Int = 1) {
             redraw()
         }
 
-        fun cancel() {}
+        fun cancel() {
+            oneShot.tryEmit(false)
+        }
 
-        fun finish() {}
+        fun finish() {
+            oneShot.tryEmit(true)
+        }
     }
 
     companion object {

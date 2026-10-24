@@ -307,7 +307,6 @@ open class AbstractSwitchboard(
                     update(toUpdate)
                     setProgress(i + 1)
                 }
-            finish()
         }
     }
 

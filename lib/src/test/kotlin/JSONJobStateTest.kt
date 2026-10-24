@@ -32,6 +32,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.assertDoesNotThrow
+import kotlin.io.path.toPath
 
 class JSONJobStateTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -53,12 +54,11 @@ class JSONJobStateTest {
     val cacheLock = Mutex()
 
     val directory by lazy {
-        Path(
-            {}.javaClass
-                .getResource("/SwitchboardTest")
-                .expect("Test couldn't find test folder")
-                .path
-        )
+        {}.javaClass
+            .getResource("/SwitchboardTest")
+            .expect("Test couldn't find test folder")
+            .toURI()
+            .toPath()
     }
 
     val jsonPath: Path by lazy { directory.resolve(GENERATED_PATH).resolve("job.json") }

@@ -8,7 +8,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.MonoColour
-import au.edu.unimelb.archivetool.util.extension.asFileAttribute
+import au.edu.unimelb.archivetool.util.extension.asFileAttributes
 import au.edu.unimelb.archivetool.util.file.copyFromResources
 import au.edu.unimelb.archivetool.util.math.geometry.Polygon
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
@@ -23,6 +23,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.pathString
 import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
 import org.bytedeco.javacpp.FloatPointer
@@ -42,7 +43,7 @@ object BoxSegmentation {
     val modelDirectory by lazy {
         createTempDirectory(
             "archivetool-models",
-            PosixFilePermissions.fromString("rwxrwxr--").asFileAttribute(),
+            *PosixFilePermissions.fromString("rwxrwxr--").asFileAttributes(),
         )
     }
 
@@ -69,15 +70,22 @@ object BoxSegmentation {
     /**
      * Segments an image into Box & Sticker polygons and returns detections as quadrilaterals, keyed
      * by image file name.
+     *
+     * Boxes whose visible part is centred within [edgeMargin] (a fraction of the image width or
+     * height) of a side are dropped, as they are mostly out of frame. 0.0 disables this.
      */
     fun getBoxes(
         imagePath: JobRelativePath,
         modelPath: Path? = null,
         conf: Double = 0.5,
+        edgeMargin: Double = 0.1,
     ): Pair<JobRelativePath, JobFile> {
         val modelPath = modelPath ?: copyModelFromResourcesIfNotExists(DEFAULT_MODEL_RESOURCE)
 
-        val dets = runModel(imagePath, modelPath, conf).filter { it.polygon.vertices.size >= 3 }
+        val dets =
+            runModel(imagePath, modelPath, conf, edgeMargin)
+                .filter { it.polygon.vertices.size >= 3 }
+                .suppressOverlaps()
         val vertexes = mutableMapOf<String, ArchiveBox>()
 
         // Key every box as box-N in confidence order
@@ -111,6 +119,28 @@ object BoxSegmentation {
 
         return imagePath to JobFile(vertexes)
     }
+
+    /** Intersection over union of two polygons' axis-aligned bounding boxes. */
+    private fun iou(a: Polygon, b: Polygon): Double {
+        val w = (min(a.xMax, b.xMax) - max(a.xMin, b.xMin)).coerceAtLeast(0)
+        val h = (min(a.yMax, b.yMax) - max(a.yMin, b.yMin)).coerceAtLeast(0)
+        val inter = w.toDouble() * h
+        fun area(p: Polygon) = (p.xMax - p.xMin).toDouble() * (p.yMax - p.yMin)
+        return inter / (area(a) + area(b) - inter)
+    }
+
+    /**
+     * Greedy non-maximum suppression: of any same-class detections overlapping by more than
+     * [iouThreshold], only the most confident is kept. The end2end model skips NMS, so duplicates
+     * can otherwise get through.
+     */
+    private fun List<Detection>.suppressOverlaps(iouThreshold: Double = 0.5): List<Detection> =
+        sortedByDescending { it.score }
+            .fold(listOf()) { kept, d ->
+                if (kept.any { it.label == d.label && iou(it.polygon, d.polygon) > iouThreshold })
+                    kept
+                else kept + d
+            }
 
     /** Loads an ONNX model once per path, with the class names and input size stored at export. */
     private fun loadModel(modelPath: Path): Model =
@@ -165,6 +195,7 @@ object BoxSegmentation {
         imagePath: JobRelativePath,
         modelPath: Path,
         conf: Double,
+        edgeMargin: Double,
     ): List<Detection> {
         val model = loadModel(modelPath)
         val inH = model.inH
@@ -238,6 +269,13 @@ object BoxSegmentation {
             val y1 = ((preds[o + 1] - lb.top) / lb.r).coerceIn(0.0, h.toDouble())
             val y2 = ((preds[o + 3] - lb.top) / lb.r).coerceIn(0.0, h.toDouble())
 
+            // The box is clamped to the image, so a box cut off by a side is centred near it
+            val label = model.names.getValue(preds[o + 5].toInt())
+            val cx = (x1 + x2) / 2 / w
+            val cy = (y1 + y2) / 2 / h
+            if (label == BOX_CLASS && listOf(cx, cy).any { it < edgeMargin || it > 1 - edgeMargin })
+                continue
+
             // Mask logits are the detection's coefficients applied to the shared prototypes;
             // upsampled to full image resolution, equivalent to retina_masks=True
             val logits = FloatArray(mh * mw)
@@ -281,7 +319,7 @@ object BoxSegmentation {
             val largest = contours.largest
             out +=
                 Detection(
-                    model.names.getValue(preds[o + 5].toInt()),
+                    label,
                     score.toDouble(),
                     Polygon.create(largest),
                 )

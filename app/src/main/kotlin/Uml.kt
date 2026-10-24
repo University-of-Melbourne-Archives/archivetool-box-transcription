@@ -17,6 +17,7 @@ import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaMethod
 import kotlin.reflect.jvm.jvmErasure
 import kotlinx.serialization.Serializable
+import kotlin.collections.filter
 
 fun main() {
     Log.registerConsumer(StdoutConsumer())
@@ -94,6 +95,12 @@ fun main() {
                                             },
                                         isSerializable =
                                             kClass.annotations.any { it is Serializable },
+                                        visibility = when (kClass.visibility) {
+                                            KVisibility.PROTECTED -> "#"
+                                            KVisibility.INTERNAL -> "~"
+                                            KVisibility.PRIVATE -> "-"
+                                            else -> ""
+                                        }
                                     )
                                 },
                             uml =
@@ -126,9 +133,23 @@ fun main() {
         )
 
     val f = createTempDirectory().resolve("archivetool.plantuml")
-    f.writeText(uml)
+    val basef = f.resolveSibling("archivetool.base.plantuml")
+    basef.writeText(uml)
 
-    println("Wrote ${runs.size} packages to $f")
+    println("Wrote ${runs.size} packages to $basef")
+
+    println("Applying Manual Patches:")
+
+    val patched = uml.let { uml ->
+        val end = "@enduml"
+        uml.lineSequence().filter { !it.contains(end) }
+            .patchHideMethodUses().patchInteractionDI().patchLogConsumerDupeProps().patchMissingCLIInheritances().patchRemoveCompanionMemberProperty().patchAddConfigJson().patchAddUoMCSV().patchAddJobJson()
+            .let { it + end }
+            .joinToString("\n", postfix = "\n")
+    }
+
+    f.writeText(patched)
+    println("Wrote patched plantuml to $f")
 }
 
 private fun KClass<*>.normalisedQualifiedName(): String =
@@ -164,6 +185,158 @@ private fun KClass<*>.synthesiseCompanionSupertypes(): List<UmlCombiner.Relation
         }
 }
 
+private fun Sequence<String>.patchInteractionDI(): Sequence<String> {
+    println("- Replace aggregation of Interaction subclasses with injection of interaction.")
+    val pat = "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard\"1\" --> \"1\" "
+    return filter { !it.contains(pat) } + "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard #-- au_edu_unimelb_archivetool_switchboard_interactions_Interaction : < injected into"
+}
+
+private fun Sequence<String>.patchLogConsumerDupeProps(): Sequence<String> {
+    println("- Remove duplicated properties on LogConsumers with properties on the superclass.")
+    return filter {
+        !(it.contains("LogLevel : maxLogLevel") || it.contains("ConsumerSettings : settings")) || it.contains("au_edu_unimelb_archivetool_util_logging_LogConsumer")
+    }
+}
+
+/* Adds the following:
+
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_BaseCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_FinaliseCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_InfoCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_OCRCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_PreviewCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_RunCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_StatusCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_ocr_OCRCreateCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_ocr_OCRReviewCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_preview_PreviewCreateCommand
+au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_preview_PreviewReviewCommand
+
+I genuinely have no clue why these aren't detected but it may be something to do with excluding random stuff (including this UML gen) from the diagram
+*/
+private fun Sequence<String>.patchMissingCLIInheritances(): Sequence<String> {
+    println("- Remove inherited methods from CLI and add missing inheritances.")
+    return this.filterNot { it.contains("+run()") || it.contains("+help(context: Context): String") } + sequenceOf(
+        "BaseCommand",
+        "FinaliseCommand",
+        "InfoCommand",
+        "OCRCommand",
+        "PreviewCommand",
+        "RunCommand",
+        "StatusCommand",
+        "ocr_OCRCreateCommand",
+        "ocr_OCRReviewCommand",
+        "preview_PreviewCreateCommand",
+        "preview_PreviewReviewCommand",
+    ).map {
+        "au_edu_unimelb_archivetool_app_cli_helpers_Command <|-- au_edu_unimelb_archivetool_app_cli_$it"
+    }
+}
+
+//todo do we have tthe jobstateinteraction inheritance borken???
+private fun Sequence<String>.patchRemoveCompanionMemberProperty(): Sequence<String> {
+    println("- Remove 'companion' member from JobStateInteraction and subtypes.")
+    return this.filterNot { it.contains(": companion") }
+}
+
+private fun Sequence<String>.patchHideMethodUses(): Sequence<String> {
+    println("- Hide the 'uses' method associations that I am no longer using.")
+    val useLines = this.filter { it.endsWith(" : uses") }
+    val deadExts = useLines.filter { it.contains("ext_") }.flatMap {
+        "(ext_(?:[_]|[a-z]|[A-Z])+) : uses".toRegex()
+            .findAll(it)
+            .mapNotNull { match -> match.groupValues.getOrNull(1) }
+            .filterNot { alias -> this.any { line -> line.startsWith("$alias <|-- ") } }
+    }.distinct()
+    return this.filterNot { line -> useLines.contains(line) || deadExts.any { line.contains(it) } }
+}
+
+private fun Sequence<String>.patchAddConfigJson(): Sequence<String> {
+    println("- Add a relationship for Config reading the json file, and between Config and ConfigInteraction")
+    val jsonShape = buildString {
+        appendLine("json \".config/archivetool/config.json\" as config_json {")
+        appendLine("\t\"ocr_api\": {")
+        appendLine("\t\"base_url\": \"https://generativelanguage.googleapis.com/v1beta/openai/\",")
+        appendLine("\t\"api_key\": \"\",")
+        appendLine("\t\"model\": \"gemini-3-flash-preview\",")
+		appendLine("\t\"effort\": \"low\"")
+        appendLine("\t}")
+        appendLine("}")
+    }
+    val assocs = sequenceOf(
+        "au_edu_unimelb_archivetool_config_Config <-- au_edu_unimelb_archivetool_switchboard_interactions_ConfigInteraction : reads",
+        "config_json <-- au_edu_unimelb_archivetool_config_Config : reads/generates",
+        "au_edu_unimelb_archivetool_switchboard_interactions_InitInteraction <-- au_edu_unimelb_archivetool_switchboard_interactions_ConfigInteraction : generates"
+    )
+    val note = buildString {
+        appendLine("note top of config_json")
+        appendLine("Approximately represents the arguments given to an Open-AI compatible API.")
+        appendLine("end note")
+    }
+    return this + jsonShape + assocs + note
+}
+private fun Sequence<String>.patchAddUoMCSV(): Sequence<String> {
+    println("- Add Table representing CSV output")
+    val table = buildString {
+        appendLine("object \"\" as output_csv {")
+        appendLine("= \"\"output.csv\"\"\n")
+        appendLine("<#transparent,#black>|= Node ID |= Node Type |= Node Title |= Description |= Date Range|")
+        appendLine("<#transparent,#black>| ????? | Item | \"\"<id number> Unit <unit number>\"\" | \"\"<remaining transcription>\"\" | \"\"<year range>;<start date>;<end date>\"\"|")
+        appendLine("}")
+    }
+    val assoc = "output_csv <-- au_edu_unimelb_archivetool_switchboard_interactions_export_UoMCSV : generates"
+
+    return this.filterNot { it.contains("au_edu_unimelb_archivetool_switchboard_interactions_export_CSV_Companion o-- ") } + table + assoc
+}
+
+private fun Sequence<String>.patchAddJobJson(): Sequence<String> {
+    println("- Add a relationship for job state management")
+    val jsonShape = buildString {
+        appendLine("json \".archivetool_generated/job.json\" as job_json {")
+        val metaJson = """
+        {
+            "id[]?": ["string"],
+            "unitNumber?": "number",
+            "dateRange?": {
+                "startDate": "ISO8601 date string",
+                "endDate?": "ISO8601 date string"
+            },
+            "description": "string"
+        }
+        """.trimIndent()
+        val boundaryJson = """
+            {
+                "points[4]": [
+                    {"x": "number", "y": "number"}
+                ],
+                "confidence": "number",
+                "rawMetadata?": $metaJson
+            }
+        """.trimIndent()
+        appendLine("""
+        "<path>*": {
+            "vertexes?": {
+                "<box-id>*": {
+                    "box": $boundaryJson,
+                    "sticker[]": [$boundaryJson],
+                    "meta?": $metaJson
+                }
+            }
+        }
+        """.trimIndent())
+        appendLine("}")
+    }
+    val assocs = sequenceOf(
+        "job_json <-- au_edu_unimelb_archivetool_switchboard_jobstate_json_JSONJobState : reads/generates",
+    )
+    val note = buildString {
+        appendLine("note top of job_json")
+        appendLine("Internal representation of processing results and state.")
+        appendLine("end note")
+    }
+    return this + jsonShape + assocs + note
+}
+
 /**
  * `KCallable` has no `isSynthetic`. The backing Java member does, and kotlin-reflect exposes it
  * through `javaField` / `javaMethod` / `javaConstructor`. Any of those that is a
@@ -193,7 +366,7 @@ private fun KCallable<*>.toPlantUmlLine(): String? {
         is KProperty<*> -> {
             val isConstant =
                 isFinal && (this.visibility == KVisibility.PUBLIC) // heuristic for constants
-            val prefix = if (isConstant) "{static} {const} " else "$visibility"
+            val prefix = if (isConstant) "\t$visibility{static} const " else "$visibility"
             val type = returnType.jvmErasure.simpleName ?: return null
             "$prefix$name: $type"
         }

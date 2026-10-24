@@ -19,7 +19,14 @@ class BaseCommand :
     Command(
         name = "archivetool",
         subcommands =
-            setOf(RunCommand(), PreviewCommand(), OCRCommand(), StatusCommand(), FinaliseCommand()),
+            setOf(
+                InfoCommand(),
+                RunCommand(),
+                PreviewCommand(),
+                OCRCommand(),
+                StatusCommand(),
+                FinaliseCommand(),
+            ),
     ) {
     init {
         subcommands(

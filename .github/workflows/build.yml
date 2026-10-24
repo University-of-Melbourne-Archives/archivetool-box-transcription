@@ -1,0 +1,75 @@
+name: Build a distribution of the software
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "mod.txt"
+      - "meta.json"
+      - ".github/workflows/**"
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: Specific codename for release
+        required: true
+        default: ""
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'graalvm'
+          java-version: 21
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 'graalpy-25.0'
+      - name: Install Black Autoformatter
+        run: pip install black
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Build a Multi-Platform Distribution with Gradle
+        run: ./gradlew app:distTar -x check -x test # Tests and Checks happen in the other workflow.
+      - name: Copy Distribution out of Build Directory
+        run: cp ./app/build/distributions /tmp/dist && cd /tmp/dist
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+         name: archivetool-cli-zip
+         path: /tmp/dist/archivetool-cli.zip
+         compression-level: 9
+         retention-days: 1
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archivetool-cli-tar
+          path: /tmp/dist/archivetool-cli.tar
+          compression-level: 9
+          retention-days: 1
+
+  create_release:
+    needs: build_multiple_os
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.job-name != 'build' }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/dist
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: /tmp/dist/*.*
+          name: "archivetool ${{ github.event.inputs.job-name != 'build' }}"
+          prerelease: false
+          tag: "${{ github.event.inputs.job-name != 'build' }}"
