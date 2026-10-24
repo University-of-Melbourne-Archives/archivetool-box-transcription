@@ -1,12 +1,12 @@
 package au.edu.unimelb.archivetool.app.cli.ocr
 
-import au.edu.unimelb.archivetool.app.cli.CliBackend
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
 import com.github.ajalt.clikt.core.Context
 
-class OCRReviewCommand(private val backend: CliBackend) : Command(name = "review") {
+class OCRReviewCommand(private val switchboard: AbstractSwitchboard) : Command(name = "review") {
 
     override fun help(context: Context): String =
         "Open OCR results for review in the selected job directory."
@@ -15,6 +15,6 @@ class OCRReviewCommand(private val backend: CliBackend) : Command(name = "review
 
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
-        backend.reviewOCR(jobRoot)
+        switchboard.reviewOCRPreview(jobRoot)
     }
 }

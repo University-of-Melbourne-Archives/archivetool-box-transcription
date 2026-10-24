@@ -1,5 +1,7 @@
 package au.edu.unimelb.archivetool.app.cli
 
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
+import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.countedTransform
 import au.edu.unimelb.archivetool.util.logging.LogLevel
@@ -14,17 +16,17 @@ import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
 /** Main CLI command and its subcommands. */
-class BaseCommand(private val backend: CliBackend = SwitchboardCliBackend) :
+class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
     Command(
         name = "archivetool",
         subcommands =
             setOf(
                 InfoCommand(),
-                RunCommand(backend),
-                PreviewCommand(backend),
-                OCRCommand(backend),
-                StatusCommand(backend),
-                FinaliseCommand(backend),
+                RunCommand(switchboard),
+                PreviewCommand(switchboard),
+                OCRCommand(switchboard),
+                StatusCommand(switchboard),
+                FinaliseCommand(switchboard),
             ),
     ) {
     init {
@@ -75,7 +77,7 @@ class BaseCommand(private val backend: CliBackend = SwitchboardCliBackend) :
             .default(Optional.of(LogLevel.Info))
 
     override fun run() {
-        backend.init(
+        switchboard.init(
             logLevel.getOrNull()?.let { setOf(StderrConsumer(maxLogLevel = it)) } ?: emptySet()
         )
     }

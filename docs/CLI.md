@@ -13,7 +13,7 @@ Run these commands from the repository root:
 .\gradlew.bat ktfmtCheck
 ```
 
-Gradle downloads missing dependencies automatically when internet access is available. `:app:test` checks CLI parsing, validation and helper behaviour; **it does not prove that the complete image-processing pipeline works**.
+Gradle downloads missing dependencies automatically when internet access is available. `:app:test` checks the help text, argument validation and command-to-Switchboard calls using a recording test backend. **It does not run actual segmentation, OCR, or GUI review.**
 
 ## Command reference
 
@@ -104,8 +104,26 @@ Use a small, previously tested image set for the demo, and coordinate the segmen
 
 ## Verification boundary
 
-- **CLI unit tests:** command registration, help, option validation, deprecated flags and path utilities.
+- **CLI tests:** command registration, help, input validation, default options, and calls to the processing stages using a recording test backend.
 - **Integration / end-to-end:** needs separate verification of real images, GUI review, OCR responses, saved job state and final CSV fields. Passing the CLI unit tests alone does not establish these outcomes.
 - **Resume:** CLI defaults and parameter parsing are covered; correct backend recovery from a partially processed job must be checked separately.
 
 For a final demo, confirm build/tests, API key and connectivity, a representative review flow, populated CSV output and a stable Git commit to fall back to.
+
+## CLI tests for the archivist user story
+
+**User story:** “As an archivist, I need a usable interface that facilitates the usage of the software.”
+
+The main automated tests are in `app/src/test/kotlin/CliCommandTest.kt`. They test the CLI from the user's point of view: finding commands, entering arguments, and choosing which processing stage to run. The tests use a small recording backend, so we can check which Switchboard stage would be called without opening GUI windows or using the OCR API.
+
+| User task | Automated checks | What we expect |
+| --- | --- | --- |
+| Find out how to use the tool | Main, `run`, `preview`, `ocr`, and `finalise` help tests | Relevant commands and options are visible |
+| Recover from an input mistake | Missing `-o`, missing input directory, invalid thresholds, unknown command | Command returns an error and processing does not start |
+| Process a whole batch | `run` stage-order test | Six stages are requested in the correct order |
+| Work on one stage at a time | `preview`, `ocr`, `status`, `finalise` tests | Only the expected stage(s) are requested |
+| Resume existing work | Resume/default and `--no-resume` tests | Job reuse is on by default and can be disabled |
+| Choose job and output locations | Input/output path tests | Normalised paths are passed to Switchboard |
+| Review confidence handling | Threshold range and conversion tests | 0–100% is accepted and passed as a fraction |
+
+**What still needs manual testing:** Run the real application on an archive image batch, check whether the steps and help messages are understandable to an archivist, review boxes and OCR in the GUI, resume a partially processed batch, and open the exported CSV to check its contents. These are separate acceptance/integration checks. CLI tests alone cannot establish usability for every user or prove the backend worked correctly.

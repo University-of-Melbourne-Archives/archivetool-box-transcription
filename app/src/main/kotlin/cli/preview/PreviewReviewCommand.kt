@@ -1,6 +1,6 @@
 package au.edu.unimelb.archivetool.app.cli.preview
 
-import au.edu.unimelb.archivetool.app.cli.CliBackend
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
@@ -10,7 +10,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.restrictTo
 
-class PreviewReviewCommand(private val backend: CliBackend) : Command(name = "review") {
+class PreviewReviewCommand(private val switchboard: AbstractSwitchboard) : Command(name = "review") {
 
     override fun help(context: Context): String =
         "Open box-detection previews for review in the selected job directory."
@@ -31,6 +31,6 @@ class PreviewReviewCommand(private val backend: CliBackend) : Command(name = "re
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
         val threshold = autoApproveThreshold?.percentToFraction() ?: 1.0
-        backend.reviewPreview(jobRoot, threshold)
+        switchboard.reviewSegmentationPreview(jobRoot, threshold)
     }
 }

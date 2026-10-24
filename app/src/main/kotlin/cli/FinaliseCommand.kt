@@ -1,5 +1,8 @@
 package au.edu.unimelb.archivetool.app.cli
 
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
+
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
@@ -8,7 +11,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 
-class FinaliseCommand(private val backend: CliBackend) : Command(name = "finalise") {
+class FinaliseCommand(private val switchboard: AbstractSwitchboard) : Command(name = "finalise") {
 
     override fun help(context: Context): String =
         """
@@ -28,6 +31,6 @@ class FinaliseCommand(private val backend: CliBackend) : Command(name = "finalis
     // Export previously processed data; do not rerun segmentation or OCR.
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
-        backend.export(jobRoot, outputPath.normalizedAbsolute())
+        switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute())).generateExport(jobRoot)
     }
 }

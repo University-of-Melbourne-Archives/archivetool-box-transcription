@@ -11,10 +11,6 @@ fun Path.normalizedAbsolute(): Path = toAbsolutePath().normalize()
 
 /** All processing commands use the same optional -i directory. */
 fun Command.inputDirectory() =
-    option(
-            "-i",
-            "--input-directory",
-            help = "Job directory containing archive photos and saved progress.",
-        )
+    option("-i", "--input-directory", help = "Job directory containing archive photos and saved progress.")
         .path(mustExist = true, canBeFile = false, mustBeReadable = true)
         .default(Path("."), defaultForHelp = "current working directory")

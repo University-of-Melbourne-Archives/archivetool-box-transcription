@@ -1,5 +1,8 @@
 package au.edu.unimelb.archivetool.app.cli
 
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
+
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
@@ -12,7 +15,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.clikt.parameters.types.restrictTo
 
-class RunCommand(private val backend: CliBackend) : Command(name = "run") {
+class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = "run") {
 
     override fun help(context: Context): String =
         """
@@ -50,11 +53,11 @@ class RunCommand(private val backend: CliBackend) : Command(name = "run") {
         val jobRoot = inputDirectory.normalizedAbsolute()
         val threshold = autoApproveThreshold?.percentToFraction() ?: 1.0
 
-        backend.createPreview(jobRoot, permitExisting = !noResume)
-        backend.reviewPreview(jobRoot, threshold)
-        backend.prepareImages(jobRoot)
-        backend.createOCR(jobRoot)
-        backend.reviewOCR(jobRoot)
-        backend.export(jobRoot, outputPath.normalizedAbsolute())
+        switchboard.createPreview(jobRoot, permitExisting = !noResume)
+        switchboard.reviewSegmentationPreview(jobRoot, threshold)
+        switchboard.manipulateImages(jobRoot)
+        switchboard.createOCR(jobRoot)
+        switchboard.reviewOCRPreview(jobRoot)
+        switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute())).generateExport(jobRoot)
     }
 }
