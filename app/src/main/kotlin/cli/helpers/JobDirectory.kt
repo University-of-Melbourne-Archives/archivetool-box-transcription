@@ -9,8 +9,12 @@ import kotlin.io.path.Path
 /** Convert a CLI path to the absolute, normalised path expected by Switchboard. */
 fun Path.normalizedAbsolute(): Path = toAbsolutePath().normalize()
 
-/** Reusable optional positional job directory, currently used by `status`. */
+/** All processing commands use the same optional -i directory. */
 fun Command.inputDirectory() =
-    option("-i", "--input-directory", help = "A directory containing photos of archive boxes.")
+    option(
+            "-i",
+            "--input-directory",
+            help = "Job directory containing archive photos and saved progress.",
+        )
         .path(mustExist = true, canBeFile = false, mustBeReadable = true)
         .default(Path("."), defaultForHelp = "current working directory")

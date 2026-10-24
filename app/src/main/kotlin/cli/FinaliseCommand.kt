@@ -3,20 +3,18 @@ package au.edu.unimelb.archivetool.app.cli
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
-import au.edu.unimelb.archivetool.switchboard.Switchboard
-import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 
-class FinaliseCommand : Command(name = "finalise") {
+class FinaliseCommand(private val backend: CliBackend) : Command(name = "finalise") {
 
     override fun help(context: Context): String =
         """
         Export existing processed job data to a CSV file.
 
-        The current working directory is used as the job root.
+        Use -i to select the job directory (defaults to the current directory).
         """
             .trimIndent()
 
@@ -30,7 +28,6 @@ class FinaliseCommand : Command(name = "finalise") {
     // Export previously processed data; do not rerun segmentation or OCR.
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
-        Switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
-            .generateExport(jobRoot)
+        backend.export(jobRoot, outputPath.normalizedAbsolute())
     }
 }

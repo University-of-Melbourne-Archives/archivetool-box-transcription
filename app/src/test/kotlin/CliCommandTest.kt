@@ -1,233 +1,262 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import com.github.ajalt.clikt.testing.test
+import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
+/** CLI tests for the archivist's usable interface user story. */
 class CliCommandTest {
 
     @Test
-    fun `help lists the main commands`() {
+    fun `help shows the main commands`() {
         val result = BaseCommand().test("--help")
-
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "run")
-        assertContains(result.output, "preview")
-        assertContains(result.output, "ocr")
-        assertContains(result.output, "status")
-        assertContains(result.output, "finalise")
+        listOf("run", "preview", "ocr", "status", "finalise").forEach {
+            assertContains(result.output, it)
+        }
     }
 
     @Test
-    fun `run help exposes the current path interface`() {
-        val result = BaseCommand().test("run --help")
+    fun `help explains the available stages and important options`() {
+        val preview = BaseCommand().test("preview --help")
+        val ocr = BaseCommand().test("ocr --help")
+        assertEquals(0, preview.statusCode)
+        assertEquals(0, ocr.statusCode)
+        listOf("create", "review").forEach {
+            assertContains(preview.output, it)
+            assertContains(ocr.output, it)
+        }
 
+        val run = BaseCommand().test("run --help")
+        assertEquals(0, run.statusCode)
+        listOf("--input-directory", "--output", "--no-resume", "--auto-approve-threshold").forEach {
+            assertContains(run.output, it)
+        }
+
+        val finalise = BaseCommand().test("finalise --help")
+        assertEquals(0, finalise.statusCode)
+        assertContains(finalise.output, "--input-directory")
+        assertContains(finalise.output, "--output")
+        assertContains(finalise.output, "CSV")
+    }
+
+    @Test
+    fun `run and finalise require an output path`() {
+        listOf("run", "finalise").forEach { command ->
+            val backend = RecordingBackend()
+            val result = BaseCommand(backend).test(command)
+            assertEquals(1, result.statusCode, command)
+            assertContains(result.output, "--output")
+            assertTrue(backend.calls.isEmpty())
+        }
+    }
+
+    @Test
+    fun `a missing input folder is rejected before processing`() {
+        val backend = RecordingBackend()
+        val result =
+            BaseCommand(backend).test("run -i __missing_archivetool_folder__ -o result.csv")
+        assertEquals(1, result.statusCode)
+        assertTrue(result.output.isNotBlank())
+        assertTrue(backend.calls.isEmpty())
+    }
+
+    @Test
+    fun `invalid approval thresholds are rejected`() {
+        listOf(
+                "run -o result.csv -A -1",
+                "run -o result.csv -A 101",
+                "run -o result.csv -A abc",
+                "preview review -A -1",
+                "preview review -A 101",
+                "preview review -A abc",
+            )
+            .forEach { command ->
+                val backend = RecordingBackend()
+                val result = BaseCommand(backend).test(command)
+                assertEquals(1, result.statusCode, command)
+                assertTrue(backend.calls.isEmpty(), "Processing started for $command")
+            }
+    }
+
+    @Test
+    fun `unknown commands show an error without starting processing`() {
+        val backend = RecordingBackend()
+        val result = BaseCommand(backend).test("unknown-command")
+        assertEquals(1, result.statusCode)
+        assertTrue(result.output.isNotBlank())
+        assertTrue(backend.calls.isEmpty())
+    }
+
+    @Test
+    fun `run requests the complete workflow in order`() {
+        val backend = RecordingBackend()
+        val result = BaseCommand(backend).test("run -o result.csv")
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "--input-directory")
-        assertContains(result.output, "--output")
-        assertContains(result.output, "--no-resume")
-        assertFalse(result.output.contains("--resume"))
-        assertContains(result.output, "--auto-approve-threshold")
-        assertFalse(result.output.contains("--job-directory"))
+        assertEquals(
+            listOf(
+                "createPreview",
+                "reviewPreview",
+                "prepareImages",
+                "createOCR",
+                "reviewOCR",
+                "export",
+            ),
+            backend.calls.map { it.name },
+        )
     }
 
     @Test
-    fun `run requires an output path`() {
-        val result = BaseCommand().test("run")
-
-        assertEquals(1, result.statusCode)
-        assertContains(result.output, "--output")
-    }
-
-    @Test
-    fun `run rejects an auto approve threshold above one hundred`() {
-        val result = BaseCommand().test("run -o result.csv -A 101")
-
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `preview help lists create and review`() {
-        val result = BaseCommand().test("preview --help")
-
+    fun `run passes selected input and output paths to Switchboard`() {
+        val backend = RecordingBackend()
+        val result = BaseCommand(backend).test("run -i .. -o result.csv")
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "create")
-        assertContains(result.output, "review")
+        assertTrue(backend.calls.all { it.directory == Path("..").normalizedAbsolute() })
+        assertEquals(Path("result.csv").normalizedAbsolute(), backend.calls.last().output)
     }
 
     @Test
-    fun `preview create defaults input directory to the current working directory`() {
-        val result = BaseCommand().test("preview create --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--input-directory")
-        assertContains(result.output, "current working directory")
-        assertContains(result.output, "--no-resume")
-        assertFalse(result.output.contains("--resume"))
+    fun `run and preview create resume jobs unless disabled`() {
+        listOf("run -o result.csv", "preview create").forEach { command ->
+            val backend = RecordingBackend()
+            assertEquals(0, BaseCommand(backend).test(command).statusCode)
+            assertEquals(true, backend.calls.first().permitExisting, command)
+        }
+        listOf("run -o result.csv --no-resume", "preview create --no-resume").forEach { command ->
+            val backend = RecordingBackend()
+            assertEquals(0, BaseCommand(backend).test(command).statusCode)
+            assertEquals(false, backend.calls.first().permitExisting, command)
+        }
     }
 
     @Test
-    fun `run rejects the removed resume option`() {
-        val result = BaseCommand().test("run -o result.csv --resume")
+    fun `review thresholds use fractions when passed to Switchboard`() {
+        val defaultBackend = RecordingBackend()
+        assertEquals(0, BaseCommand(defaultBackend).test("preview review").statusCode)
+        assertEquals(1.0, defaultBackend.calls.single().threshold)
 
-        assertEquals(1, result.statusCode)
+        val reviewBackend = RecordingBackend()
+        assertEquals(0, BaseCommand(reviewBackend).test("preview review -A 25").statusCode)
+        assertEquals(0.25, reviewBackend.calls.single().threshold)
+
+        val runBackend = RecordingBackend()
+        assertEquals(0, BaseCommand(runBackend).test("run -o result.csv -A 75").statusCode)
+        assertEquals(0.75, runBackend.calls[1].threshold)
+
+        listOf(0 to 0.0, 100 to 1.0).forEach { (percent, fraction) ->
+            val backend = RecordingBackend()
+            assertEquals(0, BaseCommand(backend).test("preview review -A $percent").statusCode)
+            assertEquals(fraction, backend.calls.single().threshold)
+        }
     }
 
     @Test
-    fun `preview create rejects the removed resume option`() {
-        val result = BaseCommand().test("preview create --resume")
+    fun `preview commands call the matching stages`() {
+        val create = RecordingBackend()
+        assertEquals(0, BaseCommand(create).test("preview create").statusCode)
+        assertEquals(listOf("createPreview"), create.calls.map { it.name })
 
-        assertEquals(1, result.statusCode)
+        val review = RecordingBackend()
+        assertEquals(0, BaseCommand(review).test("preview review").statusCode)
+        assertEquals(listOf("reviewPreview"), review.calls.map { it.name })
     }
 
     @Test
-    fun `run accepts no resume before checking required output`() {
-        val result = BaseCommand().test("run --no-resume")
+    fun `OCR commands create results and then allow review`() {
+        val create = RecordingBackend()
+        assertEquals(0, BaseCommand(create).test("ocr create").statusCode)
+        assertEquals(listOf("prepareImages", "createOCR"), create.calls.map { it.name })
 
-        assertEquals(1, result.statusCode)
-        assertContains(result.output, "--output")
+        val review = RecordingBackend()
+        assertEquals(0, BaseCommand(review).test("ocr review").statusCode)
+        assertEquals(listOf("reviewOCR"), review.calls.map { it.name })
     }
 
     @Test
-    fun `preview create no longer exposes output or auto approve options`() {
-        val result = BaseCommand().test("preview create --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--input-directory")
-        assertFalse(result.output.contains("--output"))
-        assertFalse(result.output.contains("--auto-approve-threshold"))
+    fun `status asks Switchboard for the job progress`() {
+        val backend = RecordingBackend()
+        assertEquals(0, BaseCommand(backend).test("status -i ..").statusCode)
+        assertEquals(listOf("status"), backend.calls.map { it.name })
+        assertEquals(Path("..").normalizedAbsolute(), backend.calls.single().directory)
     }
 
     @Test
-    fun `preview review exposes auto approve threshold without a job directory`() {
-        val result = BaseCommand().test("preview review --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--auto-approve-threshold")
-        assertFalse(result.output.contains("Job Directory"))
+    fun `finalise only exports existing results to the selected CSV`() {
+        val backend = RecordingBackend()
+        assertEquals(0, BaseCommand(backend).test("finalise -i .. -o result.csv").statusCode)
+        assertEquals(listOf("export"), backend.calls.map { it.name })
+        assertEquals(Path("..").normalizedAbsolute(), backend.calls.single().directory)
+        assertEquals(Path("result.csv").normalizedAbsolute(), backend.calls.single().output)
     }
 
     @Test
-    fun `preview review rejects an auto approve threshold above one hundred`() {
-        val result = BaseCommand().test("preview review -A 101")
-
-        assertEquals(1, result.statusCode)
+    fun `every individual processing command accepts an input directory`() {
+        listOf(
+                "preview create -i ..",
+                "preview review -i ..",
+                "ocr create -i ..",
+                "ocr review -i ..",
+                "status -i ..",
+                "finalise -i .. -o result.csv",
+            )
+            .forEach { command ->
+                val backend = RecordingBackend()
+                val result = BaseCommand(backend).test(command)
+                assertEquals(0, result.statusCode, command)
+                assertTrue(backend.calls.isNotEmpty(), command)
+                assertTrue(
+                    backend.calls.all { it.directory == Path("..").normalizedAbsolute() },
+                    command,
+                )
+            }
     }
 
-    @Test
-    fun `ocr help lists create and review`() {
-        val result = BaseCommand().test("ocr --help")
+    private data class Call(
+        val name: String,
+        val directory: Path,
+        val permitExisting: Boolean? = null,
+        val threshold: Double? = null,
+        val output: Path? = null,
+    )
 
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "create")
-        assertContains(result.output, "review")
-    }
+    // Records calls instead of running OCR, GUI windows or file exports.
+    private class RecordingBackend : CliBackend {
+        val calls = mutableListOf<Call>()
 
-    @Test
-    fun `ocr create is available without a job directory argument`() {
-        val result = BaseCommand().test("ocr create --help")
+        override fun init(consumers: Set<LogConsumer>) = Unit
 
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "OCR")
-        assertFalse(result.output.contains("Job Directory"))
-    }
+        override fun createPreview(directory: Path, permitExisting: Boolean) {
+            calls += Call("createPreview", directory, permitExisting = permitExisting)
+        }
 
-    @Test
-    fun `ocr review uses the current working directory`() {
-        val result = BaseCommand().test("ocr review --help")
+        override fun reviewPreview(directory: Path, threshold: Double) {
+            calls += Call("reviewPreview", directory, threshold = threshold)
+        }
 
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "current working directory")
-    }
+        override fun prepareImages(directory: Path) {
+            calls += Call("prepareImages", directory)
+        }
 
-    @Test
-    fun `finalise requires a specific output path`() {
-        val result = BaseCommand().test("finalise")
+        override fun createOCR(directory: Path) {
+            calls += Call("createOCR", directory)
+        }
 
-        assertEquals(1, result.statusCode)
-        assertContains(result.output, "--output")
-    }
+        override fun reviewOCR(directory: Path) {
+            calls += Call("reviewOCR", directory)
+        }
 
-    @Test
-    fun `finalise no longer takes a job directory`() {
-        val result = BaseCommand().test("finalise --help")
+        override fun status(directory: Path) {
+            calls += Call("status", directory)
+        }
 
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--output")
-        assertFalse(result.output.contains("Job Directory"))
-    }
-
-    @Test
-    fun `status still accepts a job directory`() {
-        val result = BaseCommand().test("status --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "-i, --input-directory=<path>")
-    }
-
-    @Test
-    fun `run rejects an auto approve threshold below zero`() {
-        val result = BaseCommand().test("run -o result.csv -A -1")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `run rejects a non numeric threshold`() {
-        val result = BaseCommand().test("run -o result.csv -A invalid")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `run rejects a missing input directory`() {
-        val result = BaseCommand().test("run -i __archivetool_missing_input_folder__ -o result.csv")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `preview review rejects a negative threshold`() {
-        val result = BaseCommand().test("preview review -A -1")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `ocr create does not accept removed job directory flag`() {
-        val result = BaseCommand().test("ocr create --job-directory unused")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `ocr review does not accept removed job directory flag`() {
-        val result = BaseCommand().test("ocr review --job-directory unused")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `finalise does not accept an input directory flag`() {
-        val result = BaseCommand().test("finalise -o result.csv --input-directory photos")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `run help describes the staged workflow`() {
-        val result = BaseCommand().test("run --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "workflow")
-    }
-
-    @Test
-    fun `CLI input paths are normalized to absolute paths`() {
-        val input = Path(".", "photos", "..", "photos")
-        assertEquals(input.toAbsolutePath().normalize(), input.normalizedAbsolute())
-    }
-
-    @Test
-    fun `finalise help describes export without OCR processing`() {
-        val result = BaseCommand().test("finalise --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "Export")
+        override fun export(directory: Path, output: Path) {
+            calls += Call("export", directory, output = output)
+        }
     }
 }

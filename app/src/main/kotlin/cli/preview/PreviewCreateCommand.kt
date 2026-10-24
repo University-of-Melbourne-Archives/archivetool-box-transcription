@@ -1,15 +1,14 @@
 package au.edu.unimelb.archivetool.app.cli.preview
 
+import au.edu.unimelb.archivetool.app.cli.CliBackend
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
-import au.edu.unimelb.archivetool.switchboard.Switchboard
 import com.github.ajalt.clikt.core.Context
-import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 
-class PreviewCreateCommand : Command(name = "create") {
+class PreviewCreateCommand(private val backend: CliBackend) : Command(name = "create") {
 
     override fun help(context: Context): String =
         """
@@ -27,6 +26,6 @@ class PreviewCreateCommand : Command(name = "create") {
             .flag(default = false)
 
     override fun run() {
-        Switchboard.createPreview(inputDirectory.normalizedAbsolute(), permitExisting = !noResume)
+        backend.createPreview(inputDirectory.normalizedAbsolute(), permitExisting = !noResume)
     }
 }
