@@ -1,10 +1,14 @@
-import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.getBoxes
+package segmentation
+
+import SemiManual
+import au.edu.unimelb.archivetool.segmentation.BoxSegmentation
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
+import kotlin.collections.iterator
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.test.Test
 import kotlin.time.Clock
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 
 class BoxSegmentationTest {
     @SemiManual(
@@ -17,7 +21,7 @@ class BoxSegmentationTest {
         val image =
             JobRelativePath(
                 Path(".").toAbsolutePath().parent,
-                Path("src/test/resources/SwitchboardTest/PXL_20251127_230150462.jpg"),
+                Path("src/test/resources/switchboard.SwitchboardTest/PXL_20251127_230150462.jpg"),
             )
         // Relative paths resolve against the working directory, so print it if a file can't be
         // found
@@ -25,7 +29,7 @@ class BoxSegmentationTest {
         require(image.absolute.exists()) { "Image not found: ${image.absolute}" }
 
         val start = Clock.System.now()
-        val result = getBoxes(image)
+        val result = BoxSegmentation.getBoxes(image)
         println("Inference took ${Clock.System.now() - start}")
 
         result.let { (name, det) ->

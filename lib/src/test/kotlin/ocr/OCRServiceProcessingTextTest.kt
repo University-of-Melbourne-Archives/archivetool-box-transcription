@@ -1,10 +1,12 @@
+package ocr
+
 import au.edu.unimelb.archivetool.config.OpenAIAPIData
 import au.edu.unimelb.archivetool.ocr.OCRService
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class OCRServiceProcessingTextTest {
     private val service = OCRService(OpenAIAPIData())
