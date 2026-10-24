@@ -1,10 +1,10 @@
 # ArchiveTool CLI — Usage and Demo Guide
 
-The Kotlin CLI uses **Clikt** to parse commands and delegates all archive processing to the **Switchboard**. The CLI does **not** implement segmentation, OCR, human review or job-state persistence.
+ArchiveTool provides a Kotlin command-line interface (CLI) built with **Clikt**. It parses commands, validates options and delegates archive processing to **Switchboard**. Segmentation, image manipulation, OCR, human review, job-state persistence and CSV generation are implemented by the backend, not duplicated in the CLI.
 
-## Build and verify (Windows PowerShell)
+## Build and check (Windows PowerShell)
 
-From the repository root, after merging Switchboard through Git:
+Run these commands from the repository root:
 
 ```powershell
 .\gradlew.bat :app:classes
@@ -13,7 +13,25 @@ From the repository root, after merging Switchboard through Git:
 .\gradlew.bat ktfmtCheck
 ```
 
-Gradle automatically resolves any missing dependencies when online. `:app:test` validates command parsing and helper functions; it **does not** prove that the full image pipeline works.
+Gradle downloads missing dependencies automatically when internet access is available. `:app:test` checks CLI parsing, validation and helper behaviour; **it does not prove that the complete image-processing pipeline works**.
+
+## Command reference
+
+| Command | Options | Switchboard action |
+| --- | --- | --- |
+| `run` | `[-i DIR] -o FILE [--no-resume] [-A 0-100]` | Run all six processing stages in sequence |
+| `preview create` | `[-i DIR] [--no-resume]` | `createPreview` |
+| `preview review` | `[-i DIR] [-A 0-100]` | `reviewSegmentationPreview` |
+| `ocr create` | `[-i DIR]` | `manipulateImages`, then `createOCR` |
+| `ocr review` | `[-i DIR]` | `reviewOCRPreview` |
+| `status` | `[-i DIR]` | `getStatus` (prints job progress from Switchboard) |
+| `finalise` | `[-i DIR] -o FILE` | `generateExport` **only** |
+
+**Shared input-directory option:** `-i, --input-directory` selects the job root containing the source images and persisted state. It is optional for the commands above; if omitted, the default is the process **current working directory (`.`)**. The supplied directory must exist and be readable. Do not pass `.archivetool_generated` itself as the job root.
+
+**Output:** `-o, --output` is required for `run` and `finalise`, and specifies the destination CSV file. `finalize` is an alternative spelling of `finalise`.
+
+**Logging:** The root command supports `-v`/`--verbose` and `-q`/`--quiet` (repeat them to adjust logging level). For example, `-v run ...` puts the root option before the subcommand.
 
 ## Full workflow
 
@@ -21,94 +39,73 @@ Gradle automatically resolves any missing dependencies when online. `:app:test` 
 .\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"'
 ```
 
-Run `-i` is optional and defaults to the **process working directory**. Using an absolute path is recommended for demos. The `-o` CSV output path is required.
-
-Processing order:
+The `run` command calls Switchboard in this order:
 
 ```text
-createPreview -> reviewSegmentationPreview -> manipulateImages
-              -> createOCR -> reviewOCRPreview -> generateExport
+createPreview
+  -> reviewSegmentationPreview
+  -> manipulateImages
+  -> createOCR
+  -> reviewOCRPreview
+  -> generateExport
 ```
 
-`run` also supports:
-
-- Resume is **enabled by default**: Switchboard may reuse an existing job state. Use `--no-resume` to opt out. Whether completed work is skipped depends on backend stage eligibility. If job state already exists, opting out may make Switchboard reject creating a new job; it does not delete or reset existing data.
-- `-A, --auto-approve-threshold <0-100>`: validate an integer percentage, convert it to 0.0–1.0 and pass it to segmentation review. **The backend must actually honour the threshold**; the CLI does not decide which images are approved.
-
-Example:
+`run` and `preview create` **enable resume by default**: the CLI passes `permitExisting = true` to `createPreview`, allowing Switchboard to reuse existing job state. Pass `--no-resume` to request `permitExisting = false` instead. **This flag does not erase a job**; if a job already exists, Switchboard may reject creation rather than overwrite it. Whether finished work is skipped depends on backend eligibility rules.
 
 ```powershell
-.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv" -A 95'
+.\gradlew.bat :app:run --args='preview create -i "C:\Archive Photos\Batch 01" --no-resume'
 ```
 
-To request a new job instead of reusing an existing one:
+For `run` and `preview review`, `-A, --auto-approve-threshold` accepts an integer percentage between 0 and 100; the CLI converts it to a value between 0.0 and 1.0 for Switchboard. Approval decisions are made by the backend, not the CLI.
+
+## Individual commands
+
+Each stage can target the **same directory explicitly**, without changing the terminal working directory:
 
 ```powershell
-.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv" --no-resume'
+.\gradlew.bat :app:run --args='preview create -i "C:\Archive Photos\Batch 01"'
+.\gradlew.bat :app:run --args='preview review -i "C:\Archive Photos\Batch 01"'
+.\gradlew.bat :app:run --args='ocr create -i "C:\Archive Photos\Batch 01"'
+.\gradlew.bat :app:run --args='ocr review -i "C:\Archive Photos\Batch 01"'
+.\gradlew.bat :app:run --args='status -i "C:\Archive Photos\Batch 01"'
+.\gradlew.bat :app:run --args='finalise -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"'
 ```
 
-`preview create` also resumes by default; pass `--no-resume` to disable state reuse. This option does **not** erase an existing job.
+These commands represent *successive stages* of the pipeline. Do not execute `ocr create`, `ocr review`, or `finalise` on an unprocessed directory and expect completed output.
 
-## Command reference
+`status` is now implemented in the reviewed Switchboard code and reports progress from the saved job state. Its stage counts reflect the backend's own classification rules. `finalise` **does not rerun segmentation, image manipulation, OCR or review**: it only exports existing processed records.
 
-| Command | Arguments/options | Switchboard action |
-| --- | --- | --- |
-| `run` | `[-i DIR] -o FILE [--no-resume] [-A 0-100]` | All six stages in order |
-| `preview create` | `[-i DIR] [--no-resume]` | `createPreview` |
-| `preview review` | `[-A 0-100]` | `reviewSegmentationPreview` |
-| `ocr create` | none | `manipulateImages`, then `createOCR` |
-| `ocr review` | none | `reviewOCRPreview` |
-| `finalise` | `-o FILE` (required) | `generateExport` **only** |
-| `status` | `[JOB_DIR]` | `getStatus` (backend implementation may be incomplete) |
+## Installed command (without Gradle on every invocation)
 
-`finalize` is an alias for `finalise`. The `-v` / `-q` root options control logging verbosity.
-
-### Important working-directory rule for staged commands
-
-`preview review`, `ocr create`, `ocr review` and `finalise` use the **current process working directory** as the job root; unlike `run`, they do not accept an `-i` option. `status` accepts an optional positional job directory.
-
-When invoking through `:app:run`, the working directory can be determined by Gradle's JavaExec configuration, **not necessarily the PowerShell directory**. For an accurate staged demo, use the application launcher from the job directory.
-
-First create the launch scripts from the repository root:
+For a demo, generate the local application distribution from the repository root:
 
 ```powershell
 .\gradlew.bat :app:installDist
+$launcher = (Get-ChildItem .\app\build\install -Recurse -Filter archivetool.bat | Select-Object -First 1).FullName
+& $launcher --help
 ```
 
-Then change into the photo directory and invoke the generated launcher using its absolute path (adjust both paths):
+The script name is configured as `archivetool.bat`; this example locates it rather than assuming an installation-directory name. Once built, use the same commands without the `:app:run --args=` wrapper:
 
 ```powershell
-Set-Location "C:\Archive Photos\Batch 01"
-& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" preview create
-& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" preview review
-& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" ocr create
-& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" ocr review
-& "C:\path\to\comp30022-uom-archives\app\build\install\app\bin\app.bat" finalise -o "C:\Archive Exports\result.csv"
+& $launcher status -i "C:\Archive Photos\Batch 01"
+& $launcher finalise -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"
 ```
 
-The default Gradle application distribution name is `app` unless the project changes its application name.
+## OCR environment and demo preparation
 
-Job state and intermediate files are under the input directory (for example `.archivetool_generated/job.json`). Do not use that internal directory as the job root.
-
-## OCR configuration
-
-The latest supplied Switchboard snapshot uses an online OCR implementation through an OpenAI-compatible SDK with a Google Gemini endpoint. Configure the **actual backend API key** before a real end-to-end demo. In PowerShell, set a key for the current session without committing it to Git:
+The reviewed Switchboard version uses an online OCR implementation through an OpenAI-compatible Java SDK targeting a Gemini endpoint. Real OCR requires a working API key and internet access. In a PowerShell session, set the key locally; **never commit it to Git**:
 
 ```powershell
 $env:ARCHIVETOOL_API_KEY = "<insert-key-locally>"
 ```
 
-The default implementation requires internet access. The Java SDK is a **Gradle dependency**, not a separate program that the CLI user installs.
+Use a small, previously tested image set for the demo, and coordinate the segmentation/OCR review windows with the presenters. Verify the CSV **contents** as well as the file's existence. Persisted job data is stored under the chosen input directory (e.g., `.archivetool_generated/job.json`).
 
-## What is and is not verified
+## Verification boundary
 
-**CLI code:** command routing, validation, path normalisation, percentage conversion and the intended Switchboard call order are represented in source and parser/unit tests.
+- **CLI unit tests:** command registration, help, option validation, deprecated flags and path utilities.
+- **Integration / end-to-end:** needs separate verification of real images, GUI review, OCR responses, saved job state and final CSV fields. Passing the CLI unit tests alone does not establish these outcomes.
+- **Resume:** CLI defaults and parameter parsing are covered; correct backend recovery from a partially processed job must be checked separately.
 
-**Backend:** the latest provided snapshot still has potential demo blockers that must be checked against Amy's next commit:
-
-- `getStatus()` was unfinished in the last reviewed backend snapshot; do not rely on `status` for a demo until Amy completes it.
-- The segmentation auto-approval threshold is forwarded by the CLI, but must be verified in the backend GUI.
-- Structured OCR metadata conversion and real-image CSV content need an end-to-end check.
-- Default resume depends on persisted Switchboard state and stage eligibility, which parser tests do not exercise.
-
-Demo checklist: build and tests pass; API key and connectivity checked; a small real input batch opens segmentation/OCR review as intended; CSV fields populated; previous working Git commit available as fallback.
+For a final demo, confirm build/tests, API key and connectivity, a representative review flow, populated CSV output and a stable Git commit to fall back to.

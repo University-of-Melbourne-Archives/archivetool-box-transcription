@@ -103,12 +103,12 @@ class CliCommandTest {
     }
 
     @Test
-    fun `preview review exposes auto approve threshold without a job directory`() {
+    fun `preview review exposes input directory and auto approve threshold`() {
         val result = BaseCommand().test("preview review --help")
 
         assertEquals(0, result.statusCode)
+        assertContains(result.output, "--input-directory")
         assertContains(result.output, "--auto-approve-threshold")
-        assertFalse(result.output.contains("Job Directory"))
     }
 
     @Test
@@ -128,19 +128,19 @@ class CliCommandTest {
     }
 
     @Test
-    fun `ocr create is available without a job directory argument`() {
+    fun `ocr create exposes the shared input directory option`() {
         val result = BaseCommand().test("ocr create --help")
 
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "OCR")
-        assertFalse(result.output.contains("Job Directory"))
+        assertContains(result.output, "--input-directory")
     }
 
     @Test
-    fun `ocr review uses the current working directory`() {
+    fun `ocr review allows an explicit input directory`() {
         val result = BaseCommand().test("ocr review --help")
 
         assertEquals(0, result.statusCode)
+        assertContains(result.output, "--input-directory")
         assertContains(result.output, "current working directory")
     }
 
@@ -153,20 +153,20 @@ class CliCommandTest {
     }
 
     @Test
-    fun `finalise no longer takes a job directory`() {
+    fun `finalise supports an input directory and requires an output path`() {
         val result = BaseCommand().test("finalise --help")
 
         assertEquals(0, result.statusCode)
+        assertContains(result.output, "--input-directory")
         assertContains(result.output, "--output")
-        assertFalse(result.output.contains("Job Directory"))
     }
 
     @Test
-    fun `status still accepts a job directory`() {
+    fun `status exposes the shared input directory option`() {
         val result = BaseCommand().test("status --help")
 
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "-i, --input-directory=<path>")
+        assertContains(result.output, "--input-directory")
     }
 
     @Test
@@ -206,9 +206,12 @@ class CliCommandTest {
     }
 
     @Test
-    fun `finalise does not accept an input directory flag`() {
-        val result = BaseCommand().test("finalise -o result.csv --input-directory photos")
+    fun `finalise accepts input directory before validating required output`() {
+        // If -i were unsupported, parsing would fail for an unknown option rather than -o.
+        val result = BaseCommand().test("finalise --input-directory .")
+
         assertEquals(1, result.statusCode)
+        assertContains(result.output, "--output")
     }
 
     @Test
@@ -225,10 +228,11 @@ class CliCommandTest {
     }
 
     @Test
-    fun `status help does not promise an implemented backend`() {
-        val result = BaseCommand().test("status --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "Switchboard")
+    fun `status rejects an input directory that does not exist`() {
+        val result = BaseCommand().test("status -i __missing_archivetool_test_job__")
+
+        assertEquals(1, result.statusCode)
+        assertContains(result.output, "__missing_archivetool_test_job__")
     }
 
     @Test
