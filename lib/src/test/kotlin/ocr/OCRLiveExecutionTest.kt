@@ -24,7 +24,7 @@ class OCRLiveExecutionTest {
     // as "irrelevant"
     //   may differ from one person to another.
 
-    // Disabled on CI because CI doesn't have an API key set-up.
+    // Disabled on CI either way.
     @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `extract info from test image 01`() {
@@ -48,7 +48,7 @@ class OCRLiveExecutionTest {
         assertContains(output.description, "direct interests", ignoreCase = true)
     }
 
-    // Disabled on CI because CI doesn't have an API key set-up.
+    // Disabled on CI either way.
     @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
     @Test
     fun `extract info from test image 02`() {

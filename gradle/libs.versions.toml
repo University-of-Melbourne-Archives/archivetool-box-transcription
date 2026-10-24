@@ -37,11 +37,14 @@ javacv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv" }
 csv = { module = "com.jsoizo:kotlin-csv", version = "2.0.0" }
 # UML Generator, used for docs purposes.
 kotlin2plantuml = { module = "io.github.kelvindev15:Kotlin2PlantUML", version = "3.0.16"}
+# Parameterised Test Support
+junitparams = { module = "org.junit.jupiter:junit-jupiter-params", version = "5.1.0"}
 
 [bundles]
 kotlinEcosystem = ["kotlinReflect", "kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines", "kotlinxCoroutinesSwing"]
 clikt = ["clikt", "clikt-markdown"]
 polyglot = ["polyglot", "polyglot-python"]
+junit = ["junitparams"]
 
 [plugins]
 # Serializaition Codegen Plugin

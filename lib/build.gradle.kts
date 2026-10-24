@@ -24,6 +24,5 @@ dependencies {
     doodle()
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
-    // For OCR Test
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.1.0")
+    testImplementation(libs.bundles.junit)
 }
