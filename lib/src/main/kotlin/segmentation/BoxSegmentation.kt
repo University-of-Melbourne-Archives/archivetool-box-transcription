@@ -55,7 +55,7 @@ object BoxSegmentation {
         }
     }
 
-    private class Detection(val label: String, val score: Double, val polygon: Polygon)
+    internal class Detection(val label: String, val score: Double, val polygon: Polygon)
 
     private class Model(
         val session: OrtSession,
@@ -121,7 +121,7 @@ object BoxSegmentation {
     }
 
     /** Intersection over union of two polygons' axis-aligned bounding boxes. */
-    private fun iou(a: Polygon, b: Polygon): Double {
+    internal fun iou(a: Polygon, b: Polygon): Double {
         val w = (min(a.xMax, b.xMax) - max(a.xMin, b.xMin)).coerceAtLeast(0)
         val h = (min(a.yMax, b.yMax) - max(a.yMin, b.yMin)).coerceAtLeast(0)
         val inter = w.toDouble() * h
@@ -134,7 +134,7 @@ object BoxSegmentation {
      * [iouThreshold], only the most confident is kept. The end2end model skips NMS, so duplicates
      * can otherwise get through.
      */
-    private fun List<Detection>.suppressOverlaps(iouThreshold: Double = 0.5): List<Detection> =
+    internal fun List<Detection>.suppressOverlaps(iouThreshold: Double = 0.5): List<Detection> =
         sortedByDescending { it.score }
             .fold(listOf()) { kept, d ->
                 if (kept.any { it.label == d.label && iou(it.polygon, d.polygon) > iouThreshold })
@@ -157,7 +157,7 @@ object BoxSegmentation {
             Model(session, names, inH, inW)
         }
 
-    private class Letterboxed(
+    internal class Letterboxed(
         val padded: Mat,
         val r: Double,
         val left: Int,
@@ -169,7 +169,7 @@ object BoxSegmentation {
     /**
      * Resizes an image to fit the model input while keeping aspect ratio, padding the rest grey.
      */
-    private fun letterbox(image: Mat, inH: Int, inW: Int): Letterboxed {
+    internal fun letterbox(image: Mat, inH: Int, inW: Int): Letterboxed {
         val h = image.rows()
         val w = image.cols()
         val r = min(inH.toDouble() / h, inW.toDouble() / w)
@@ -331,7 +331,7 @@ object BoxSegmentation {
     )
 
     /** Gets corners of a (not axis-aligned) polygon by simplifying its convex hull to 4 points. */
-    private fun Polygon.cornerPoints(): Quad {
+    internal fun Polygon.cornerPoints(): Quad {
         val hull = convexHull()
         val perimeter = CV.perimeter(hull.vertices.toList(), true)
 
