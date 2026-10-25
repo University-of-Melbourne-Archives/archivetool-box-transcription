@@ -9,6 +9,7 @@ import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.getBoxes
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.iou
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.letterbox
 import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.suppressOverlaps
+import au.edu.unimelb.archivetool.segmentation.BoxSegmentation.toArchiveBoxes
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.util.error.expect
 import au.edu.unimelb.archivetool.util.math.geometry.Point
@@ -148,6 +149,50 @@ class BoxSegmentationTest {
         assertEquals(1, dets.suppressOverlaps(iouThreshold = 0.2).size)
         assertEquals(2, dets.suppressOverlaps(iouThreshold = 0.5).size)
         assertEquals(listOf<Detection>(), listOf<Detection>().suppressOverlaps())
+    }
+
+    @Test
+    fun toArchiveBoxesAssignsStickerOutsideBoxToOverlappingBox() {
+        val boxes =
+            listOf(
+                    Detection("Box", 0.9, rect(0, 0, 100, 100)),
+                    Detection("Box", 0.8, rect(200, 0, 300, 100)),
+                    Detection("Sticker", 0.7, rect(40, 40, 60, 60)),
+                    // Centred just past the right edge of the second box
+                    Detection("Sticker", 0.6, rect(290, 40, 320, 60)),
+                )
+                .toArchiveBoxes()
+        assertEquals(listOf(0.7), boxes.getValue("box-1").labelBoundaries.map { it.confidence })
+        assertEquals(listOf(0.6), boxes.getValue("box-2").labelBoundaries.map { it.confidence })
+    }
+
+    @Test
+    fun toArchiveBoxesOnlyGivesUnassignedStickersToStickerlessBoxes() {
+        val boxes =
+            listOf(
+                    Detection("Box", 0.9, rect(0, 0, 100, 100)),
+                    Detection("Box", 0.8, rect(200, 0, 300, 100)),
+                    Detection("Sticker", 0.7, rect(40, 40, 60, 60)),
+                    // Overlaps the first box, which already has a sticker
+                    Detection("Sticker", 0.6, rect(95, 40, 120, 60)),
+                    // Both overlap the second box, so the more confident wins
+                    Detection("Sticker", 0.5, rect(290, 40, 320, 60)),
+                    Detection("Sticker", 0.4, rect(290, 70, 320, 90)),
+                    // Overlaps no box, so belongs to one out of frame
+                    Detection("Sticker", 0.3, rect(500, 500, 510, 510)),
+                )
+                .toArchiveBoxes()
+        assertEquals(listOf(0.7), boxes.getValue("box-1").labelBoundaries.map { it.confidence })
+        assertEquals(listOf(0.5), boxes.getValue("box-2").labelBoundaries.map { it.confidence })
+        // A box with no sticker nearby is left without one
+        assertEquals(
+            listOf<Double>(),
+            listOf(Detection("Box", 0.9, rect(0, 0, 100, 100)))
+                .toArchiveBoxes()
+                .getValue("box-1")
+                .labelBoundaries
+                .map { it.confidence },
+        )
     }
 
     @Test
