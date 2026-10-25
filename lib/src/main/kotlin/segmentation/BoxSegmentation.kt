@@ -99,7 +99,9 @@ object BoxSegmentation {
         val boxes =
             filter { it.label == BOX_CLASS }
                 .sortedByDescending { it.score }
-                .mapIndexed { n, d -> "box-${n + 1}" to Boundary(d.polygon.cornerPoints(), d.score) }
+                .mapIndexed { n, d ->
+                    "box-${n + 1}" to Boundary(d.polygon.cornerPoints(), d.score)
+                }
 
         val stickers = mutableMapOf<String, List<Boundary>>()
         val unassigned = mutableListOf<Boundary>()
