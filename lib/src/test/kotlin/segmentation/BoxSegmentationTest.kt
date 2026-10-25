@@ -52,7 +52,7 @@ class BoxSegmentationTest {
         val image =
             JobRelativePath(
                 Path(".").toAbsolutePath().parent,
-                Path("src/test/resources/switchboard.SwitchboardTest/PXL_20251127_230150462.jpg"),
+                Path("src/test/resources/SwitchboardTest/PXL_20251127_230150462.jpg"),
             )
         // Relative paths resolve against the working directory, so print it if a file can't be
         // found
