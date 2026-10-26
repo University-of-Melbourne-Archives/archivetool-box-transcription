@@ -241,6 +241,3 @@ On the other hand, a local model may be slower, hardware-intensive, and produce 
 [^2]: Or to add it to `$PATH`, if you are so inclined.
 
 [^3]: The specifics are described in [`Platform`](lib/src/main/kotlin/util/os/Platform.kt)
-
-
-ONE MORE TODO BEFORE IF FORGET, MAKE SURE THE CLI OFFERS SOURCE CODE SOMEWHERE.

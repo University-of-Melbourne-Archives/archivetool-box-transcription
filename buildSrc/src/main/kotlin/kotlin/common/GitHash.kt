@@ -6,9 +6,12 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.getByType
 
+const val TRIPLE_QUOTE = "\"\"\""
+
 object GitHash : Module {
     override fun configure(project: Project) = with(project) {
         val gitDir = "${rootDir}/.git"
+
         val generateHashConstant = tasks.maybeRegister("get-git-hash") {
             val hash = project.providers
                 .exec {
@@ -28,6 +31,12 @@ object GitHash : Module {
                         }.standardOutput.asText.get().takeIf {it.isEmpty()} ?: " (dirty working tree)")
                 }
             val outDir = layout.buildDirectory.dir("generated/git")
+
+            val repoUrl = findProperty("archivetool.repository_url")
+                ?.toString()
+                ?.trim()
+                ?.also { if (it.contains(TRIPLE_QUOTE)) error("Repository URL was unable to be escaped.") }
+
             inputs.dir(gitDir)
             outputs.dir(outDir)
             doLast {
@@ -39,6 +48,7 @@ object GitHash : Module {
         
                     object Git {
                         const val HASH: String = "$hash";
+                        const val REPOSITORY_URL = $TRIPLE_QUOTE$repoUrl$TRIPLE_QUOTE;
                     }
                     """.trimIndent()
                 )

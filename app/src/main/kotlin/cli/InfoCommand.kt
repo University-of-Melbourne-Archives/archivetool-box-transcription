@@ -46,6 +46,10 @@ class InfoCommand : Command(name = "info") {
             You should have received a copy of the GNU Affero General Public License
             along with this program. If not, see <https://www.gnu.org/licenses/>.
             
+            Additionally, if you wish to have access to the source-code,
+            either request it from the person who provided you this program,
+            or find the 'canonical' source code at ${Git.REPOSITORY_URL}
+            
             $configMsg
             """
                 .trimIndent()
