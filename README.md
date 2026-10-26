@@ -85,7 +85,9 @@ In particular, it will run the following:
 6. CSV Export
 
 Alternatively, you can run the individual steps separately 
-or pass additional options, as described in [`docs/CLI.md`](docs/CLI.md) or by running `/path/to/archivetool --help`.
+or pass additional options, as described in [`docs/CLI.md`](docs/CLI.md).  
+You can see the specifics of a given command by running 
+`/path/to/archivetool --help` or `/path/to/archivetool <command> --help`.
 
 ## Building
 This project uses [Gradle](https://gradle.org/).
