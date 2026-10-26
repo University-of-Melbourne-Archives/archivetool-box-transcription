@@ -57,8 +57,7 @@ Next, you will need to set up the LLM you plan to use.
   The exact location depends on platform and system configuration[^3], but it is usually at:
   - `%APPDATA%/archivetool/config.json` (i.e. `C:/Users/<YOUR_NAME>/AppData/Roaming/archivetool/config.json`) on Windows
   - `~/Library/Application Support/archivetool/config.json` on macOS
-  - and `$XDG_CONFIG_HOME/archivetool/config.json` (i.e. `~/.config/archivetool/config.json`) on Linux and other platforms.       
-  
+  - and `$XDG_CONFIG_HOME/archivetool/config.json` (i.e. `~/.config/archivetool/config.json`) on Linux and other platforms.
 
 
 Finally, you will need to decide on where you want the manifest to be output (as a CSV file).
@@ -101,9 +100,9 @@ Additionally, if you wish to build the Python module, you will need to enable it
 - Run `./gradlew build` to only build the application.
 - Run `./gradlew check` to run all checks, including tests.
 - Run `./gradlew clean` to clean all build outputs.
-- You can install `archivetool` to your system with `./gradlew installDist`.
 
-Finally, after `./gradlew build`, the distribution archives (`.zip` and `.tar`) are available in [`app/build/distributions`](app/build/distributions).
+After `./gradlew build`, the distribution archives (`.zip` and `.tar`) are available in [`app/build/distributions`](app/build/distributions).
+Or, you can run `./gradlew installDist` to generate a non-archived version of this distribution in [`app/build/install`](app/build/install).
 
 This project is multi-module with the CLI living in `app`, and the core OCR library living in `lib`, and Python code in `python`.
 As much of possible of the shared build logic is extracted to a convention plugin located in `buildSrc`.
