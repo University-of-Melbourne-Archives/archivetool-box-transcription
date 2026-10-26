@@ -1,6 +1,11 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
+import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.FileConsumer
+import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRPreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.SegmentationPreviewInteraction
@@ -154,6 +159,67 @@ class CliCommandTest {
             assertTrue(Files.size(output) > 0)
         } finally {
             Files.deleteIfExists(output)
+        }
+    }
+
+    @Test
+    fun `log file and stderr use separate levels`() {
+        val consumers = mutableSetOf<LogConsumer>()
+        val init = object : InitInteraction {
+            override fun init(logConsumers: Set<LogConsumer>) {
+                consumers.clear()
+                consumers.addAll(logConsumers)
+            }
+
+            override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
+        }
+        val switchboard = MockSwitchboard.with(init)
+        val directory = Files.createTempDirectory("cli-logging-")
+        val logFile = directory.resolve("archivetool.log")
+        try {
+            val result =
+                BaseCommand(switchboard)
+                    .test("-vv", "-L", logFile.toString(), "-Q", "status", "-i", directory.toString())
+            assertEquals(0, result.statusCode, result.output)
+            assertEquals(LogLevel.Trace, consumers.filterIsInstance<StderrConsumer>().single().maxLogLevel)
+            val fileConsumer = consumers.filterIsInstance<FileConsumer>().single()
+            assertEquals(LogLevel.Warn, fileConsumer.maxLogLevel)
+
+            // FileConsumer is already part of the logging library.
+            fileConsumer.recordLogEntry("Example log entry\n")
+            assertContains(Files.readString(logFile), "Example log entry")
+        } finally {
+            Files.deleteIfExists(logFile)
+            Files.deleteIfExists(directory)
+        }
+    }
+
+    @Test
+    fun `file logging can stay enabled when stderr is quiet`() {
+        val consumers = mutableSetOf<LogConsumer>()
+        val init = object : InitInteraction {
+            override fun init(logConsumers: Set<LogConsumer>) {
+                consumers.clear()
+                consumers.addAll(logConsumers)
+            }
+
+            override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
+        }
+        val directory = Files.createTempDirectory("cli-quiet-logging-")
+        try {
+            val result = BaseCommand(MockSwitchboard.with(init)).test(
+                "-qqq", "-L", directory.resolve("run.log").toString(), "-V",
+                "status", "-i", directory.toString(),
+            )
+            assertEquals(0, result.statusCode, result.output)
+            assertTrue(consumers.none { it is StderrConsumer })
+            assertEquals(LogLevel.Debug, consumers.filterIsInstance<FileConsumer>().single().maxLogLevel)
+
+            val missingFile = BaseCommand(MockSwitchboard).test("-V", "status", "-i", directory.toString())
+            assertEquals(1, missingFile.statusCode)
+            assertContains(missingFile.output, "--log-file")
+        } finally {
+            Files.deleteIfExists(directory)
         }
     }
 
