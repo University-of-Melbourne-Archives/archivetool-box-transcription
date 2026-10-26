@@ -50,7 +50,7 @@ class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
                         "-v",
                         "--verbose",
                         help =
-                            "Enable more verbose logging${Cli.newLineChar}Can be added multiple times to further increase verbosity",
+                            "Increase console log verbosity${Cli.newLineChar}Can be added multiple times to further increase verbosity",
                     )
                     .countedTransform(limit = 2, clamp = true) {
                         Optional.of(
@@ -65,7 +65,7 @@ class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
                         "-q",
                         "--quiet",
                         help =
-                            "Disable a level of logging${Cli.newLineChar}Can be added multiple times to silence more logs",
+                            "Decrease console log verbosity${Cli.newLineChar}Can be added multiple times to silence more logs",
                     )
                     .countedTransform(limit = 3, clamp = true) {
                         when (it) {
@@ -88,7 +88,7 @@ class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
                 option(
                         "-V",
                         help =
-                            "Increase log file verbosity${Cli.newLineChar}Repeat to include trace messages",
+                            "Increase log file verbosity${Cli.newLineChar}Can be added multiple times to further increase verbosity",
                     )
                     .countedTransform(limit = 2, clamp = true) {
                         Optional.of(
@@ -102,7 +102,7 @@ class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
                 option(
                         "-Q",
                         help =
-                            "Reduce log file verbosity${Cli.newLineChar}Repeat to silence more messages",
+                            "Decrease log file verbosity${Cli.newLineChar}Can be added multiple times to silence more logs",
                     )
                     .countedTransform(limit = 3, clamp = true) {
                         when (it) {

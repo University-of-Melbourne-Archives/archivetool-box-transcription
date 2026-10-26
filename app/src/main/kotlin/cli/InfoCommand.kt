@@ -13,7 +13,7 @@ class InfoCommand : Command(name = "info") {
 
     override fun help(context: Context): String =
         """
-        Displays Legal and System Information about archivetool
+        Display Legal and System Information about archivetool
         """
             .trimIndent()
 

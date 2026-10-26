@@ -12,7 +12,7 @@ class PreviewCreateCommand(private val switchboard: AbstractSwitchboard) : Comma
 
     override fun help(context: Context): String =
         """
-        Create previews from a directory of archive images.
+        Create previews from a directory of archive images
 
         Any existing job state is reused by default; use --no-resume to disable reuse
         """
@@ -21,7 +21,7 @@ class PreviewCreateCommand(private val switchboard: AbstractSwitchboard) : Comma
     private val inputDirectory by inputDirectory()
 
     private val noResume by
-        option("--no-resume", help = "Do not reuse any existing job state")
+        option("--no-resume", help = "Prevent reuse of any existing job state")
             .flag(default = false)
 
     override fun run() {

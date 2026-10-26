@@ -15,14 +15,14 @@ class FinaliseCommand(private val switchboard: AbstractSwitchboard) : Command(na
 
     override fun help(context: Context): String =
         """
-        Export existing processed job data to a CSV file
+        Export processed job data to a CSV file
         """
             .trimIndent()
 
     private val inputDirectory by inputDirectory()
 
     private val outputPath by
-        option("-o", "--output", help = "Path for the generated CSV file.")
+        option("-o", "--output", help = "Path for the generated CSV file")
             .path(mustExist = false, canBeDir = false)
             .required()
 

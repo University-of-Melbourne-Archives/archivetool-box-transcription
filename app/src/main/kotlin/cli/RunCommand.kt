@@ -19,22 +19,28 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
 
     override fun help(context: Context): String =
         """
-        Run the complete archive processing workflow.
+        Run the complete processing workflow
 
-        Processes archive images and writes a final CSV output
-        Any existing job state is reused by default; use --no-resume to disable reuse
+        Equivalent to running the following commands in order:
+        - `preview create`
+        - `preview review`
+        - `ocr create`
+        - `ocr review`
+        - `finalise`
+        
+        Options behave identically in the subcommand that they are inherited from
         """
             .trimIndent()
 
     private val inputDirectory by inputDirectory()
 
     private val outputPath by
-        option("-o", "--output", help = "Path for the generated CSV file.")
+        option("-o", "--output", help = "Path for the generated CSV file (finalise)")
             .path(mustExist = false, canBeDir = false)
             .required()
 
     private val noResume by
-        option("--no-resume", help = "Do not reuse any existing job state")
+        option("--no-resume", help = "Prevent reuse of any existing job state (preview create)")
             .flag(default = false)
 
     private val autoApproveThreshold by
@@ -43,7 +49,7 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
                 "--auto-approve-threshold",
                 metavar = "threshold",
                 help =
-                    "Segmentation confidence threshold in percent (0-100)",
+                    "[0-100] Threshold (as a percentage) that defines the minimum confidence of an image for it to be approved automatically (preview review)",
             )
             .int()
             .restrictTo(0, 100)

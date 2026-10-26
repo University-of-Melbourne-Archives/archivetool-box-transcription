@@ -10,7 +10,7 @@ class StatusCommand(private val switchboard: AbstractSwitchboard) : Command(name
 
     override fun help(context: Context): String =
         """
-        Show the progress of the job in the selected directory.
+        Show the progress of the job in the selected directory
         """
             .trimIndent()
 

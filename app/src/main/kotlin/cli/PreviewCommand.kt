@@ -9,7 +9,7 @@ import com.github.ajalt.clikt.core.Context
 /** Commands for checking detected boxes. */
 class PreviewCommand(switchboard: AbstractSwitchboard) :
     Command(name = "preview", subcommands = setOf(PreviewCreateCommand(switchboard), PreviewReviewCommand(switchboard))) {
-    override fun help(context: Context) = "Generate and review box-detection previews."
+    override fun help(context: Context) = "Generate and review box-detection previews"
 
     // Work is performed by the registered subcommands.
     override fun run() = Unit

@@ -9,7 +9,7 @@ import com.github.ajalt.clikt.core.Context
 /** Commands for creating and reviewing OCR results. */
 class OCRCommand(switchboard: AbstractSwitchboard) :
     Command(name = "ocr", subcommands = setOf(OCRCreateCommand(switchboard), OCRReviewCommand(switchboard))) {
-    override fun help(context: Context) = "Create and review OCR output."
+    override fun help(context: Context) = "Create and review OCR output"
 
     override fun run() = Unit
 }
