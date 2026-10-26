@@ -35,26 +35,28 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
       - name: Build a Multi-Platform Distribution with Gradle
-        run: ./gradlew app:distTar -x check -x test # Tests and Checks happen in the other workflow.
+        run: ./gradlew app:assembleDist -x check -x test # Tests and Checks happen in the other workflow.
       - name: Copy Distribution out of Build Directory
-        run: cp ./app/build/distributions /tmp/dist && cd /tmp/dist
+        run: cp -r ./app/build/distributions /tmp/dist && cd /tmp/dist
+      - name: Compress TAR distribution
+        run: gzip -9vk /tmp/dist/archivetool-cli.tar
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-         name: archivetool-cli-zip
+         name: archivetool-cli.tar.gz
          path: /tmp/dist/archivetool-cli.zip
-         compression-level: 9
+         archive: false
          retention-days: 1
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: archivetool-cli-tar
-          path: /tmp/dist/archivetool-cli.tar
-          compression-level: 9
+          name: archivetool-cli.tar.gz
+          path: /tmp/dist/archivetool-cli.tar.gz
+          archive: false
           retention-days: 1
 
   create_release:
-    needs: build_multiple_os
+    needs: build
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.job-name != 'build' }}
     steps:

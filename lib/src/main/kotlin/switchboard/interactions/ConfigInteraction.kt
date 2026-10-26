@@ -17,7 +17,15 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 
 class JSONConfigInteraction : ConfigInteraction {
-    val json by lazy { Json { prettyPrint = true } }
+    val json by lazy {
+        Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+            isLenient = true
+            allowTrailingComma = true
+            allowComments = true
+        }
+    }
     val filePath by lazy { Platform.configPath().resolve("config.json") }
 
     override fun getConfig(): Config {

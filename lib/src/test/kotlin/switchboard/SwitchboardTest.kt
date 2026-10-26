@@ -1,8 +1,11 @@
+package switchboard
+
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
 import au.edu.unimelb.archivetool.switchboard.jobstate.ArchiveBox
 import au.edu.unimelb.archivetool.switchboard.jobstate.Boundary
 import au.edu.unimelb.archivetool.switchboard.jobstate.BoxMetadata
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.RecordSetID
@@ -14,16 +17,18 @@ import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StringConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
+import baseFiles
 import kotlin.collections.mutableMapOf
 import kotlin.io.path.Path
+import kotlin.io.path.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
-import kotlin.io.path.toPath
 
 class SwitchboardTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -357,5 +362,123 @@ class SwitchboardTest {
                 .toRegex(RegexOption.MULTILINE)
                 .find(log))
         )
+    }
+
+    @Test
+    fun `only process files valid for a given step`() = runTest {
+        val consumer = StringConsumer(LogLevel.Trace)
+        Log.registerConsumer(consumer)
+
+        cacheLock.lock("merge_runs")
+        val cacheGuard = cache.writeLock()
+        val cache = cacheGuard.value
+
+        cache.put(
+            directory,
+            ConcreteJobState(
+                directory,
+                starterState =
+                    baseFiles
+                        .mapValues {
+                            it.value.run {
+                                JobFile(
+                                    approved = true,
+                                    vertexes =
+                                        mutableMapOf(
+                                            "box-1" to
+                                                ArchiveBox(
+                                                    Boundary(
+                                                        Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                        confidence = 1.0,
+                                                        rawMetadata =
+                                                            BoxMetadata(
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                description = "test1",
+                                                            ),
+                                                    ),
+                                                    listOf(
+                                                        Boundary(
+                                                            Quad.create(
+                                                                0 to 0,
+                                                                1 to 0,
+                                                                1 to 1,
+                                                                0 to 1,
+                                                            ),
+                                                            confidence = 0.5,
+                                                            rawMetadata =
+                                                                BoxMetadata(
+                                                                    RecordSetID.OldID("1976.0276"),
+                                                                    1,
+                                                                    DateRange(
+                                                                        LocalDate(
+                                                                            year = 1971,
+                                                                            month = 1,
+                                                                            day = 1,
+                                                                        ),
+                                                                        null,
+                                                                    ),
+                                                                    description = "test2",
+                                                                ),
+                                                        )
+                                                    ),
+                                                    metadata =
+                                                        BoxMetadata(
+                                                            RecordSetID.OldID("1976.0276"),
+                                                            1,
+                                                            DateRange(
+                                                                LocalDate(
+                                                                    year = 1971,
+                                                                    month = 1,
+                                                                    day = 1,
+                                                                ),
+                                                                null,
+                                                            ),
+                                                            description = "test1;test2",
+                                                        ),
+                                                )
+                                        ),
+                                )
+                            }
+                        }
+                        .toMutableMap(),
+            ),
+        )
+        cache
+            .get(directory)!!
+            .update(
+                mapOf(
+                    JobRelativePath(directory, Path("PXL_20251127_230317928.jpg")) to
+                        JobFile(
+                            vertexes =
+                                mutableMapOf(
+                                    "box-1" to
+                                        ArchiveBox(
+                                            Boundary(
+                                                Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                confidence = 1.0,
+                                            ),
+                                            listOf(
+                                                Boundary(
+                                                    Quad.create(0 to 0, 1 to 0, 1 to 1, 0 to 1),
+                                                    confidence = 0.5,
+                                                )
+                                            ),
+                                        )
+                                )
+                        )
+                )
+            )
+
+        cacheGuard.release()
+
+        MockSwitchboard.reviewSegmentationPreview(directory)
+
+        cacheLock.unlock("merge_runs")
+        Log.revokeConsumer(consumer)
+        val log = consumer.getLog()
+
+        assertContains(log, "1 total files, 0 above auto-approval threshold 1.0")
     }
 }

@@ -2,6 +2,7 @@ package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.switchboard.Switchboard
+import au.edu.unimelb.archivetool.util.Git
 import au.edu.unimelb.archivetool.util.os.Platform
 import com.github.ajalt.clikt.core.Context
 import kotlin.io.path.notExists
@@ -29,7 +30,7 @@ class InfoCommand : Command(name = "info") {
 
         println(
             """
-            archivetool -- Archive Digitisation Software
+            archivetool -- Archive Digitisation Software (commit ${Git.HASH})
             Copyright $COPYRIGHT_SYM 2026 The University of Melbourne
     
             This program is free software: you can redistribute it and/or modify
@@ -44,6 +45,10 @@ class InfoCommand : Command(name = "info") {
     
             You should have received a copy of the GNU Affero General Public License
             along with this program. If not, see <https://www.gnu.org/licenses/>.
+            
+            Additionally, if you wish to have access to the source-code,
+            either request it from the person who provided you this program,
+            or find the 'canonical' source code at ${Git.REPOSITORY_URL}
             
             $configMsg
             """

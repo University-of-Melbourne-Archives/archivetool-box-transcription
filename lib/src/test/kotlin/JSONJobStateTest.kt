@@ -22,6 +22,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.pathString
 import kotlin.io.path.readText
+import kotlin.io.path.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -32,7 +33,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.assertDoesNotThrow
-import kotlin.io.path.toPath
 
 class JSONJobStateTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)

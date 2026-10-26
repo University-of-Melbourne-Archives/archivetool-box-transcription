@@ -17,7 +17,8 @@ data class DeclarationMetadata(
     val companionMembers: List<String> = emptyList(),
     val companionAssociations: List<UmlCombiner.Relation> = emptyList(),
     val annotations: List<String> = emptyList(),
-    val visibility: String = ""
+    val visibility: String = "",
+    val isSealed: Boolean = false,
 )
 
 object UmlCombiner {
@@ -219,12 +220,11 @@ object UmlCombiner {
                         if (owner != null) {
                             val ownerAlias = aliasFor(owner)
                             if (metadata.isInner) {
-                                // Inner classes have a strong ownership/composition relationship
-                                blocks += "$ownerAlias *-- ${version.alias}"
+                                blocks += "$ownerAlias +-- ${version.alias}"
                             } else {
                                 // Non-inner static nested classes use a clean association or
                                 // aggregation link
-                                blocks += "$ownerAlias o-- ${version.alias}"
+                                blocks += "$ownerAlias +.. ${version.alias}"
                             }
                         }
                     }
@@ -235,6 +235,7 @@ object UmlCombiner {
         return buildString {
             appendLine("@startuml")
             appendLine("!pragma layout elk")
+            appendLine("allowmixing")
             appendLine("top to bottom direction")
             appendLine("hide empty members")
             // appendLine("hide circle")
@@ -243,6 +244,7 @@ object UmlCombiner {
             appendLine("skinparam nodesep 15")
             appendLine("skinparam ranksep 25")
             appendLine("skinparam node {\n\tBackgroundColor #AAAAAA\n}")
+            appendLine("skinparam class {\n\tBackgroundColor<<sealed>> Moccasin\n}")
 
             // Render external classes and external annotations cleanly in their own package
             if (externalClasses.isNotEmpty() || externalAnnotations.isNotEmpty()) {
@@ -375,7 +377,10 @@ object UmlCombiner {
                     matches.fold(it) { s, match ->
                         val params = match.groups["n"]!!.value.toInt()
                         val types = match.groups["types"]!!.value.split(", ")
-                        s.replace(match.value, "(${types.take(params).joinToString()}) -> ${types.last()}")
+                        s.replace(
+                            match.value,
+                            "(${types.take(params).joinToString()}) -> ${types.last()}",
+                        )
                     } + " {field}"
                 } else it
             }
@@ -460,21 +465,20 @@ object UmlCombiner {
             }
     }
 
-    private fun edge(owner: String, target: String, multiplicity: String?, label: String? = null, qualifier: String? = null): String =
-        buildString {
-            append(owner)
-            qualifier?.let {
-                append(" [$qualifier] ")
-            } ?: append("\"1\"")
-            append(" -->")
-            multiplicity?.let {
-                append(" \"").append(multiplicity).append('"')
-            }
-            append(' ').append(target)
-            label?.let {
-                append(" : ").append(label)
-            }
-        }
+    private fun edge(
+        owner: String,
+        target: String,
+        multiplicity: String?,
+        label: String? = null,
+        qualifier: String? = null,
+    ): String = buildString {
+        append(owner)
+        qualifier?.let { append(" [$qualifier] ") } ?: append("\"1\"")
+        append(" -->")
+        multiplicity?.let { append(" \"").append(multiplicity).append('"') }
+        append(' ').append(target)
+        label?.let { append(" : ").append(label) }
+    }
 
     private val methodRegex = Regex("""^ {4}[+~#-]\w+\((?<params>.*?)\): (?<ret>.+)$""")
 
@@ -503,7 +507,14 @@ object UmlCombiner {
                 if (targets.isNotEmpty()) {
                     val label = attrMatch.groups["name"]!!.value
                     targets.forEach { (target, multiplicity) ->
-                        edges += edge(ownerAlias, target, multiplicity, label = label, qualifier = "$label: $typeStr")
+                        edges +=
+                            edge(
+                                ownerAlias,
+                                target,
+                                multiplicity,
+                                label = label,
+                                qualifier = "$label: $typeStr",
+                            )
                     }
                     continue
                 }
@@ -551,7 +562,7 @@ object UmlCombiner {
                             edges += $$"$$ownerAlias ..> $$targetAlias : uses"
                         }
                     }
-                }
+            }
 
             kept += line
         }
@@ -663,6 +674,7 @@ object UmlCombiner {
 
         val stereotypes = buildList {
             if (metadata?.isObject == true) add("object")
+            if (metadata?.isSealed == true) add("sealed")
             if (header.groups["kw"]!!.value.endsWith("interface")) add("interface")
             // Include external or custom annotations as stereotypes if present
             metadata?.annotations?.forEach { add("@$it") }
@@ -670,17 +682,21 @@ object UmlCombiner {
 
         val stereotypePrefix =
             stereotypes
-                .filterNot { it == "object" }
+                .filter { it.startsWith("@") }
                 .takeUnless { it.isEmpty() }
-                ?.joinToString("", prefix = "<i>", postfix = "</i>\\n") {
-                    if (it.startsWith("@")) {
-                        "$it "
-                    } else {
-                        "<<$it>> "
-                    }
-                } ?: ""
+                ?.joinToString(" ", prefix = "<i>", postfix = "</i>\\n") { it } ?: ""
 
-        val stereotypeSuffix = if (stereotypes.contains("object")) {"<< (O,#FF7700) object >>"} else {""}
+        val stereotypeSuffix =
+            (stereotypes
+                .filterNot { it == "object" }
+                .filterNot { it.startsWith("@") }
+                .takeUnless { it.isEmpty() }
+                ?.joinToString(" ") { "<<$it>>" } ?: "") +
+                if (stereotypes.contains("object")) {
+                    "<< (O${if (!stereotypes.contains("sealed")) {",#FF7700"} else {""}}) object >>"
+                } else {
+                    ""
+                }
 
         val match = "(\\w+)\\s*(<\\w+(?:,\\s*\\w+)*>)".toRegex().find(display)
         val name =
@@ -689,10 +705,14 @@ object UmlCombiner {
             } else {
                 display + '"'
             }
-        val first = "${metadata?.visibility}${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias $stereotypeSuffix {"
+        val first =
+            "${metadata?.visibility}${header.groups["kw"]!!.value} \"$stereotypePrefix$name as $alias $stereotypeSuffix"
         val members =
             lines.drop(1).map { line -> if (metadata?.isObject == true) markStatic(line) else line }
-        return (listOf(first) + members).joinToString("\n")
+        if (members.filterNot { it.trim() == "}" }.isEmpty()) {
+            return first + "\n"
+        }
+        return (listOf(first + " {") + members + "").joinToString("\n")
     }
 
     private fun markStatic(line: String): String {

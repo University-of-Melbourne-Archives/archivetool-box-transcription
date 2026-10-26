@@ -24,4 +24,5 @@ dependencies {
     doodle()
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinxCoroutinesTest)
+    testImplementation(libs.bundles.junit)
 }

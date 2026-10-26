@@ -3,7 +3,6 @@ package au.edu.unimelb.archivetool.util
 import au.edu.unimelb.archivetool.util.extension.DISTANT_FUTURE
 import au.edu.unimelb.archivetool.util.extension.isDistantFuture
 import au.edu.unimelb.archivetool.util.extension.tightestBoundsWithSentinel
-import java.time.format.DateTimeParseException
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateRange
 import kotlinx.datetime.format
@@ -51,9 +50,7 @@ data class DateRange(val range: LocalDateRange) {
 
     val endDateString by lazy { endDate?.format(dateFormatter) }
 
-    val CSVString by lazy {
-        "$yearRange;$startDateString;" + (endDateString ?: "")
-    }
+    val CSVString by lazy { "$yearRange;$startDateString;" + (endDateString ?: "") }
 
     override fun toString(): String {
         return "DateRange(startDate=$startDate, endDate=$endDate)"
@@ -88,16 +85,23 @@ data class DateRange(val range: LocalDateRange) {
                 .runCatching {
                     map { (start, end) ->
                         val startDate =
-                            LocalDate.parse(start.takeIf { it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex()) }
-                                ?: "$start-01-01")
+                            LocalDate.parse(
+                                start.takeIf {
+                                    it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex())
+                                } ?: "$start-01-01"
+                            )
                         val endDate = end?.let {
-                            LocalDate.parse(end.takeIf { it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex()) }
-                                ?: "$start-12-31")
+                            LocalDate.parse(
+                                end.takeIf {
+                                    it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex())
+                                } ?: "$start-12-31"
+                            )
                         }
 
                         DateRange(startDate, endDate)
                     }
-                }.getOrNull()
+                }
+                .getOrNull()
                 ?.tightestBounds()
         }
 

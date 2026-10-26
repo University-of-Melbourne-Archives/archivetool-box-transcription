@@ -13,12 +13,11 @@ import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Rectangle
 import baseFiles
-import kotlin.io.path.Path
+import kotlin.io.path.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
-import kotlin.io.path.toPath
 
 class CLAHEInteractionTest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
@@ -74,7 +73,7 @@ class CLAHEInteractionTest {
                 .toMutableMap()
         CLAHEInteraction().manipulate(files)
         // TODO: Find a better method to verify correctness than manually checking
-        // lib/build/resources/test/SwitchboardTest/
+        // lib/build/resources/test/switchboard.SwitchboardTest/
     }
 
     @SemiManual(

@@ -22,7 +22,7 @@ Other documentation that may be useful if you wish to contribute to further deve
 
 In order to run `archivetool`, you will need:
 - A copy of the software.  
-  You will need to extract the `zip` or `tar` somewhere, and note down the path to `bin/archivetool.bat` script on Windows, and the `bin/archivetool` script on MacOS or Linux.[^2]
+  You will need to extract the `zip` or `tar` somewhere, and note down the path to `bin/archivetool.bat` script on Windows, and the `bin/archivetool` script on macOS or Linux.[^2]
 - A Java Runtime that supports at least Java 21.  
 _You likely already have this installed, or you can download it for your platform at [getjdk.com](https://getjdk.com/?version=21&os=any&arch=any&distribution=oracle&package=any>)._
 - An OpenAI-compatible language model that supports the Chat-Completions endpoint and Vision.  
@@ -41,7 +41,7 @@ Place these images inside a folder on the system you plan to run `archivetool` o
 
 Then you will need to open a terminal in the folder you just created:
 - On Windows, click in the address par at the top of File Explorer, and type `cmd`. 
-- On MacOS, follow [these instructions](https://ladedu.com/how-to-open-a-terminal-window-at-any-folder-from-finder-in-macos/).
+- On macOS, follow [these instructions](https://ladedu.com/how-to-open-a-terminal-window-at-any-folder-from-finder-in-macos/).
 - On Linux, use `cd` or look up how to do this with your file manager.
 
 Next, you will need to set up the LLM you plan to use.
@@ -55,9 +55,9 @@ Next, you will need to set up the LLM you plan to use.
   Remember to save your changes before running `archivetool`. 
   You can see [**Customisation: OCR**](#ocr) for more details on how you can change this.
   The exact location depends on platform and system configuration[^3], but it is usually at:
-  - `%APPDATA%/archivetool/config.json` (ie. `C:/Users/<YOUR_NAME>/AppData/Roaming/archivetool/config.json`) on Windows
-  - `~/Library/Application Support/archivetool/config.json` on MacOS
-  - and `$XDG_CONFIG_HOME/archivetool/config.json` (ie. `~/.config/archivetool/config.json`) on Linux and other platforms.       
+  - `%APPDATA%/archivetool/config.json` (i.e. `C:/Users/<YOUR_NAME>/AppData/Roaming/archivetool/config.json`) on Windows
+  - `~/Library/Application Support/archivetool/config.json` on macOS
+  - and `$XDG_CONFIG_HOME/archivetool/config.json` (i.e. `~/.config/archivetool/config.json`) on Linux and other platforms.       
   
 
 
@@ -66,7 +66,7 @@ If you're unsure, `./manifest.csv` will create a file called `manifest.csv` alon
 
 Then, run the `archivetool` command-line interface.  
 You will need the path to where you extracted the `zip` or `tar`, and the location you want the CSV to output.
-On MacOS/Linux, run: 
+On macOS/Linux, run: 
 ```shell
 /path/to/extracted/folder/bin/archivetool run -o /path/to/save/generated.csv
 ```
@@ -77,7 +77,7 @@ or on Windows, run:
 Replacing the placeholder paths as appropriate.
 
 This will run all of the steps sequentially, expecting user interaction when required.
-In particular it will run the following:
+In particular, it will run the following:
 1. Box Segmentation
 2. Box Segmentation Review (using a GUI, requires manual review)
 3. Image Manipulation (to improve OCR results)
@@ -105,7 +105,7 @@ Additionally, if you wish to build the Python module, you will need to enable it
 
 Finally, after `./gradlew build`, the distribution archives (`.zip` and `.tar`) are available in [`app/build/distributions`](app/build/distributions).
 
-This project is multi-module with the CLI living in `app`, and the core OCR library living in `lib`, and python code in `python`.
+This project is multi-module with the CLI living in `app`, and the core OCR library living in `lib`, and Python code in `python`.
 As much of possible of the shared build logic is extracted to a convention plugin located in `buildSrc`.
 
 This project uses a version catalog (see `gradle/libs.versions.toml`) to declare and version dependencies, wherever possible.
@@ -115,7 +115,7 @@ This project uses a version catalog (see `gradle/libs.versions.toml`) to declare
 If you are only building for a single system, you may want to set the `archivetool.platform` to `<platform>-<arch>` 
 in order to only bundle binaries for your platform into the JAR. This will save a little bit on space and load times but 
 will mean that the program will crash at runtime on an unsupported platform.
-Additionally, you can add a `-gpu` suffix to enable some CUDA support, if you have a nvidia GPU.
+Additionally, you can add a `-gpu` suffix to enable some CUDA support, if you have an Nvidia GPU.
 Alternatively, you can set this value to `host`, and archivetool will detect platform based on the system you are compiling on.
 
 You can set this value on the command-line with `-Parchivetool.platform=linux-x86_64` or by creating a file called 
@@ -146,7 +146,7 @@ It is incredibly quick, and very, very good at detecting brown cardboard archive
 However, if your items look at all different, it will struggle to detect them, if it can at all.
 <!--TODO This isnt out yet--> 
 There is a training harness available that allows you to train on hand-annotated images from your own collection.
-You can find out more about that in it's documentation.
+You can find out more about that in its documentation.
 
 There is no command-line tool to swap it out yet, 
 but you can replace the model at compile time by putting it along-side the existing model in [weights](lib/src/main/resources/model-sandbox/weights),
@@ -154,8 +154,8 @@ alongside the existing model, and changing the default path in [`BoxSegmentation
 ### OCR
 The OCR engine used in `archivetool` is based on a vision-LLM. We would have preferred a fully local solution, 
 but the quality of the results when using a library like Kraken was unacceptably poor. 
-In comparison, most vision models do a suprisingly good job.
-If you would prefer to try something completely local, 
+In comparison, most vision models do a surprisingly good job.
+If you prefer to try something completely local, 
 you will need to write your own DIed implementation as described in [**Alternate Implementations**](#alternate-implementations).  
 
 You can change where the API endpoints are that `archivetool` calls out to at runtime, via `config.json`, which is in the config path[^3].
@@ -241,6 +241,3 @@ On the other hand, a local model may be slower, hardware-intensive, and produce 
 [^2]: Or to add it to `$PATH`, if you are so inclined.
 
 [^3]: The specifics are described in [`Platform`](lib/src/main/kotlin/util/os/Platform.kt)
-
-
-ONE MORE TODO BEFORE IF ORGET, MAKE SURE THE CLI OFFERS SOURCE CODE SOMEWHERE.
