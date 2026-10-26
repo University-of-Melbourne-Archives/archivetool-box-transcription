@@ -9,7 +9,7 @@ import com.github.ajalt.clikt.core.Context
 class OCRCreateCommand(private val switchboard: AbstractSwitchboard) : Command(name = "create") {
 
     override fun help(context: Context): String =
-        "Prepare approved images and generate OCR results for the selected job."
+        "Prepare approved images and generate OCR results"
 
     private val inputDirectory by inputDirectory()
 

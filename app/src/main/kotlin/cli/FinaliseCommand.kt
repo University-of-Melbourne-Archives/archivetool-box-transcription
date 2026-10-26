@@ -15,9 +15,7 @@ class FinaliseCommand(private val switchboard: AbstractSwitchboard) : Command(na
 
     override fun help(context: Context): String =
         """
-        Export existing processed job data to a CSV file.
-
-        Use -i to select the job directory (defaults to the current directory).
+        Export existing processed job data to a CSV file
         """
             .trimIndent()
 

@@ -21,7 +21,7 @@ class PreviewCreateCommand(private val switchboard: AbstractSwitchboard) : Comma
     private val inputDirectory by inputDirectory()
 
     private val noResume by
-        option("--no-resume", help = "Do not reuse existing job state in the input directory.")
+        option("--no-resume", help = "Do not reuse any existing job state")
             .flag(default = false)
 
     override fun run() {

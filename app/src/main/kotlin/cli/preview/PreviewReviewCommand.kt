@@ -13,7 +13,7 @@ import com.github.ajalt.clikt.parameters.types.restrictTo
 class PreviewReviewCommand(private val switchboard: AbstractSwitchboard) : Command(name = "review") {
 
     override fun help(context: Context): String =
-        "Open box-detection previews for review in the selected job directory."
+        "Open box-detection previews for review"
 
     private val inputDirectory by inputDirectory()
 

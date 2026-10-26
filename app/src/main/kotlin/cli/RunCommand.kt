@@ -34,7 +34,7 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
             .required()
 
     private val noResume by
-        option("--no-resume", help = "Do not reuse existing job state in the input directory.")
+        option("--no-resume", help = "Do not reuse any existing job state")
             .flag(default = false)
 
     private val autoApproveThreshold by

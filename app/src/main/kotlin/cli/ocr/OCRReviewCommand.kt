@@ -9,7 +9,7 @@ import com.github.ajalt.clikt.core.Context
 class OCRReviewCommand(private val switchboard: AbstractSwitchboard) : Command(name = "review") {
 
     override fun help(context: Context): String =
-        "Open OCR results for review in the selected job directory."
+        "Open OCR results for review"
 
     private val inputDirectory by inputDirectory()
 
