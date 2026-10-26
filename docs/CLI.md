@@ -1,125 +1,85 @@
 # ArchiveTool CLI — Usage and Demo Guide
 
-ArchiveTool provides a Kotlin command-line interface (CLI) built with **Clikt**. It parses commands, validates options and delegates archive processing to **Switchboard**. Segmentation, image manipulation, OCR, human review, job-state persistence and CSV generation are implemented by the backend, not duplicated in the CLI.
+ArchiveTool provides a command-line interface (CLI) built with [**Clikt**](https://ajalt.github.io/clikt/).
+Clikt has some quirks relating to advanced usage[^1]
 
-## Build and check (Windows PowerShell)
-
-Run these commands from the repository root:
-
-```powershell
-.\gradlew.bat :app:classes
-.\gradlew.bat :app:test
-.\gradlew.bat :app:run --args="--help"
-.\gradlew.bat ktfmtCheck
-```
-
-Gradle downloads missing dependencies automatically when internet access is available. `:app:test` checks the help text, argument validation and command-to-Switchboard calls using the existing MockSwitchboard. **It does not run actual segmentation, OCR, or GUI review.**
+It parses commands, validates options and delegates archive processing to an in internal mechanism called the '**Switchboard**'.   
+The Switchboard acts as a backend, implementing the program's main functionality, so the CLI does not have to duplicate any significant work.
 
 ## Command reference
 
-| Command | Options | Switchboard action |
-| --- | --- | --- |
-| `run` | `[-i DIR] -o FILE [--no-resume] [-A 0-100]` | Run all six processing stages in sequence |
-| `preview create` | `[-i DIR] [--no-resume]` | `createPreview` |
-| `preview review` | `[-i DIR] [-A 0-100]` | `reviewSegmentationPreview` |
-| `ocr create` | `[-i DIR]` | `manipulateImages`, then `createOCR` |
-| `ocr review` | `[-i DIR]` | `reviewOCRPreview` |
-| `status` | `[-i DIR]` | `getStatus` (prints job progress from Switchboard) |
-| `finalise` | `[-i DIR] -o FILE` | `generateExport` **only** |
+| Command                      | Options                                     | Behaviour                                                                                                                                                                                                                                                                                                     |
+|------------------------------|---------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `info`                       | None                                        | Prints out program and system-global information. <br />Specifically: program version, copyright and licensing details, and the location of the configuration file.                                                                                                                                           |
+| `status`                     | `[-i DIR]`                                  | Prints out job-specific information for a given directory, such as processing progress.                                                                                                                                                                                                                       |
+| `run`                        | `[-i DIR] -o FILE [--no-resume] [-A 0-100]` | Run all six processing stages in sequence                                                                                                                                                                                                                                                                     |
+| `preview create`             | `[-i DIR] [--no-resume]`                    | Automatically segments every image in `DIR` into individual boxes and stickers.                                                                                                                                                                                                                               |
+| `preview review`             | `[-i DIR] [-A 0-100]`                       | Allows the user to manually adjust the automatic segmentations created in the previous step. <br/>For more information on using this tool, see [TODO](./SegmentationReview.md).                                                                                                                               |
+| `ocr create`                 | `[-i DIR]`                                  | Crops and applies legibility filters to the results of segmentation, then runs them through an LLM for transcription.                                                                                                                                                                                         |
+| `ocr review`                 | `[-i DIR]`                                  | Allows the user to edit the transcriptions created by the previous step. <br/>Unlike edits to the resultant CSV, these changes are persisted between exports. <br/>However, the editor is not as intuitive as a spreadsheet editor. <br/>For more information on using this tool, see [TODO](./OCRReview.md). |
+| `finalise` (_or `finalize`_) | `[-i DIR] -o FILE`                          | `generateExport` **only**                                                                                                                                                                                                                                                                                     |
 
-**Shared input-directory option:** `-i, --input-directory` selects the job root containing the source images and persisted state. It is optional for the commands above; if omitted, the default is the process **current working directory (`.`)**. The supplied directory must exist and be readable. Do not pass `.archivetool_generated` itself as the job root.
+### Input Directory (`-i, --input-directory`)
+This option selects the folder containing the source images and any persisted state.  
+It is optional for the commands above, with the default being the current working directory.  
+The supplied directory must exist and be readable.  
+_Do not pass the hidden `.archivetool_generated` to this argument._
 
-**Output:** `-o, --output` is required for `run` and `finalise`, and specifies the destination CSV file. `finalize` is an alternative spelling of `finalise`.
+### Output File (`-o, --output`)
+This option is required for `run` and `finalise`, and specifies the location to write the destination CSV file to.  
+If a file already exists in this location, it will be overwritten.
 
-**Logging:** The root command supports `-v`/`--verbose` and `-q`/`--quiet` for stderr (repeat them to adjust the level). Add `-L, --log-file PATH` to also write to a log file. Use repeated `-V` (more verbose) or `-Q` (quieter) to set the **file** level separately. File logging defaults to Info, and `-V`/`-Q` require `-L`. Put these root options before the subcommand. Existing log files are overwritten when the first log entry is written, and the parent directory must already exist.
+### Logging
+The root command allows you to adjust its logging verbosity by putting these root options before any subcommands.
 
-```powershell
-.\gradlew.bat :app:run --args='-q -L archive.log -VV status -i "C:\Archive Photos\Batch 01"'
+You can use either `-v`/`--verbose` or `-q`/`--quiet` to adjust the verbosity of logs to the console[^2].   
+
+Passing `-L, --log-file PATH` will make archivetool additionally write logs to a file.  
+Using `-V` or `-Q` will set the log verbosity for the file specified by `-L` separately.  
+Existing log files are overwritten when the first log entry is written, and the parent directory must already exist.  
+
+You can repeat any of `v`, `V`, `q`, or `Q` multiple times to make logging quieter or more verbose.
+
+The below example only prints warnings and errors to the console, but records everything (including tracing notices) to a file called `log.txt`.
+```shell
+archivetool -q -L log.txt -VV status -i "./Archive Photos/Batch 01"
+```
+### Resumption
+`preview create` and `run` will _resume_ by default.
+If you pass `--no-resume`, they will only work on folders where no existing state exists.
+
+Otherwise, any command can be called a second time to pick up whereever you left off, 
+since they save the most recent edits automatically, either per-image or in chunks.
+
+### Automatic Approval
+For `run` and `preview review`, `-A, --auto-approve-threshold` accepts an integer percentage between 0 and 100.  
+Any files that are segmented with a minimum 'confidence' over this percentage 
+will not be sent to the `preview review` GUI and will be automatically marked as approved for OCR. 
+
+### State
+`preview review`, `ocr create`, `ocr review`, and `finalise` are stateful.  
+These commands depend on the state generated by the prior commands in the pipeline, 
+and will automatically fail if the preceding step was not run beforehand.  
+Additionally, `status` can be used to inspect the state of a given input directory. 
+However, it will not fail with an empty directory.
+
+### Progress
+Many commands have a progress bar drawn to the terminal.  
+These commands may take a long time, even per progress step, and may be quiet when logging. These steps are running, as long as the little spinner keeps spinning.  
+Each time the bar progresses is a "snapshot" that you can resume from by calling the same command again.  
+
+## Running in a Single Command Call
+
+```shell
+archivetool run -i "./Archive Photos/" -o "./Archive Exports/result.csv"
 ```
 
-This example reduces messages on stderr while recording debug and trace messages in the file. File logging uses the existing `FileConsumer` rather than a separate logging system.
+The `run` command is functionally equivalent to calling the following series of commands in order:
+- `preview create`
+- `preview review`
+- `ocr create`
+- `ocr review`
+- `finalise`
 
-## Full workflow
-
-```powershell
-.\gradlew.bat :app:run --args='run -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"'
-```
-
-The `run` command calls Switchboard in this order:
-
-```text
-createPreview
-  -> reviewSegmentationPreview
-  -> manipulateImages
-  -> createOCR
-  -> reviewOCRPreview
-  -> generateExport
-```
-
-`run` and `preview create` **enable resume by default**: the CLI passes `permitExisting = true` to `createPreview`, allowing Switchboard to reuse existing job state. Pass `--no-resume` to request `permitExisting = false` instead. **This flag does not erase a job**; if a job already exists, Switchboard may reject creation rather than overwrite it. Whether finished work is skipped depends on backend eligibility rules.
-
-```powershell
-.\gradlew.bat :app:run --args='preview create -i "C:\Archive Photos\Batch 01" --no-resume'
-```
-
-For `run` and `preview review`, `-A, --auto-approve-threshold` accepts an integer percentage between 0 and 100; the CLI converts it to a value between 0.0 and 1.0 for Switchboard. Approval decisions are made by the backend, not the CLI.
-
-## Individual commands
-
-Each stage can target the **same directory explicitly**, without changing the terminal working directory:
-
-```powershell
-.\gradlew.bat :app:run --args='preview create -i "C:\Archive Photos\Batch 01"'
-.\gradlew.bat :app:run --args='preview review -i "C:\Archive Photos\Batch 01"'
-.\gradlew.bat :app:run --args='ocr create -i "C:\Archive Photos\Batch 01"'
-.\gradlew.bat :app:run --args='ocr review -i "C:\Archive Photos\Batch 01"'
-.\gradlew.bat :app:run --args='status -i "C:\Archive Photos\Batch 01"'
-.\gradlew.bat :app:run --args='finalise -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"'
-```
-
-These commands represent *successive stages* of the pipeline. Do not execute `ocr create`, `ocr review`, or `finalise` on an unprocessed directory and expect completed output.
-
-`status` is now implemented in the reviewed Switchboard code and reports progress from the saved job state. Its stage counts reflect the backend's own classification rules. `finalise` **does not rerun segmentation, image manipulation, OCR or review**: it only exports existing processed records.
-
-## Installed command (without Gradle on every invocation)
-
-For a demo, generate the local application distribution from the repository root:
-
-```powershell
-.\gradlew.bat :app:installDist
-$launcher = (Get-ChildItem .\app\build\install -Recurse -Filter archivetool.bat | Select-Object -First 1).FullName
-& $launcher --help
-```
-
-The script name is configured as `archivetool.bat`; this example locates it rather than assuming an installation-directory name. Once built, use the same commands without the `:app:run --args=` wrapper:
-
-```powershell
-& $launcher status -i "C:\Archive Photos\Batch 01"
-& $launcher finalise -i "C:\Archive Photos\Batch 01" -o "C:\Archive Exports\result.csv"
-```
-
-## OCR environment and demo preparation
-
-The reviewed Switchboard version uses an online OCR implementation through an OpenAI-compatible Java SDK targeting a Gemini endpoint. Real OCR requires a working API key and internet access. In a PowerShell session, set the key locally; **never commit it to Git**:
-
-```powershell
-$env:ARCHIVETOOL_API_KEY = "<insert-key-locally>"
-```
-
-Use a small, previously tested image set for the demo, and coordinate the segmentation/OCR review windows with the presenters. Verify the CSV **contents** as well as the file's existence. Persisted job data is stored under the chosen input directory (e.g., `.archivetool_generated/job.json`).
-
-## Verification boundary
-
-- **CLI tests:** command registration, help, input validation, default options, and calls to the processing stages using the existing MockSwitchboard.
-- **Integration / end-to-end:** needs separate verification of real images, GUI review, OCR responses, saved job state and final CSV fields. Passing the CLI unit tests alone does not establish these outcomes.
-- **Resume:** CLI defaults and parameter parsing are covered; correct backend recovery from a partially processed job must be checked separately.
-
-For a final demo, confirm build/tests, API key and connectivity, a representative review flow, populated CSV output and a stable Git commit to fall back to.
-
-## CLI tests for the archivist user story
-
-**User story:** “As an archivist, I need a usable interface that facilitates the usage of the software.”
-
-`app/src/test/kotlin/CliCommandTest.kt` uses the existing `MockSwitchboard` to check command help, input errors and selected processing commands. The tests check log configuration independently as well, using a test InitInteraction to capture the log consumers.
-
-These are CLI-focused automated tests. Real segmentation, GUI review, OCR, resume from disk and full CSV content still require separate integration and manual checks.
+[^1]: Most notably, the arguments to a subcommand must come after said sub-command and before the next one.
+[^2]: Specifically, `stderr`.
