@@ -1,3 +1,5 @@
+package au.edu.unimelb.archivetool.app
+
 /** The raw PlantUML produced by one generator run over the classes of a single package. */
 class PackageRun(
     val packageName: String,

@@ -1,3 +1,5 @@
+package au.edu.unimelb.archivetool.app
+
 import au.edu.unimelb.archivetool.util.Git
 import au.edu.unimelb.archivetool.util.logging.Log
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
