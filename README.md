@@ -140,6 +140,11 @@ set `archivetool.python` to `true` in [`gradle.properties`](gradle.properties).
 This does not replace the Kotlin implementations by default, 
 and `Switchboard` will still use the Kotlin implementations unless you tell it otherwise. 
 
+## Debugging
+If you need to inspect an intermediate output or manually edit metadata,
+it is stored in a hidden `.archivetool_generated` subdirectory.  
+Enabling more verbose logging as described in [`docs/CLI.md`](docs/CLI.md) may help diagnosing problems.
+
 ## Customisation
 ### Box Segmentation
 `archivetool` uses an ONNX export of an incredibly fine-tuned  version of Ultralytics' YOLO 26 Nano.
@@ -213,7 +218,6 @@ This means that if you need support for something dramatically different, you ca
 and not change any internal logic.
 
 An example of doing this can be seen in [`PythonSwitchboard`](python/src/main/kotlin/PythonSwitchboard.kt).
-## Larger Structure
 ## Internet Connectivity and Confidentiality
 By default, `archivetool` connects to the internet to use a cloud language model, specifically Google Gemini.
 
