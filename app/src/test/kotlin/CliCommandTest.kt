@@ -26,7 +26,7 @@ class CliCommandTest {
     fun `help lists the main commands`() {
         val result = BaseCommand(MockSwitchboard).test("--help")
         assertEquals(0, result.statusCode)
-        listOf("run", "preview", "ocr", "status", "finalise").forEach {
+        listOf("run", "preview", "ocr", "status", "finalise", "info").forEach {
             assertContains(result.output, it)
         }
     }
