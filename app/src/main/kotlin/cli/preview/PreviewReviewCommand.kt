@@ -23,7 +23,7 @@ class PreviewReviewCommand(private val switchboard: AbstractSwitchboard) : Comma
                 "--auto-approve-threshold",
                 metavar = "threshold",
                 help =
-                    "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
+                    "Segmentation confidence threshold in percent (0-100)",
             )
             .int()
             .restrictTo(0, 100)

@@ -14,8 +14,7 @@ class PreviewCreateCommand(private val switchboard: AbstractSwitchboard) : Comma
         """
         Create previews from a directory of archive images.
 
-        Switchboard manages job state and intermediate files.
-        An existing job state is reused by default; use --no-resume to disable reuse.
+        Any existing job state is reused by default; use --no-resume to disable reuse
         """
             .trimIndent()
 

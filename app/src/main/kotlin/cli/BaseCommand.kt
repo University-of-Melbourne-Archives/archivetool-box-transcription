@@ -81,7 +81,7 @@ class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
 
     // The file has its own log level, separate from stderr.
     val logFile by
-        option("-L", "--log-file", help = "Write log messages to this file (alongside stderr)")
+        option("-L", "--log-file", help = "Write log messages to a file")
 
     val fileLogLevel by
         mutuallyExclusiveOptions(

@@ -21,8 +21,8 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
         """
         Run the complete archive processing workflow.
 
-        Processes archive images and writes the final CSV output.
-        An existing job state is reused by default; use --no-resume to disable reuse.
+        Processes archive images and writes a final CSV output
+        Any existing job state is reused by default; use --no-resume to disable reuse
         """
             .trimIndent()
 
@@ -43,7 +43,7 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
                 "--auto-approve-threshold",
                 metavar = "threshold",
                 help =
-                    "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
+                    "Segmentation confidence threshold in percent (0-100)",
             )
             .int()
             .restrictTo(0, 100)
