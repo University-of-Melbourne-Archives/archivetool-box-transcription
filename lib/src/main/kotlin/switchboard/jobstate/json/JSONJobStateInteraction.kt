@@ -9,6 +9,7 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
 import au.edu.unimelb.archivetool.util.error.expect
 import au.edu.unimelb.archivetool.util.extension.asFileAttributes
+import au.edu.unimelb.archivetool.util.extension.setHidden
 import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -55,6 +56,9 @@ object JSONJobStateWriterThread {
 
                     folder
                         .resolve(GENERATED_PATH)
+                        .apply {
+                            setHidden()
+                        }
                         .resolve("job.json")
                         .takeIf { it.isWritable() }
                         .expect("Could not write state to file: $this")
