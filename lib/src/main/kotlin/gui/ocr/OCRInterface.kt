@@ -85,6 +85,9 @@ class OCRInterface(
     private val viewport = ImageViewport(imageLoader, appScope)
     private val table = ReviewTable(textMetrics, fonts, appScope)
 
+    private var tableButtons: List<PushButton> = emptyList()
+    private var errorDialogOpen = false
+
     init {
         windows.apply {
             main.apply {
@@ -155,9 +158,15 @@ class OCRInterface(
                 PushButton("Next").apply { fired += { moveIndex(currentIndex + 1) } },
                 PushButton("Save").apply { fired += { save() } },
                 PushButton("Finish").apply {
-                    fired += { CoroutineScope(Dispatchers.Default).launch { close() } }
+                    fired += {
+                        if (!errorDialogOpen) {
+                            CoroutineScope(Dispatchers.Default).launch { close() }
+                        }
+                    }
                 },
             )
+
+        tableButtons = bottomButtonsTable
 
         val buttonWidthTable = 108.0
         val buttonHeightTable = 40.0
@@ -246,7 +255,14 @@ class OCRInterface(
     }
 
     private fun moveIndex(index: Int) {
-        if (index !in boxes.indices || index == currentIndex) return
+        if (errorDialogOpen) {
+            return
+        }
+
+        if (index !in boxes.indices || index == currentIndex) {
+            return
+        }
+
         currentIndex = index
         displayCurrent()
     }
@@ -361,7 +377,7 @@ class OCRInterface(
     // -- Saving --------------------------------------------------------------
 
     private fun save() {
-        if (boxes.isEmpty()) {
+        if (errorDialogOpen || boxes.isEmpty()) {
             return
         }
 
@@ -534,13 +550,25 @@ class OCRInterface(
                 }
         }
 
-        okButton.fired += { popups.hide(dialog) }
+        okButton.fired += {
+            popups.hide(dialog)
+            setEditingEnabled(true)
+        }
+
+        setEditingEnabled(false)
 
         popups.show(dialog) {
             it.width eq messageWidth
             it.height eq messageHeight
             it.center eq parent.center
         }
+    }
+
+    // For disabling button and input field functionality when error popup is active
+    private fun setEditingEnabled(enabled: Boolean) {
+        errorDialogOpen = !enabled
+        tableButtons.forEach { it.enabled = enabled }
+        table.enabled = enabled
     }
 
     override fun shutdown() {}

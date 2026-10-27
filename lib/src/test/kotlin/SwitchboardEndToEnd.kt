@@ -7,16 +7,15 @@ import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.Path
 import kotlin.io.path.createTempFile
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.pathString
+import kotlin.io.path.toPath
 import kotlin.io.path.writeText
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
-import kotlin.io.path.toPath
 
 class SwitchboardEndToEnd {
     val testConsumer = StdoutConsumer(LogLevel.Trace)

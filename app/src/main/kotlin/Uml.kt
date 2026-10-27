@@ -138,10 +138,13 @@ fun main() {
         println("- Replace aggregation of Interaction subclasses with injection of interaction.")
         val pat = "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard\"1\" --> \"1\" "
         uml.lineSequence()
-            .filter { !it.contains(pat) }.toMutableList()
+            .filter { !it.contains(pat) }
+            .toMutableList()
             .apply {
                 val end = last { it.isNotEmpty() }
-                add("au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard #-- au_edu_unimelb_archivetool_switchboard_interactions_Interaction : < injected into")
+                add(
+                    "au_edu_unimelb_archivetool_switchboard_AbstractSwitchboard #-- au_edu_unimelb_archivetool_switchboard_interactions_Interaction : < injected into"
+                )
                 addLast(end)
             }
             .joinToString("\n", postfix = "\n")

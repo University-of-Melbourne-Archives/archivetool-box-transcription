@@ -121,6 +121,13 @@ class ReviewTable(textMetrics: TextMetrics, private val fonts: FontLoader, scope
     private val cells = HEADERS.map { TextField() }
     private val previews = HEADERS.map { WrappedText(textMetrics) }
 
+    // Text fields disabled when error popup is active
+    var enabled: Boolean = true
+        set(value) {
+            field = value
+            cells.forEach { it.enabled = value }
+        }
+
     // Current maximum height of preview text
     private var previewHeight = WrappedText.MIN_HEIGHT
     private var appliedBarWidth = -1.0

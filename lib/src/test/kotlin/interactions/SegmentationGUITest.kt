@@ -12,12 +12,12 @@ import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.StdoutConsumer
 import au.edu.unimelb.archivetool.util.math.geometry.Quad
 import kotlin.io.path.Path
+import kotlin.io.path.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
-import kotlin.io.path.toPath
 
 class SegmentationGUITest {
     val testConsumer = StdoutConsumer(LogLevel.Trace)
