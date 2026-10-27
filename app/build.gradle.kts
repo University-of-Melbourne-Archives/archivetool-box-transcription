@@ -41,6 +41,8 @@ distributions {
         contents {
             into("") { from("../README.md") }
             into("") { from("../LICENSE") }
+            into("") { from("../CONTRIBUTING") }
+            into("/docs") { from("../docs") }
             into("") { from("../THIRD_PARTY.md") }
         }
     }
