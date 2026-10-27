@@ -221,21 +221,24 @@ class OCRInterface(
         display += listOf(bottomBarViewport, viewport, bottomBarTable, table.view)
         display.fill(MonoColour(0xECu).toDoodle().toRGB().paint)
 
+        // Represents the maximum width of the window the viewport takes up
+        val maxViewportWidthFraction = 0.6
+
         display.layout =
             constrain(bottomBarViewport, viewport, bottomBarTable, table.view) { bbv, vp, bbt, tb ->
                 vp.top eq 35
-                vp.bottom eq parent.height - 80
                 vp.centerX eq vp.width / 1.75
-                vp.height lessEq parent.height - vp.top - 30
-                vp.width lessEq parent.width / 3
+
+                // 3:4 ratio viewport
                 vp.width eq vp.height * (3.0 / 4.0)
+                vp.height lessEq parent.height - 115
+                vp.width lessEq parent.width * maxViewportWidthFraction
                 vp.width eq 5000 strength Medium
 
                 tb.top eq vp.top
                 tb.bottom eq vp.bottom
                 tb.left eq vp.right + 20
                 tb.right eq parent.width - 20
-                tb.height eq vp.height
 
                 bbv.top eq vp.bottom + 10
                 bbv.left eq vp.left
