@@ -1,11 +1,10 @@
 package au.edu.unimelb.archivetool.app.cli
 
-import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
-
-import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
+import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
 import au.edu.unimelb.archivetool.util.extension.percentToFraction
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.flag
@@ -27,7 +26,7 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
         - `ocr create`
         - `ocr review`
         - `finalise`
-        
+
         Options behave identically in the subcommand that they are inherited from
         """
             .trimIndent()
@@ -64,6 +63,8 @@ class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = 
         switchboard.manipulateImages(jobRoot)
         switchboard.createOCR(jobRoot)
         switchboard.reviewOCRPreview(jobRoot)
-        switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute())).generateExport(jobRoot)
+        switchboard
+            .with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
+            .generateExport(jobRoot)
     }
 }

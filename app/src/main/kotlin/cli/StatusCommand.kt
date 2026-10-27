@@ -1,9 +1,9 @@
 package au.edu.unimelb.archivetool.app.cli
 
-import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import com.github.ajalt.clikt.core.Context
 
 class StatusCommand(private val switchboard: AbstractSwitchboard) : Command(name = "status") {

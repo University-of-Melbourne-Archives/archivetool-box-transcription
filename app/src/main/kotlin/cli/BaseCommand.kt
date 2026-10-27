@@ -1,14 +1,15 @@
 package au.edu.unimelb.archivetool.app.cli
 
-import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
-import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.countedTransform
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
+import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.util.logging.LogConsumer
 import au.edu.unimelb.archivetool.util.logging.LogLevel
 import au.edu.unimelb.archivetool.util.logging.consumers.FileConsumer
 import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import com.github.ajalt.clikt.completion.CompletionCommand
+import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.groups.default
 import com.github.ajalt.clikt.parameters.groups.mutuallyExclusiveOptions
@@ -16,7 +17,6 @@ import com.github.ajalt.clikt.parameters.groups.single
 import com.github.ajalt.clikt.parameters.options.option
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
-import com.github.ajalt.clikt.core.UsageError
 
 /** Main CLI command and its subcommands. */
 class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
@@ -80,8 +80,7 @@ class BaseCommand(private val switchboard: AbstractSwitchboard = Switchboard) :
             .default(Optional.of(LogLevel.Info))
 
     // The file has its own log level, separate from stderr.
-    val logFile by
-        option("-L", "--log-file", help = "Write log messages to a file")
+    val logFile by option("-L", "--log-file", help = "Write log messages to a file")
 
     val fileLogLevel by
         mutuallyExclusiveOptions(

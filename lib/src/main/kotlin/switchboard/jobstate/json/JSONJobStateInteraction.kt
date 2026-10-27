@@ -56,9 +56,7 @@ object JSONJobStateWriterThread {
 
                     folder
                         .resolve(GENERATED_PATH)
-                        .apply {
-                            setHidden()
-                        }
+                        .apply { setHidden() }
                         .resolve("job.json")
                         .takeIf { it.isWritable() }
                         .expect("Could not write state to file: $this")

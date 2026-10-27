@@ -1,17 +1,17 @@
 package au.edu.unimelb.archivetool.app.cli
 
 import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
-import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
-import au.edu.unimelb.archivetool.util.logging.LogConsumer
-import au.edu.unimelb.archivetool.util.logging.LogLevel
-import au.edu.unimelb.archivetool.util.logging.consumers.FileConsumer
-import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.OCRPreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.SegmentationPreviewInteraction
 import au.edu.unimelb.archivetool.switchboard.interactions.StringStatusInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.FileConsumer
+import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import com.github.ajalt.clikt.testing.test
 import java.nio.file.Files
 import java.nio.file.Path
@@ -57,16 +57,23 @@ class CliCommandTest {
 
     @Test
     fun `invalid commands and thresholds report errors`() {
-        listOf("unknown-command", "run -o result.csv -A 101", "preview review -A -1", "preview review -A abc").forEach { args ->
-            val result = BaseCommand(MockSwitchboard).test(args)
-            assertEquals(1, result.statusCode, args)
-            assertTrue(result.output.isNotBlank(), args)
-        }
+        listOf(
+                "unknown-command",
+                "run -o result.csv -A 101",
+                "preview review -A -1",
+                "preview review -A abc",
+            )
+            .forEach { args ->
+                val result = BaseCommand(MockSwitchboard).test(args)
+                assertEquals(1, result.statusCode, args)
+                assertTrue(result.output.isNotBlank(), args)
+            }
     }
 
     @Test
     fun `a missing input directory is rejected`() {
-        val result = BaseCommand(MockSwitchboard).test("run -i __missing_archive_directory__ -o result.csv")
+        val result =
+            BaseCommand(MockSwitchboard).test("run -i __missing_archive_directory__ -o result.csv")
         assertEquals(1, result.statusCode)
     }
 
@@ -87,17 +94,18 @@ class CliCommandTest {
     @Test
     fun `preview create can be called separately`() = withSampleImage { directory, _ ->
         var calls = 0
-        val preview = object : CreatePreviewInteraction {
-            override fun createPreview(
-                files: Set<JobRelativePath>,
-                weights: Path?,
-                rejectConfidenceThreshold: Double,
-            ): Map<JobRelativePath, JobFile> {
-                calls++
-                assertEquals(1, files.size)
-                return emptyMap()
+        val preview =
+            object : CreatePreviewInteraction {
+                override fun createPreview(
+                    files: Set<JobRelativePath>,
+                    weights: Path?,
+                    rejectConfidenceThreshold: Double,
+                ): Map<JobRelativePath, JobFile> {
+                    calls++
+                    assertEquals(1, files.size)
+                    return emptyMap()
+                }
             }
-        }
         val switchboard = MockSwitchboard.with(preview)
         val result = BaseCommand(switchboard).test("preview", "create", "-i", directory.toString())
         assertEquals(0, result.statusCode, result.output)
@@ -105,41 +113,52 @@ class CliCommandTest {
     }
 
     @Test
-    fun `preview review passes the threshold to Switchboard`() = withSampleImage { directory, image ->
-        var threshold: Double? = null
-        val review = object : SegmentationPreviewInteraction {
-            override fun review(
-                files: Map<JobRelativePath, JobFile?>,
-                autoApproveThreshold: Double,
-            ): Map<JobRelativePath, JobFile> {
-                threshold = autoApproveThreshold
-                return emptyMap()
-            }
-        }
-        val switchboard = MockSwitchboard.with(review)
-        val state = requireNotNull(switchboard.job.create(directory))
-        state.update(mapOf(JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())))
+    fun `preview review passes the threshold to Switchboard`() =
+        withSampleImage { directory, image ->
+            var threshold: Double? = null
+            val review =
+                object : SegmentationPreviewInteraction {
+                    override fun review(
+                        files: Map<JobRelativePath, JobFile?>,
+                        autoApproveThreshold: Double,
+                    ): Map<JobRelativePath, JobFile> {
+                        threshold = autoApproveThreshold
+                        return emptyMap()
+                    }
+                }
+            val switchboard = MockSwitchboard.with(review)
+            val state = requireNotNull(switchboard.job.create(directory))
+            state.update(
+                mapOf(
+                    JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())
+                )
+            )
 
-        val result = BaseCommand(switchboard).test("preview", "review", "-i", directory.toString(), "-A", "25")
-        assertEquals(0, result.statusCode, result.output)
-        assertEquals(0.25, threshold)
-    }
+            val result =
+                BaseCommand(switchboard)
+                    .test("preview", "review", "-i", directory.toString(), "-A", "25")
+            assertEquals(0, result.statusCode, result.output)
+            assertEquals(0.25, threshold)
+        }
 
     @Test
     fun `OCR review can be called separately`() = withSampleImage { directory, image ->
         var calls = 0
-        val review = object : OCRPreviewInteraction {
-            override fun review(
-                files: Map<JobRelativePath, JobFile?>,
-                autoApproveThreshold: Double,
-            ): Map<JobRelativePath, JobFile> {
-                calls++
-                return emptyMap()
+        val review =
+            object : OCRPreviewInteraction {
+                override fun review(
+                    files: Map<JobRelativePath, JobFile?>,
+                    autoApproveThreshold: Double,
+                ): Map<JobRelativePath, JobFile> {
+                    calls++
+                    return emptyMap()
+                }
             }
-        }
         val switchboard = MockSwitchboard.with(review)
         val state = requireNotNull(switchboard.job.create(directory))
-        state.update(mapOf(JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())))
+        state.update(
+            mapOf(JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf()))
+        )
 
         val result = BaseCommand(switchboard).test("ocr", "review", "-i", directory.toString())
         assertEquals(0, result.statusCode, result.output)
@@ -152,8 +171,14 @@ class CliCommandTest {
         try {
             val switchboard = MockSwitchboard.with()
             val state = requireNotNull(switchboard.job.create(directory))
-            state.update(mapOf(JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())))
-            val result = BaseCommand(switchboard).test("finalise", "-i", directory.toString(), "-o", output.toString())
+            state.update(
+                mapOf(
+                    JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())
+                )
+            )
+            val result =
+                BaseCommand(switchboard)
+                    .test("finalise", "-i", directory.toString(), "-o", output.toString())
             assertEquals(0, result.statusCode, result.output)
             assertTrue(Files.exists(output))
             assertTrue(Files.size(output) > 0)
@@ -165,23 +190,35 @@ class CliCommandTest {
     @Test
     fun `log file and stderr use separate levels`() {
         val consumers = mutableSetOf<LogConsumer>()
-        val init = object : InitInteraction {
-            override fun init(logConsumers: Set<LogConsumer>) {
-                consumers.clear()
-                consumers.addAll(logConsumers)
-            }
+        val init =
+            object : InitInteraction {
+                override fun init(logConsumers: Set<LogConsumer>) {
+                    consumers.clear()
+                    consumers.addAll(logConsumers)
+                }
 
-            override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
-        }
+                override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
+            }
         val switchboard = MockSwitchboard.with(init)
         val directory = Files.createTempDirectory("cli-logging-")
         val logFile = directory.resolve("archivetool.log")
         try {
             val result =
                 BaseCommand(switchboard)
-                    .test("-vv", "-L", logFile.toString(), "-Q", "status", "-i", directory.toString())
+                    .test(
+                        "-vv",
+                        "-L",
+                        logFile.toString(),
+                        "-Q",
+                        "status",
+                        "-i",
+                        directory.toString(),
+                    )
             assertEquals(0, result.statusCode, result.output)
-            assertEquals(LogLevel.Trace, consumers.filterIsInstance<StderrConsumer>().single().maxLogLevel)
+            assertEquals(
+                LogLevel.Trace,
+                consumers.filterIsInstance<StderrConsumer>().single().maxLogLevel,
+            )
             val fileConsumer = consumers.filterIsInstance<FileConsumer>().single()
             assertEquals(LogLevel.Warn, fileConsumer.maxLogLevel)
 
@@ -197,25 +234,37 @@ class CliCommandTest {
     @Test
     fun `file logging can stay enabled when stderr is quiet`() {
         val consumers = mutableSetOf<LogConsumer>()
-        val init = object : InitInteraction {
-            override fun init(logConsumers: Set<LogConsumer>) {
-                consumers.clear()
-                consumers.addAll(logConsumers)
-            }
+        val init =
+            object : InitInteraction {
+                override fun init(logConsumers: Set<LogConsumer>) {
+                    consumers.clear()
+                    consumers.addAll(logConsumers)
+                }
 
-            override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
-        }
+                override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
+            }
         val directory = Files.createTempDirectory("cli-quiet-logging-")
         try {
-            val result = BaseCommand(MockSwitchboard.with(init)).test(
-                "-qqq", "-L", directory.resolve("run.log").toString(), "-V",
-                "status", "-i", directory.toString(),
-            )
+            val result =
+                BaseCommand(MockSwitchboard.with(init))
+                    .test(
+                        "-qqq",
+                        "-L",
+                        directory.resolve("run.log").toString(),
+                        "-V",
+                        "status",
+                        "-i",
+                        directory.toString(),
+                    )
             assertEquals(0, result.statusCode, result.output)
             assertTrue(consumers.none { it is StderrConsumer })
-            assertEquals(LogLevel.Debug, consumers.filterIsInstance<FileConsumer>().single().maxLogLevel)
+            assertEquals(
+                LogLevel.Debug,
+                consumers.filterIsInstance<FileConsumer>().single().maxLogLevel,
+            )
 
-            val missingFile = BaseCommand(MockSwitchboard).test("-V", "status", "-i", directory.toString())
+            val missingFile =
+                BaseCommand(MockSwitchboard).test("-V", "status", "-i", directory.toString())
             assertEquals(1, missingFile.statusCode)
             assertContains(missingFile.output, "--log-file")
         } finally {
