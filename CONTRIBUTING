@@ -1,0 +1,232 @@
+# Contributing to `archivetool`
+## License
+As with the rest of this project, this document is licensed under the GNU AGPL.
+
+Copyright &copy; 2026 The University of Melbourne
+
+`archivetool` was originally built for [COMP30022: IT Project](https://handbook.unimelb.edu.au/2026/subjects/comp30022/assessment)
+by @91woshinailong, @jtee27, @ledwardes, @Siri-chan and @Ulrich-Fuhring.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the
+GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.  
+This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**;
+without even the implied warranty of **MERCHANTABILITY** or **FITNESS FOR A PARTICULAR PURPOSE**.  
+See the GNU Affero General Public License, provided in [LICENSE](LICENSE), or at
+[`<https://www.gnu.org/licenses/>`](https://www.gnu.org/licenses/) for more details.
+
+By contributing code to this repository, you acknowledge that you:
+1. Own or have otherwise complied with the licence of everything included in your submission.  
+   This includes both avoiding blatant plagiarism, and a few less obvious conditions:  
+   1. If you have used a Generative AI, you have read and understood the [AI Generation](#ai-generation) section.  
+   2. If you have written code for another project and you have used it again here,
+   check that that project doesn't require you to assign your intellectual property.
+   3. If you plan to use this code elsewhere in the future, you must be willing and able for your intellectual property
+   to be licensed under the GNU AGPL v3-or-later and for it to remain a constituent part of this work in perpetuity. 
+2. Have read and understand the remainder of this document and are willing to abide by it.
+3. Are not currently barred from contribution or discussion regarding this repository.
+## Etiquette
+### Conducting Yourself
+Please be a civil person, and try not to stir trouble.  
+This repository is a place for code and collaboration, 
+and not for spam, politics, harassment, insults, threats or anything overtly NSFW.
+
+Please also be receptive to feedback and participate in discussion.
+
+If you are making people uncomfortable or behaving unacceptably, 
+you may be barred from contributing or participating in any discussion, through any medium, at our discretion.
+
+This does not restrict the right to access the source-code afforded to you by the AGPL licence.
+### Using Git
+#### Commit Messages
+All commit messages **must** be written using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).  
+If they do not, they will likely be rebased and renamed before merging, or outright rejected.
+
+If you use a large language model, please include an `Assisted-by: <tool>:<model>` tag in the footer.
+Some historical commits are missing these, but we now mandate such a disclosure.
+
+#### Branching
+The 'trunk' branch of this repository is called `main`. This branch has protection rules, 
+and should never be pushed to directly unless merging from elsewhere.  
+We do not distinguish a `development` or `staging` branch from a `stable` branch at this stage.
+
+In most cases, you can simply fork this repository and merge from a branch named however you would like.  
+If you are submitting a branch to the main repository, you must comply with the following conventions.
+
+Branch names should have a one-or-two word description of the target feature or fix.  
+They should not be prefixed with `fix`, `patch` or similar.  
+
+Branches can be 'foldered' if appropriate, 
+and folder names should also be one-or-two word summaries. (eg. `integration/ocr`)  
+If you are unsure how to name a branch, create an issue and name the branch `issues/#<issue number>`.  
+
+Obviously, Git must also support the name of your branch. 
+You can read more about the technical requirements in `man git-check-ref-format`.
+
+#### Issues
+Issues should be used to report bugs, problems and to request features, 
+when you are not intending to implement said feature yourself.  
+Where applicable, they should be written and managed the same way as Pull Requests.
+
+#### Pull Requests
+Pull requests should be titled using a one-sentence description of the changes.
+
+A Pull Request should be an isolated set of changes and target the branch they are based upon. 
+Changes from one branch should not "piggy-back" on another in order to end-up in `main`.[^1]
+
+If a PR is blocked by any others, as well as being based onto the other branch, 
+it should reference that branch by number[^2].
+If a PR is a draft and has things still to complete, 
+the description should contain a checklist of what is still outstanding.
+
+Once a Pull Request is complete (not blocked and not marked as a draft), a member of the original team, 
+or another appropriate stakeholder should review it.   
+This involves looking over the code using the ‘Submit Review’ button on the ‘Files Changed’ page and 
+providing some criticism, the author of the PR should then go back and address said criticism.  
+Review should be a back and forth, rather than just one monolithic list of complaints.
+
+Pull Requests are also automatically checked using `./gradlew check` via. GitHub Actions, to ensure that all tests pass, 
+and that the code meets our style guidelines.
+
+Additions of dependencies and changes to existing tests should be given particular scrutiny, and if possible, 
+should be reviewed by a second person. For this reason, changes of this form are strongly discouraged,
+unless the expected behaviour has changed as a result of your changes.  
+On the other hand, the introduction of new tests is important to ensure the behaviour of any new features, 
+and  
+
+Once the reviewer is happy and the automated tests pass, they can mark the PR as approved, and merge it.
+
+## Quality
+### AI Generation
+> TLDR; While we do not outright ban AI contributions, please [disclose the assistance](#commit-messages),
+understand the implications of using such tools, and give your work some thought.
+
+
+Please be aware that we are likely to be picky with what AI-generated code is included in our repository, 
+and will not accept any undisclosed AI-generated or -assisted contributions.
+You can disclose the AI contribution with a footer as described in [Commit Messages](#commit-messages)
+
+AI generated code may be the source of quality concerns, and may also lead to legal concerns in the future.  
+Please remember that you do not own the copyright to any AI-generated code, and you may be plagiarising from a source
+with a licence incompatible with the AGPL licence used by this software.   
+If any disputes of this nature arise, you may be deemed responsible for introducing plagiarised code to the codebase.   
+O'Reilly Media published [an excellent article](https://www.oreilly.com/radar/who-owns-the-code-claude-wrote/)
+about the state of affairs regarding AI and Code Copyright back in June, if you would like to read more.
+
+### Code
+Documentation is optional, but much appreciated.  
+Avoid comments that re-iterate the code directly.
+If a statement is complex enough to warrant a comment describing it, 
+it may be worth trying to encapsulate it in a function.
+
+Core functionality of code should be tested alongside any edge-cases.
+During our initial development, we were modelled by _Agile_, and most of our tests target a specific _User Story_.  
+This is not a requirement anymore.
+
+The code is heavily modularised, and code should go in whatever folder is most appropriate.
+Breaking changes should be avoided as best as possible and may be best suited 
+as a seperate implementation in some way or another.
+
+### Dependencies
+Introducing a new dependency should be a last-resort, and its version should be locked as best as possible.  
+Dependencies should be listed in the version catalogue rather than an individual build file.  
+`buildSrc` should manage any heavy configuration, rather than an individual `build.gradle.kts`.
+
+Currently, this project only targets Kotlin-JVM, and so Java dependencies are fine.
+## Style
+### General
+Where possible, please use Australian English (Australian English sits between British and American English).  
+This means using '_ou_' in words like _colour_, using the _s_ in words like _backwards_, 
+and using _s_ in words like _finalise_.  
+Australian English typically leans towards British English, but uses certain elements of American English, such as
+the nouns _eggplant_ or _soccer_. 
+Australian English also has some of its own idiosyncrasies such as the words _capsicum_ or _footpath_. 
+
+If you are unsure about a word, try to support multiple spellings[^3], 
+otherwise, a reviewer may change some spellings and phrasings before merging.
+
+This is not a hard-and-fast rule, and any dialect should be acceptable for "meta"-writing, 
+such as discussing Pull Requests and Issues, or when quoting prior work.
+### Code
+#### Formatting
+All code should follow our code-style conventions.  
+Running `./gradlew fmt` and autoformatting all source code will be sufficient. 
+
+- Kotlin code should be formatted with KtFmt
+- Python code should be formatted with Black and comply with PEP-8.
+
+Furthermore, even though it is not required, code should aim to be clear and readable, with consistent whitespace.  
+Particularly hard-to-read code may be edited or rejected even when an auto-formatter approves it. 
+
+#### Naming Conventions
+All code should follow the following naming conventions:
+
+| Element           | Naming Case             |
+|-------------------|-------------------------|
+| Package           | `lowercase`             |
+| Class / Interface | `PascalCase`            |
+| Variable          | `camelCase`             |
+| Enum Value        | `PascalCase`            |
+| Function          | `camelCase`             |
+| Constant          | `UPPER_SNAKE_CASE`      |
+| Test Function     | `lowercase with spaces` |
+
+##### Unused Variables
+Unused variables should be prefixed with `_`.
+
+##### Naming a Test Function
+The test function naming can be done using backticks in Kotlin:
+```kotlin
+fun `test name goes here`() {}
+```
+In Python, if we use it in production, we intend to run tests as a `PythonScript`, 
+and read the tests as the members of a dict:
+```python
+def __test_actual_name():
+    pass
+
+{"test name goes here": __test_actual_name}
+```
+### Documentation
+#### CLI
+- Subcommands should be verbs in simple future tense.  
+_They should make sense in a sentence like "\<command name\> will \<help message first line>"._  
+ Any following lines should be notes or clarifications and use the command name as an implied subject.
+
+- Options are either a '_flag_' or 'value':  
+*Flag*s are boolean or counted options, with no additional information.  
+*Value*s are options that take additional information as the next argument.
+    - _Flag_ help messages be in the same form as a subcommand.
+    - _Value_ help messages should be a noun with an optional "that" conjunction.  
+  _They should make sense in a sentence like "\<command name> is (a/the) \<help message>"._  
+  There should not be any following lines.
+#### In-code
+Documentation comments are styled per-language.
+- Kotlin Documentation should be in [KDoc](https://kotlinlang.org/docs/kotlin-doc.html).
+- Python Documentation should be in [PyDoc](https://docs.python.org/3/library/pydoc.html).
+
+We currently have no automatic generator for the documentation, however this may change in the future.
+#### Other
+There are no strict requirements for documentation outside of the code,
+however, all new documentation should be written in GitHub Flavoured Markdown.
+
+A number of documents are exported from the Confluence space we used during initial development.
+If you are looking to change or add to one of these documents, please convert it to Markdown.  
+If you want to partially automate this, 
+you can use a tool like [pandoc](https://pandoc.org/) to convert the exported HTML directly into Markdown.
+Do note that this will usually need some additional editing in order for it to be of an acceptable quality.
+
+When documentation is meant to face the user, such as `README.md`, 
+anything inside [`docs/`](docs), that isn't marked as internal, or as program output, 
+please ensure that it doesn't assume internal knowledge of the tooling.  
+For example, until recently, some of the CLI documentation outwardly described its behaviour 
+in terms of the internal `Switchboard` framework. This information is not useful to an end user, 
+and should not be in such documentation.
+
+
+[^1]: "Piggy-backing" is when a set of changes is carried onto a branch via another.
+        For example, if branch `A` implements some feature, and branch `B` requires that feature;
+        `B` should be based on `A` and should have its Pull Request target `A`. 
+        Even if `B` is approved, it should only be merged into `A`, and not `main` until `A` is also approved.
+[^2]: GitHub uses the format `#<number>` to identify these, which should auto-complete while in GitHub.
+[^3]: For example, the CLI supports `finalise` and `finalize`.

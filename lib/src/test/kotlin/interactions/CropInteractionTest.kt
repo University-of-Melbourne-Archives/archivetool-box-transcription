@@ -92,6 +92,6 @@ class CropInteractionTest {
                 .toMutableMap()
         CropInteraction().manipulate(files)
         // TODO: Find a better method to verify correctness than manually checking
-        // lib/build/resources/test/SwitchboardTest/
+        // lib/build/resources/test/switchboard.SwitchboardTest/
     }
 }

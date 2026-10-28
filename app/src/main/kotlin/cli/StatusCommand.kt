@@ -3,20 +3,20 @@ package au.edu.unimelb.archivetool.app.cli
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
-import au.edu.unimelb.archivetool.switchboard.Switchboard
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import com.github.ajalt.clikt.core.Context
 
-class StatusCommand : Command(name = "status") {
+class StatusCommand(private val switchboard: AbstractSwitchboard) : Command(name = "status") {
 
     override fun help(context: Context): String =
         """
-        Request the current status of an archive job.
+        Show the progress of the job in the selected directory
         """
             .trimIndent()
 
     private val inputDirectory by inputDirectory()
 
     override fun run() {
-        Switchboard.getStatus(inputDirectory.normalizedAbsolute())
+        switchboard.getStatus(inputDirectory.normalizedAbsolute())
     }
 }

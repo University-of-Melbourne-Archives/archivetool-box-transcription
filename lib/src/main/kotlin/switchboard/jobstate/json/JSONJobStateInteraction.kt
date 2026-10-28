@@ -8,10 +8,11 @@ import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateCache.Companion.g
 import au.edu.unimelb.archivetool.switchboard.jobstate.JobStateVariant
 import au.edu.unimelb.archivetool.switchboard.jobstate.json.JSONString.Companion.toStrictString
 import au.edu.unimelb.archivetool.util.error.expect
+import au.edu.unimelb.archivetool.util.extension.asFileAttributes
+import au.edu.unimelb.archivetool.util.extension.setHidden
 import au.edu.unimelb.archivetool.util.logging.Log
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
 import java.nio.file.attribute.PosixFilePermissions.fromString
 import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createFile
@@ -55,6 +56,7 @@ object JSONJobStateWriterThread {
 
                     folder
                         .resolve(GENERATED_PATH)
+                        .apply { setHidden() }
                         .resolve("job.json")
                         .takeIf { it.isWritable() }
                         .expect("Could not write state to file: $this")
@@ -85,7 +87,7 @@ class JSONJobStateInteraction : JobStateInteraction {
             .createParentDirectories()
             .takeIf { it.notExists() && it.parent.isWritable() }
             .expect("Could not create new Job State.")
-            .createFile(asFileAttribute(fromString("rw-rw-r--")))
+            .createFile(*fromString("rw-rw-r--").asFileAttributes())
 
         return runBlocking {
             getCacheOld<JobStateVariant.JSON, JSONJobState>(variant).withWriteLock {

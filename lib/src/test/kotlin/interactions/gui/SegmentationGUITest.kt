@@ -1,4 +1,4 @@
-package interactions
+package interactions.gui
 
 import SemiManual
 import au.edu.unimelb.archivetool.switchboard.interactions.SegmentationGUIInteraction

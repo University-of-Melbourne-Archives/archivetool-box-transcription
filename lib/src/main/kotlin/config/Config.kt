@@ -18,6 +18,7 @@ data class OpenAIAPIData(
     val baseUrl: String = "https://generativelanguage.googleapis.com/v1beta/openai/",
     @EncodeDefault @SerialName("api_key") private val _apiKey: String = "",
     @EncodeDefault val model: String = "gemini-3-flash-preview",
+    @EncodeDefault val effort: String = "low",
 ) {
     val apiKey
         get() = System.getenv(API_KEY_ENV_VAR) ?: _apiKey

@@ -5,10 +5,7 @@ import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.installMordantMarkdown
 import com.github.ajalt.clikt.core.subcommands
 
-/**
- * Shared Clikt setup: register subcommands, enable Markdown help, and use the project's consistent
- * help layout. Does not execute backend operations.
- */
+/** Common settings for commands and their help pages. */
 abstract class Command(val name: String? = null, val subcommands: Set<CliktCommand> = emptySet()) :
     CliktCommand(name) {
     init {

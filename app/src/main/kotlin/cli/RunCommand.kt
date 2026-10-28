@@ -3,7 +3,7 @@ package au.edu.unimelb.archivetool.app.cli
 import au.edu.unimelb.archivetool.app.cli.helpers.Command
 import au.edu.unimelb.archivetool.app.cli.helpers.inputDirectory
 import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
-import au.edu.unimelb.archivetool.switchboard.Switchboard
+import au.edu.unimelb.archivetool.switchboard.AbstractSwitchboard
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVFileExportInteraction
 import au.edu.unimelb.archivetool.util.extension.percentToFraction
 import com.github.ajalt.clikt.core.Context
@@ -14,26 +14,32 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.clikt.parameters.types.restrictTo
 
-class RunCommand : Command(name = "run") {
+class RunCommand(private val switchboard: AbstractSwitchboard) : Command(name = "run") {
 
     override fun help(context: Context): String =
         """
-        Run the complete archive processing workflow.
+        Run the complete processing workflow
 
-        Processes archive images and writes the final CSV output.
-        An existing job state is reused by default; use --no-resume to disable reuse.
+        Equivalent to running the following commands in order:
+        - `preview create`
+        - `preview review`
+        - `ocr create`
+        - `ocr review`
+        - `finalise`
+
+        Options behave identically in the subcommand that they are inherited from
         """
             .trimIndent()
 
     private val inputDirectory by inputDirectory()
 
     private val outputPath by
-        option("-o", "--output", help = "Path for the generated CSV file.")
+        option("-o", "--output", help = "Path for the generated CSV file (finalise)")
             .path(mustExist = false, canBeDir = false)
             .required()
 
     private val noResume by
-        option("--no-resume", help = "Do not reuse existing job state in the input directory.")
+        option("--no-resume", help = "Prevent reuse of any existing job state (preview create)")
             .flag(default = false)
 
     private val autoApproveThreshold by
@@ -42,28 +48,23 @@ class RunCommand : Command(name = "run") {
                 "--auto-approve-threshold",
                 metavar = "threshold",
                 help =
-                    "Segmentation confidence threshold in percent (0-100); passed to Switchboard.",
+                    "[0-100] Threshold (as a percentage) that defines the minimum confidence of an image for it to be approved automatically (preview review)",
             )
             .int()
             .restrictTo(0, 100)
 
-    /**
-     * Coordinate the six published Switchboard stages in their required order. Segmentation, image
-     * processing, OCR, review and job-state persistence are deliberately owned by Switchboard
-     * rather than reimplemented by the CLI.
-     */
+    // Run each stage in order, using the same job directory throughout.
     override fun run() {
         val jobRoot = inputDirectory.normalizedAbsolute()
         val threshold = autoApproveThreshold?.percentToFraction() ?: 1.0
-        val switchboard =
-            Switchboard.with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
 
-        // Resume by default; the opt-out flag prevents reuse of existing job state.
         switchboard.createPreview(jobRoot, permitExisting = !noResume)
         switchboard.reviewSegmentationPreview(jobRoot, threshold)
         switchboard.manipulateImages(jobRoot)
         switchboard.createOCR(jobRoot)
         switchboard.reviewOCRPreview(jobRoot)
-        switchboard.generateExport(jobRoot)
+        switchboard
+            .with(CSVFileExportInteraction(outputPath.normalizedAbsolute()))
+            .generateExport(jobRoot)
     }
 }

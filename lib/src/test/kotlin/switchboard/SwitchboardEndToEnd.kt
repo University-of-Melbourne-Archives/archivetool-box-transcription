@@ -1,3 +1,6 @@
+package switchboard
+
+import SemiManual
 import au.edu.unimelb.archivetool.switchboard.Switchboard
 import au.edu.unimelb.archivetool.switchboard.interactions.export.CSVStringExportInteraction
 import au.edu.unimelb.archivetool.switchboard.jobstate.GENERATED_PATH

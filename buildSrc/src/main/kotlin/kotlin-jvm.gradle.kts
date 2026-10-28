@@ -5,6 +5,7 @@ package buildsrc.convention
 import buildsrc.convention.kotlin.jvm.Platform
 import buildsrc.convention.kotlin.jvm.Tests
 import buildsrc.convention.kotlin.common.AutoFormat
+import buildsrc.convention.kotlin.common.GitHash
 import buildsrc.convention.util.Module
 import buildsrc.convention.util.Module.Companion.apply
 
@@ -19,5 +20,5 @@ kotlin {
     jvmToolchain(21)
 }
 
-val modules: Set<Module> = setOf(AutoFormat, Platform, Tests)
+val modules: Set<Module> = setOf(AutoFormat, GitHash, Platform, Tests)
 modules.apply(project)

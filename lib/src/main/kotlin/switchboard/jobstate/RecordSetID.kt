@@ -1,7 +1,6 @@
 package au.edu.unimelb.archivetool.switchboard.jobstate
 
 import au.edu.unimelb.archivetool.util.extension.counted
-import au.edu.unimelb.archivetool.util.logging.Log
 import kotlin.reflect.full.companionObjectInstance
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -55,32 +54,19 @@ sealed class RecordSetID {
             return searchInOrder(ids)
         }
 
-        fun fromOCROutput(ids: List<String>): RecordSetID {
+        fun fromOCROutput(ids: List<String>): RecordSetID? {
             val scanned = ids.map { scanForAll(it) }
-            val type = scanned.first()
-            var result: RecordSetID
-            when (type) {
-                is ModernID -> {
-                    result = scanned.first()!!
-                }
+            val type = scanned.firstOrNull() ?: return null
+            return when (type) {
                 is OldID -> {
-                    result =
-                        if (scanned.all { it is OldID } && scanned.size > 1) {
-                            OldMultiID(scanned.joinToString { it!!.id })
-                        } else {
-                            scanned.first()!!
-                        }
+                    if (scanned.all { it is OldID } && scanned.size > 1) {
+                        OldMultiID(scanned.joinToString { it!!.id })
+                    } else {
+                        type
+                    }
                 }
-                is OldShorthandID -> {
-                    result = scanned.first()!!
-                }
-                is OldMultiID,
-                null -> {
-                    Log.error("Invalid Output from Python OCR module.")
-                    error("")
-                }
+                else -> type
             }
-            return result
         }
 
         // Sort by priority order, then the most frequent one remaining, with ties being broken by

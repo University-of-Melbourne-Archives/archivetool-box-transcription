@@ -3,7 +3,6 @@ package au.edu.unimelb.archivetool.util
 import au.edu.unimelb.archivetool.util.extension.DISTANT_FUTURE
 import au.edu.unimelb.archivetool.util.extension.isDistantFuture
 import au.edu.unimelb.archivetool.util.extension.tightestBoundsWithSentinel
-import java.time.format.DateTimeParseException
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateRange
 import kotlinx.datetime.format
@@ -51,9 +50,7 @@ data class DateRange(val range: LocalDateRange) {
 
     val endDateString by lazy { endDate?.format(dateFormatter) }
 
-    val CSVString by lazy {
-        yearRange + (endDate?.let { ";$startDateString;$endDateString" } ?: ";;")
-    }
+    val CSVString by lazy { "$yearRange;$startDateString;" + (endDateString ?: "") }
 
     override fun toString(): String {
         return "DateRange(startDate=$startDate, endDate=$endDate)"
@@ -84,25 +81,28 @@ data class DateRange(val range: LocalDateRange) {
             if (dateRange.contains("None")) return null
             val ranges = dateRange.split(", ")
             return ranges
-                .map { it.split('!', limit = 1).let { it[0] to it.getOrNull(1) } }
-                .map { (start, end) ->
-                    val startDate =
-                        try {
-                            LocalDate.parse(start)
-                        } catch (e: DateTimeParseException) {
-                            LocalDate.parse("$start-01-01")
+                .map { it.split(':', limit = 2).let { it[0] to it.getOrNull(1) } }
+                .runCatching {
+                    map { (start, end) ->
+                        val startDate =
+                            LocalDate.parse(
+                                start.takeIf {
+                                    it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex())
+                                } ?: "$start-01-01"
+                            )
+                        val endDate = end?.let {
+                            LocalDate.parse(
+                                end.takeIf {
+                                    it.matches("^[12][90]\\d{2}-\\d{1,2}-\\d{1,2}".toRegex())
+                                } ?: "$start-12-31"
+                            )
                         }
-                    val endDate = end?.let {
-                        try {
-                            LocalDate.parse(end)
-                        } catch (e: DateTimeParseException) {
-                            LocalDate.parse("$end-12-31")
-                        }
-                    }
 
-                    DateRange(startDate, endDate)
+                        DateRange(startDate, endDate)
+                    }
                 }
-                .tightestBounds()
+                .getOrNull()
+                ?.tightestBounds()
         }
 
         // Validates a single string with the only valid format being

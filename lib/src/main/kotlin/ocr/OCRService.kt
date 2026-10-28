@@ -35,9 +35,14 @@ class OCRService(private val settings: OpenAIAPIData) {
     }
 
     val baseParams by lazy {
+        // List supported by OpenAI-Java
+        val efforts = setOf("none", "minimal", "low", "medium", "high", "xhigh", "max")
         ChatCompletionCreateParams.builder()
             .model(settings.model)
-            .reasoningEffort(ReasoningEffort.LOW)
+            .reasoningEffort(
+                settings.effort.takeIf { efforts.contains(it) }?.let { ReasoningEffort.of(it) }
+                    ?: ReasoningEffort.LOW
+            )
     }
 
     fun params(imageBase64Url: String): ChatCompletionCreateParams =
@@ -144,7 +149,11 @@ class OCRService(private val settings: OpenAIAPIData) {
                 "Preserve line breaks and formatting. Do not summarize or add commentary. " +
                 "Ignore strikethrough, text on logo and randomly placed numbers outside the sticker. " +
                 "Identify the unique date ranges and output them as 'Date ranges: {date ranges}'," +
-                "with the start and end of the range separated by a '!', and each date in ISO8601. " +
+                "with the start and end of the range separated by a ':', and each date as YYYY-MM-DD. " +
+                "Some ranges may be in a form such as 1990-91. These should be expanded. " +
+                "Do not combine individual dates or date ranges into a compound. " +
+                "Instead, and these all be included as a comma-separated list. " +
+                "For ambiguous dates (such as YYYY), choose the earliest or latest possible date, as appropriate." +
                 "If a single date appears, treat it as a range with no end. " +
                 "Return 'None' if there's none.")
     }

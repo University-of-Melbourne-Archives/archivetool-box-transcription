@@ -1,240 +1,287 @@
 package au.edu.unimelb.archivetool.app.cli
 
-import au.edu.unimelb.archivetool.app.cli.helpers.normalizedAbsolute
+import au.edu.unimelb.archivetool.switchboard.MockSwitchboard
+import au.edu.unimelb.archivetool.switchboard.interactions.CreatePreviewInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.InitInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.OCRPreviewInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.SegmentationPreviewInteraction
+import au.edu.unimelb.archivetool.switchboard.interactions.StringStatusInteraction
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobFile
+import au.edu.unimelb.archivetool.switchboard.jobstate.JobRelativePath
+import au.edu.unimelb.archivetool.util.logging.LogConsumer
+import au.edu.unimelb.archivetool.util.logging.LogLevel
+import au.edu.unimelb.archivetool.util.logging.consumers.FileConsumer
+import au.edu.unimelb.archivetool.util.logging.consumers.StderrConsumer
 import com.github.ajalt.clikt.testing.test
-import kotlin.io.path.Path
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
+/** Checks the CLI commands against the user stories. */
 class CliCommandTest {
-
     @Test
     fun `help lists the main commands`() {
-        val result = BaseCommand().test("--help")
-
+        val result = BaseCommand(MockSwitchboard).test("--help")
         assertEquals(0, result.statusCode)
-        assertContains(result.output, "run")
-        assertContains(result.output, "preview")
-        assertContains(result.output, "ocr")
-        assertContains(result.output, "status")
-        assertContains(result.output, "finalise")
+        listOf("run", "preview", "ocr", "status", "finalise", "info").forEach {
+            assertContains(result.output, it)
+        }
     }
 
     @Test
-    fun `run help exposes the current path interface`() {
-        val result = BaseCommand().test("run --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--input-directory")
-        assertContains(result.output, "--output")
-        assertContains(result.output, "--no-resume")
-        assertFalse(result.output.contains("--resume"))
-        assertContains(result.output, "--auto-approve-threshold")
-        assertFalse(result.output.contains("--job-directory"))
+    fun `help explains the important options and subcommands`() {
+        val run = BaseCommand(MockSwitchboard).test("run --help")
+        assertEquals(0, run.statusCode)
+        listOf("--input-directory", "--output", "--no-resume", "--auto-approve-threshold").forEach {
+            assertContains(run.output, it)
+        }
+        listOf("preview", "ocr").forEach { command ->
+            val result = BaseCommand(MockSwitchboard).test("$command --help")
+            assertEquals(0, result.statusCode)
+            assertContains(result.output, "create")
+            assertContains(result.output, "review")
+        }
     }
 
     @Test
-    fun `run requires an output path`() {
-        val result = BaseCommand().test("run")
-
-        assertEquals(1, result.statusCode)
-        assertContains(result.output, "--output")
+    fun `run and finalise require an output path`() {
+        listOf("run", "finalise").forEach { command ->
+            val result = BaseCommand(MockSwitchboard).test(command)
+            assertEquals(1, result.statusCode, command)
+            assertContains(result.output, "--output")
+        }
     }
 
     @Test
-    fun `run rejects an auto approve threshold above one hundred`() {
-        val result = BaseCommand().test("run -o result.csv -A 101")
-
-        assertEquals(1, result.statusCode)
+    fun `invalid commands and thresholds report errors`() {
+        listOf(
+                "unknown-command",
+                "run -o result.csv -A 101",
+                "preview review -A -1",
+                "preview review -A abc",
+            )
+            .forEach { args ->
+                val result = BaseCommand(MockSwitchboard).test(args)
+                assertEquals(1, result.statusCode, args)
+                assertTrue(result.output.isNotBlank(), args)
+            }
     }
 
     @Test
-    fun `preview help lists create and review`() {
-        val result = BaseCommand().test("preview --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "create")
-        assertContains(result.output, "review")
-    }
-
-    @Test
-    fun `preview create defaults input directory to the current working directory`() {
-        val result = BaseCommand().test("preview create --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--input-directory")
-        assertContains(result.output, "current working directory")
-        assertContains(result.output, "--no-resume")
-        assertFalse(result.output.contains("--resume"))
-    }
-
-    @Test
-    fun `run rejects the removed resume option`() {
-        val result = BaseCommand().test("run -o result.csv --resume")
-
+    fun `a missing input directory is rejected`() {
+        val result =
+            BaseCommand(MockSwitchboard).test("run -i __missing_archive_directory__ -o result.csv")
         assertEquals(1, result.statusCode)
     }
 
     @Test
-    fun `preview create rejects the removed resume option`() {
-        val result = BaseCommand().test("preview create --resume")
-
-        assertEquals(1, result.statusCode)
+    fun `status uses the selected Switchboard`() {
+        val status = StringStatusInteraction()
+        val switchboard = MockSwitchboard.with(status)
+        val directory = Files.createTempDirectory("cli-status-")
+        try {
+            val result = BaseCommand(switchboard).test("status", "-i", directory.toString())
+            assertEquals(0, result.statusCode, result.output)
+            assertContains(status.result, "no active job")
+        } finally {
+            Files.deleteIfExists(directory)
+        }
     }
 
     @Test
-    fun `run accepts no resume before checking required output`() {
-        val result = BaseCommand().test("run --no-resume")
-
-        assertEquals(1, result.statusCode)
-        assertContains(result.output, "--output")
+    fun `preview create can be called separately`() = withSampleImage { directory, _ ->
+        var calls = 0
+        val preview =
+            object : CreatePreviewInteraction {
+                override fun createPreview(
+                    files: Set<JobRelativePath>,
+                    weights: Path?,
+                    rejectConfidenceThreshold: Double,
+                ): Map<JobRelativePath, JobFile> {
+                    calls++
+                    assertEquals(1, files.size)
+                    return emptyMap()
+                }
+            }
+        val switchboard = MockSwitchboard.with(preview)
+        val result = BaseCommand(switchboard).test("preview", "create", "-i", directory.toString())
+        assertEquals(0, result.statusCode, result.output)
+        assertEquals(1, calls)
     }
 
     @Test
-    fun `preview create no longer exposes output or auto approve options`() {
-        val result = BaseCommand().test("preview create --help")
+    fun `preview review passes the threshold to Switchboard`() =
+        withSampleImage { directory, image ->
+            var threshold: Double? = null
+            val review =
+                object : SegmentationPreviewInteraction {
+                    override fun review(
+                        files: Map<JobRelativePath, JobFile?>,
+                        autoApproveThreshold: Double,
+                    ): Map<JobRelativePath, JobFile> {
+                        threshold = autoApproveThreshold
+                        return emptyMap()
+                    }
+                }
+            val switchboard = MockSwitchboard.with(review)
+            val state = requireNotNull(switchboard.job.create(directory))
+            state.update(
+                mapOf(
+                    JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())
+                )
+            )
 
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--input-directory")
-        assertFalse(result.output.contains("--output"))
-        assertFalse(result.output.contains("--auto-approve-threshold"))
+            val result =
+                BaseCommand(switchboard)
+                    .test("preview", "review", "-i", directory.toString(), "-A", "25")
+            assertEquals(0, result.statusCode, result.output)
+            assertEquals(0.25, threshold)
+        }
+
+    @Test
+    fun `OCR review can be called separately`() = withSampleImage { directory, image ->
+        var calls = 0
+        val review =
+            object : OCRPreviewInteraction {
+                override fun review(
+                    files: Map<JobRelativePath, JobFile?>,
+                    autoApproveThreshold: Double,
+                ): Map<JobRelativePath, JobFile> {
+                    calls++
+                    return emptyMap()
+                }
+            }
+        val switchboard = MockSwitchboard.with(review)
+        val state = requireNotNull(switchboard.job.create(directory))
+        state.update(
+            mapOf(JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf()))
+        )
+
+        val result = BaseCommand(switchboard).test("ocr", "review", "-i", directory.toString())
+        assertEquals(0, result.statusCode, result.output)
+        assertEquals(1, calls)
     }
 
     @Test
-    fun `preview review exposes auto approve threshold without a job directory`() {
-        val result = BaseCommand().test("preview review --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--auto-approve-threshold")
-        assertFalse(result.output.contains("Job Directory"))
+    fun `finalise writes a CSV from an existing job`() = withSampleImage { directory, image ->
+        val output = directory.resolve("result.csv")
+        try {
+            val switchboard = MockSwitchboard.with()
+            val state = requireNotNull(switchboard.job.create(directory))
+            state.update(
+                mapOf(
+                    JobRelativePath(directory, image.fileName) to JobFile(vertexes = mutableMapOf())
+                )
+            )
+            val result =
+                BaseCommand(switchboard)
+                    .test("finalise", "-i", directory.toString(), "-o", output.toString())
+            assertEquals(0, result.statusCode, result.output)
+            assertTrue(Files.exists(output))
+            assertTrue(Files.size(output) > 0)
+        } finally {
+            Files.deleteIfExists(output)
+        }
     }
 
     @Test
-    fun `preview review rejects an auto approve threshold above one hundred`() {
-        val result = BaseCommand().test("preview review -A 101")
+    fun `log file and stderr use separate levels`() {
+        val consumers = mutableSetOf<LogConsumer>()
+        val init =
+            object : InitInteraction {
+                override fun init(logConsumers: Set<LogConsumer>) {
+                    consumers.clear()
+                    consumers.addAll(logConsumers)
+                }
 
-        assertEquals(1, result.statusCode)
+                override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
+            }
+        val switchboard = MockSwitchboard.with(init)
+        val directory = Files.createTempDirectory("cli-logging-")
+        val logFile = directory.resolve("archivetool.log")
+        try {
+            val result =
+                BaseCommand(switchboard)
+                    .test(
+                        "-vv",
+                        "-L",
+                        logFile.toString(),
+                        "-Q",
+                        "status",
+                        "-i",
+                        directory.toString(),
+                    )
+            assertEquals(0, result.statusCode, result.output)
+            assertEquals(
+                LogLevel.Trace,
+                consumers.filterIsInstance<StderrConsumer>().single().maxLogLevel,
+            )
+            val fileConsumer = consumers.filterIsInstance<FileConsumer>().single()
+            assertEquals(LogLevel.Warn, fileConsumer.maxLogLevel)
+
+            // FileConsumer is already part of the logging library.
+            fileConsumer.recordLogEntry("Example log entry\n")
+            assertContains(Files.readString(logFile), "Example log entry")
+        } finally {
+            Files.deleteIfExists(logFile)
+            Files.deleteIfExists(directory)
+        }
     }
 
     @Test
-    fun `ocr help lists create and review`() {
-        val result = BaseCommand().test("ocr --help")
+    fun `file logging can stay enabled when stderr is quiet`() {
+        val consumers = mutableSetOf<LogConsumer>()
+        val init =
+            object : InitInteraction {
+                override fun init(logConsumers: Set<LogConsumer>) {
+                    consumers.clear()
+                    consumers.addAll(logConsumers)
+                }
 
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "create")
-        assertContains(result.output, "review")
+                override fun isEligible(file: Pair<JobRelativePath, JobFile>) = false
+            }
+        val directory = Files.createTempDirectory("cli-quiet-logging-")
+        try {
+            val result =
+                BaseCommand(MockSwitchboard.with(init))
+                    .test(
+                        "-qqq",
+                        "-L",
+                        directory.resolve("run.log").toString(),
+                        "-V",
+                        "status",
+                        "-i",
+                        directory.toString(),
+                    )
+            assertEquals(0, result.statusCode, result.output)
+            assertTrue(consumers.none { it is StderrConsumer })
+            assertEquals(
+                LogLevel.Debug,
+                consumers.filterIsInstance<FileConsumer>().single().maxLogLevel,
+            )
+
+            val missingFile =
+                BaseCommand(MockSwitchboard).test("-V", "status", "-i", directory.toString())
+            assertEquals(1, missingFile.statusCode)
+            assertContains(missingFile.output, "--log-file")
+        } finally {
+            Files.deleteIfExists(directory)
+        }
     }
 
-    @Test
-    fun `ocr create is available without a job directory argument`() {
-        val result = BaseCommand().test("ocr create --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "OCR")
-        assertFalse(result.output.contains("Job Directory"))
-    }
-
-    @Test
-    fun `ocr review uses the current working directory`() {
-        val result = BaseCommand().test("ocr review --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "current working directory")
-    }
-
-    @Test
-    fun `finalise requires a specific output path`() {
-        val result = BaseCommand().test("finalise")
-
-        assertEquals(1, result.statusCode)
-        assertContains(result.output, "--output")
-    }
-
-    @Test
-    fun `finalise no longer takes a job directory`() {
-        val result = BaseCommand().test("finalise --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "--output")
-        assertFalse(result.output.contains("Job Directory"))
-    }
-
-    @Test
-    fun `status still accepts a job directory`() {
-        val result = BaseCommand().test("status --help")
-
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "-i, --input-directory=<path>")
-    }
-
-    @Test
-    fun `run rejects an auto approve threshold below zero`() {
-        val result = BaseCommand().test("run -o result.csv -A -1")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `run rejects a non numeric threshold`() {
-        val result = BaseCommand().test("run -o result.csv -A invalid")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `run rejects a missing input directory`() {
-        val result = BaseCommand().test("run -i __archivetool_missing_input_folder__ -o result.csv")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `preview review rejects a negative threshold`() {
-        val result = BaseCommand().test("preview review -A -1")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `ocr create does not accept removed job directory flag`() {
-        val result = BaseCommand().test("ocr create --job-directory unused")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `ocr review does not accept removed job directory flag`() {
-        val result = BaseCommand().test("ocr review --job-directory unused")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `finalise does not accept an input directory flag`() {
-        val result = BaseCommand().test("finalise -o result.csv --input-directory photos")
-        assertEquals(1, result.statusCode)
-    }
-
-    @Test
-    fun `run help describes the staged workflow`() {
-        val result = BaseCommand().test("run --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "workflow")
-    }
-
-    @Test
-    fun `CLI input paths are normalized to absolute paths`() {
-        val input = Path(".", "photos", "..", "photos")
-        assertEquals(input.toAbsolutePath().normalize(), input.normalizedAbsolute())
-    }
-
-    @Test
-    fun `status help does not promise an implemented backend`() {
-        val result = BaseCommand().test("status --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "Switchboard")
-    }
-
-    @Test
-    fun `finalise help describes export without OCR processing`() {
-        val result = BaseCommand().test("finalise --help")
-        assertEquals(0, result.statusCode)
-        assertContains(result.output, "Export")
+    // A single image is enough to exercise the mock processing commands.
+    private fun withSampleImage(block: (Path, Path) -> Unit) {
+        val directory = Files.createTempDirectory("cli-test-")
+        val image = directory.resolve("sample.jpg")
+        try {
+            Files.write(image, byteArrayOf(0x01, 0x02, 0x03))
+            block(directory, image)
+        } finally {
+            Files.deleteIfExists(image)
+            Files.deleteIfExists(directory)
+        }
     }
 }
