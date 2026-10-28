@@ -95,7 +95,10 @@ class OCRInterface(
                 size = Size(1100.0, 1000.0)
             }
 
-            mainWindowCloseBehavior = { runBlocking { close() } }
+            mainWindowCloseBehavior = {
+                runBlocking { close() }
+                display.children.clear()
+            }
         }
 
         themeManager.selected = theme
