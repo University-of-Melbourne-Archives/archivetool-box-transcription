@@ -1,153 +1,192 @@
-﻿# ArchiveTool Review Interfaces — Usage Guide With Examples
+﻿# ArchiveTool Review Interfaces: Usage Guide With Examples
+## Preamble
+ArchiveTool provides an optional review stage for the output of both the Segmentation `(preview create)` 
+and Transcription `(ocr create)` stages.  
+These review stages are powered by simple user interfaces.  
+This document serves as a guide on the usage of these review interfaces.  
 
-ArchiveTool provides an optional review stage for the output of the `preview create` command model and another for the output of the `ocr create` command model.
+### Table of Contents
+- [Review GUI 1: Segmentation](#review-gui-1-segmentation)
+- [Review GUI 2: Segmentation](#review-gui-2-ocr)
 
-## 1. Review GUI 1 — Segmentation
+## Review GUI 1: Segmentation
 
-### 1.1 Purpose
+### Purpose
 
 The user interface called by the `preview review` command is used for manual review of the `preview create` output file.
  
-Review consists of adjusting any hallucinated, missed, or misaligned box/sticker segmentations.
+This interface allows the user to adjust any hallucinated, missed, or misaligned box/sticker segmentations.
 
-### 1.2 Interface Overview
- 
-Resizing the window increases the size of the image viewport; it does not affect the current image scale.
- 
-#### 1.2.1 Image Controls
+### Interface Overview
 
-Clicking within the boundaries of a box or its sticker will create a selection for both the sticker and box itself. 
+#### General 
+In this interface, the window is resizable.  
+Resizing the window increases the size of the image viewport, but does not affect the current image scale.  
+The <kbd>Fit</kbd> button can rescale the image to correctly fit the adjusted viewport.
+
+While using this interface, you can use the operating system _close_ button at any time.  
+This will close the app and save your progress.  
+However, you should always finish your work with the <kbd>Finish</kbd> button, as otherwise, 
+edits to the current image may not be saved completely.
+ 
+#### Image Controls
+
+Clicking within the boundaries of a box or its sticker will select both the sticker and the box itself. 
 One selection may be active at once.
 
-Mouse dragging a corner of the selection of a box or sticker allows the user to move vertices around to change the shape and size of the box.
+Clicking and dragging the corner of a selected box or sticker allows the user
+to move the vertex around and change the size and shape of the box.
 
-Mouse dragging within a box allows moving of the box and its sticker. Creates a selection, if not already present.
+Clicking and dragging within a box will move the box and its sticker.  
+This will select the box and sticker, if they are not selected already.
 
-Mouse dragging within just a sticker allows moving of just the sticker. Creates new selection, if not already present.
+Clicking and dragging within just a sticker allows moving of just the sticker.  
+This will select the sticker and its parent box, if they are not selected already.
 
-Mouse dragging outside the boundaries of any box allows for the panning of the image.
+Clicking and dragging in any area where a box is not present will pan the image.
 
-#### 1.2.2 Scaling Controls
+#### Scaling Controls
 
-| Button | Purpose                                     | Behaviour Details                                                   |
-|--------|---------------------------------------------|---------------------------------------------------------------------|
-| `+`    | Zooms in on image                           | -                                                                   |
-| `-`    | Zoom out on image                           | -                                                                   |
-| `Fit`  | Adjusts zoom and view position to fit image | Resizes to current viewport size, recommended after resizing window |
+| Button         | Purpose                                                              |
+|----------------|----------------------------------------------------------------------|
+| <kbd>+</kbd>   | Zooms in on the image                                                |
+| <kbd>-</kbd>   | Zooms out on the image                                               |
+| <kbd>Fit</kbd> | Adjusts the zoom and view position for the image to fit the viewport |
 
-#### 1.2.3 Review Controls
+#### Review Controls
 
-| Button     | Purpose                                                                           | Behaviour Details                                                                            |
-|------------|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| `Previous` | Starts review previous image in batch                                             | Does not automatically save unsaved changes                                                  |
-| `Next`     | Starts review for next image in batch                                             | Does not automatically save unsaved changes                                                  |
-| `Confirm`  | Saves all changes made to current image                                           | All additions or modifications to image are reverted if not saved                            |
-| `Create`   | Creates a new, rectangular segmentation in the middle of the image to be adjusted | Newly created segmentation is automatically selected and must be confirmed to save creation. |
-| `Delete`   | Deletes currently selected segmentation                                           | Only functional if a selection is active, does not require a save to confirm deletion        |
-| `Finish`   | Finishes the review                                                               | Closes review window, does not write unsaved changes                                         |
+| Button              | Purpose                                                      | Behaviour Details                                                                                                                  |
+|---------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| <kbd>Previous</kbd> | Opens the previous image in the batch for review             | Does not save unsaved changes                                                                                                      |
+| <kbd>Next</kbd>     | Opens the next image in the batch for review                 | Does not save unsaved changes                                                                                                      |
+| <kbd>Confirm</kbd>  | Saves all of the changes made to the current image           | All additions and modifications to an image are reverted if they are not saved by <kbd>Confirm</kbd>                               |
+| <kbd>Create</kbd>   | Creates a new, rectangular border in the middle of the image | This new segmentation is automatically selected and must be saved with the <kbd>Confirm</kbd> button                               |
+| <kbd>Delete</kbd>   | Deletes the currently selected segmentation                  | Does nothing when no boxes or stickers are selected<br/>Deletions happen immediately and do not require saving to confirm deletion |
+| <kbd>Finish</kbd>   | Finishes the review                                          | Closes the review window and only saves changes made to the current image                                                          |
 
-### 1.3 Output
+### Output
 
-Updates the segmentation_data.json file in the specified `[-i DIR]` for all images that were changed in the batch.
+Saving updates a file named `.archivetool_generated/job.json` in the target directory.
 
-### 1.4 Example Workflow
+### Example Workflow
 
-In this scenario, the user adjusts the segmentations with any inaccurate points for every image in the batch. 
+In this scenario, the user reviews the segmentations generated for a directory of images. 
 
-1. `preview review` is called and the interface loads.
-2. User clicks `Next` button until a coloured outline drawn on the image preview does not correctly match its box or sticker edges
-3. User clicks within the inaccurate outline to select it.
-4. User drags the vertices of the inaccurate sticker and/or box selection to match image.
-5. User clicks `Confirm` button to save all changes.
-6. User repeats steps 2 to 5 until all images in the batch have been reviewed.
-7. User clicks `Finish` button.
+1. The `preview review` command is called from the command-line and the interface loads.
+2. The user clicks the <kbd>Next</kbd> button until one or more of the coloured outlines drawn on the image preview
+does not correctly align with any boxes or stickers.
+3. The user clicks within the inaccurate outline to select it.
+4. The user clicks and drags the corners of the inaccurate sticker and/or box until it matches the image.
+5. The user clicks the <kbd>Confirm</kbd> button to save the change.
+6. The user repeats steps 2 to 5 until all of the images in the batch have been reviewed.
+7. The user clicks the <kbd>Finish</kbd> button and the GUI closes.
 
-## 2. Review GUI 2 — OCR
+## Review GUI 2: OCR
 
-### 2.1 Purpose
+### Purpose
 
 The user interface called by the `ocr review` command is used for manual review of the `ocr create` output file.
  
-Review consists of adjusting any missed or inaccurately read box and sticker text.
+This interface allows the user to adjust any missed or inaccurately transcribed text from a box and its sticker.
 
-### 2.2 Interface Overview
+### Interface Overview
+#### General
+In this interface, the window is resizable.  
+Resizing the window increases the size of the image viewport, but does not affect the current image scale.  
+The <kbd>Fit</kbd> button can rescale the image to correctly fit the adjusted viewport.
 
-Resizing the window increases the size of the image viewport; it does not affect the current image scale.
+While using this interface, you can use the operating system _close_ button at any time.  
+This will close the app and save your progress.  
+However, you should always finish your work with the <kbd>Finish</kbd> button, as otherwise,
+edits to the current image may not be saved completely.
 
-#### 2.2.1 Image Controls
+#### Image Controls
 
-Mouse dragging anywhere allows for the panning of the image.
+Clicking and dragging anywhere on the image will pan it.
 
-#### 2.2.2 Scaling Controls
 
-| Button | Purpose                                     | Behaviour Details                                                   |
-|--------|---------------------------------------------|---------------------------------------------------------------------|
-| `+`    | Zooms in on image                           | -                                                                   |
-| `-`    | Zoom out on image                           | -                                                                   |
-| `Fit`  | Adjusts zoom and view position to fit image | Resizes to current viewport size, recommended after resizing window |
+#### Scaling Controls
 
-#### 2.2.3 Input & Formatting
+| Button         | Purpose                                                              |
+|----------------|----------------------------------------------------------------------|
+| <kbd>+</kbd>   | Zooms in on the image                                                |
+| <kbd>-</kbd>   | Zooms out on the image                                               |
+| <kbd>Fit</kbd> | Adjusts the zoom and view position for the image to fit the viewport |
 
-The OCR output is formatted as 3 fields: Node Title, Description, and Date Range.
+#### Input and Formatting
 
-The single-line input fields are used to review and edit each of the OCR output fields.
+The OCR output is formatted as 3 fields: 
+- Node Title,
+- Description, and 
+- Date Range.
 
+The single-line input fields are used to review and edit each of the OCR output fields.[^1]  
 The text below each input field is a live multi-line display of the entire line. 
 
-Any input field may be saved while empty.
+Any input field can be saved while empty or with a value in the expected format.
 
-##### 2.2.3.1 Node Title
+##### Node Title
 
-\<Record Set ID> is the unique identifier displayed on each archive box sticker that comes in various different formats, given in examples below.
+*The accepted format for this field is `<Record Set ID> Unit <Unit Number>`, where:*  
+- `<Record Set ID>` is the unique identifier for a series of boxes, and is displayed on a box's sticker.  
+It can come in various different formats, as given in the examples below.
+- `<Unit Number>` is a singular number used to reference the individual box within a series of boxes,
+and is displayed on a box's sticker.  
+On save, the `<Unit Number>` is automatically padded to four characters.
 
-\<Unit Number> is a singular number stored on each archive box sticker. On save, \<Unit Number> is automatically padded to four characters.
-
-*The accepted format is:*
-\<Record Set ID> Unit \<Unit Number>
-
-*Examples of valid formatting:*\
-1976.0276 Unit 1071\
-76/29 Unit 1071\
-UMA-AC-000000330 Unit 431\
+Any of these lines would be valid formatting:
+```text
+1976.0276 Unit 1071
+76/29 Unit 1071
+UMA-AC-000000330 Unit 431
 UMA-SRE-20160038 Unit 0431
+```
 
-##### 2.2.3.2 Description
+##### Description
 
-Any input format is valid.
+Any input text is valid. Use a semi-colon `(;)` to separate different lines.
 
-##### 2.2.3.2 Date Range
+##### Date Range
 
-The start and end dates are displayed on the box.
+This is the range of years that a box is relevant for.  
+This field is only automatically populated when there are dates written on the box,
+but during review, a range can be added through context.
 
-In the case of only a singular year being on the box, a singular year should be input accordingly. 
+When there is only a singular date on the box, a singular year should be input accordingly. 
 
-*Accepted format is:*\
-yyyy-yyyy;yyyy-MM-dd;yyyy-MM-dd\
-*OR*\
-yyyy;;
+If only years are known, the generated range will be from the 1st of January until the 31st of December.
 
-Input must be a possible date and year range.
+The following inputs are valid formats:
+```text
+yyyy-yyyy;yyyy-MM-dd;yyyy-MM-dd
 
-#### 2.2.4 Review Controls
+yyyy;
+```
 
-| Button     | Purpose                                                | Behaviour Details                                                                                                                       |
-|------------|--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `Previous` | Starts review previous image in batch                  | Does not automatically save unsaved changes                                                                                             |
-| `Next`     | Starts review for next image in batch                  | Does not automatically save unsaved changes                                                                                             |
-| `Save`     | Saves all changes made to fields for the current image | All changes to fields are reverted if not saved; an error popup with a targeted message for all saved fields that are invalid is shown. |
-| `Finish`   | Finishes the review                                    | Closes review window, does not write unsaved changes                                                                                    |
+Additionally, the input is checked to be a valid date and year range.
 
-### 2.3 Output
+#### Review Controls
 
-Updates the segmentation_data.json file in the specified `[-i DIR]` for all of the box OCR output that was changed in the batch.
+| Button              | Purpose                                                 | Behaviour Details                                                                                                                                 |
+|---------------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| <kbd>Previous</kbd> | Opens the previous image in the batch for review        | Does not save unsaved changes                                                                                                                     |
+| <kbd>Next</kbd>     | Opens the next image in the batch for review            | Does not save unsaved changes                                                                                                                     |
+| <kbd>Save</kbd>     | Saves any changes made to a field for the current image | All modifications to a field if they are not saved by <kbd>Save</kbd><br/>If a modification is in an invalid format, an error message will pop up |
+| <kbd>Finish</kbd>   | Finishes the review                                     | Closes the review window and does not write any unsaved changes                                                                                   |
 
-### 2.4 Example Workflow
+### Output
+Saving updates a file named `.archivetool_generated/job.json` in the target directory.
 
-In this scenario, the user adjusts the any inaccurately extracted text for every box in the batch. 
+### Example Workflow
 
-1. `ocr review` is called and the interface loads.
-2. User clicks `Next` button until the extracted text for any of the three fields do not correctly match what is read on the box.
-3. User clicks on input field(s) with inaccurate text and corrects it.
-4. User clicks `Save` button to save all changes.
-5. User repeats steps 2 to 4 until all boxes in the batch have been reviewed.
-6. User clicks `Finish` button.
+In this scenario, the user adjusts reviews and corrects the text extracted from each box in a directory of images. 
+
+1. The `ocr review` command is called from the command-line and the interface loads.
+2. The user clicks the <kbd>Next</kbd> button until one or more of the three extracted text fields 
+do not correctly match what is written on the box.
+3. The user clicks on each input field with incorrect text and corrects them.
+4. The user clicks the <kbd>Save</kbd> button to save their changes.
+5. The user repeats steps 2 to 4 until every box has been reviewed.
+6. The user clicks the <kbd>Finish</kbd> button.
+
+[^1]: This input field is single-line due to technical limitations in the GUI library being used.
