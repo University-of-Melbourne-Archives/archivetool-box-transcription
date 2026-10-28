@@ -2,29 +2,37 @@
 `archivetool` is mass-digitisation software, designed to expedite the detection, transcription and recording of a 
 large physical archive.
 
-The easiest way to get started is to download the prebuilt JAR and script from GitHub Releases, and then see [**Running**](#running).
+The easiest way to get started is to download the prebuilt JAR and script from GitHub Releases, 
+and then see [**Running**](#running).
 
 For instructions on compiling from source, see [**Compilation**](#customisation).
 
 It is customisable to suit a large variety of collections and requirements, 
 though the base configuration is specifically suited to the University of Melbourne Archives.  
-The base settings, and instructions on how to customise them to suit your needs are available under [**Customisation**](#customisation).
+The base settings, and instructions on how to customise them to suit your needs are available under 
+[**Customisation**](#customisation).
 
 This project may require additional customisation if you need to process confidential information.  
 More information is available under [**Internet Connectivity and Confidentiality**](#internet-connectivity-and-confidentiality) 
 
 If you want to distribute this project yourself, see [**Licensing and Credits**](#licensing-and-credits) for more information.
+If you are looking to contribute, see [CONTRIBUTING](CONTRIBUTING)
 
-Other documentation that may be useful if you wish to contribute to further development is available under [`docs/`](docs/).
+Other documentation that may be useful if you wish to contribute to further development is available 
+under [`docs/`](docs).
 
 ## Running
 `archivetool` is distributed as a `.jar` file, with an accompanying launcher script.
 
 In order to run `archivetool`, you will need:
 - A copy of the software.  
-  You will need to extract the `zip` or `tar` somewhere, and note down the path to `bin/archivetool.bat` script on Windows, and the `bin/archivetool` script on macOS or Linux.[^2]
+  You will need to extract the `zip` or `tar` somewhere, 
+  and note down the path to `bin/archivetool.bat` script on Windows,
+  and the `bin/archivetool` script on macOS or Linux.[^2]
 - A Java Runtime that supports at least Java 21.  
-_You likely already have this installed, or you can download it for your platform at [getjdk.com](https://getjdk.com/?version=21&os=any&arch=any&distribution=oracle&package=any>)._
+_You likely already have this installed, 
+and you can download it for your platform at
+[getjdk.com](https://getjdk.com/?version=21&os=any&arch=any&distribution=oracle&package=any>)._
 - An OpenAI-compatible language model that supports the Chat-Completions endpoint and Vision.  
   You can use either:
   - An API Key to a cloud model, such as ChatGPT, Claude, Microsoft Copilot or Google Gemini.
@@ -34,14 +42,17 @@ _You likely already have this installed, or you can download it for your platfor
 
 Next, you need to go out and take a series of pictures, of the items you wish to digitise.
 Ideally, these pictures are front-on and as clear as possible, but we appreciate that that may not always be possible.
-There can be multiple boxes per picture. You can a series of sample images in [our test resources](lib/src/test/resources/SwitchboardTest).
-There are no file-name or -format restrictions (within reason), or resolution requirements (although, higher resolutions may improve legibility).
+There can be multiple boxes per picture. 
+You can a series of sample images in [our test resources](lib/src/test/resources/SwitchboardTest).
+There are no file-name or -format restrictions (within reason), or resolution requirements 
+(although, higher resolutions may improve legibility).
 
 Place these images inside a folder on the system you plan to run `archivetool` on. You will need the path to this folder.
 
 Then you will need to open a terminal in the folder you just created:
 - On Windows, click in the address par at the top of File Explorer, and type `cmd`. 
-- On macOS, follow [these instructions](https://ladedu.com/how-to-open-a-terminal-window-at-any-folder-from-finder-in-macos/).
+- On macOS, follow 
+[these instructions](https://ladedu.com/how-to-open-a-terminal-window-at-any-folder-from-finder-in-macos/).
 - On Linux, use `cd` or look up how to do this with your file manager.
 
 Next, you will need to set up the LLM you plan to use.
@@ -61,7 +72,7 @@ Next, you will need to set up the LLM you plan to use.
 
 
 Finally, you will need to decide on where you want the manifest to be output (as a CSV file).
-If you're unsure, `./manifest.csv` will create a file called `manifest.csv` alongside the folder of photos.
+If you're unsure, a path like `./manifest.csv` will create a file called `manifest.csv` alongside the folder of photos.
 
 Then, run the `archivetool` command-line interface.  
 You will need the path to where you extracted the `zip` or `tar`, and the location you want the CSV to output.
@@ -89,13 +100,16 @@ or pass additional options, as described in [`docs/CLI.md`](docs/CLI.md).
 You can see the specifics of a given command by running 
 `/path/to/archivetool --help` or `/path/to/archivetool <command> --help`.
 
+There is also information on the behaviour of the Graphical User interfaces in [`docs/Review.md`](docs/Review.md)
+
 ## Building
 This project uses [Gradle](https://gradle.org/).
 To build and run the application, use the *Gradle* tool window by running the wrapper directly from the terminal.
 This will automatically download Gradle 9.3.0 upon first run.
 
 Additionally, if you wish to build the Python module, you will need to enable it as described in 
-[**Python Implementations**](#python-implementations), you will also need to install the Python [Black](https://pypi.org/project/black/) autoformatter.
+[**Python Implementations**](#python-implementations),
+you will also need to install the Python [Black](https://pypi.org/project/black/) autoformatter.
 
 - Run `./gradlew fmt` to run the autoformatter.
 - Run `./gradlew run` to build and run the application.
