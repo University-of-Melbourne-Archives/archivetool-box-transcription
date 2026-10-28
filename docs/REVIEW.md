@@ -29,22 +29,22 @@ Mouse dragging outside the boundaries of any box allows for the panning of the i
 
 #### 1.2.2 Scaling Controls
 
-| Button | Purpose | Behaviour Details |
-|---|---|---|
-| `+` | Zooms in on image | - |
-| `-` | Zoom out on image | - |
-| `Fit` | Adjusts zoom and view position to fit image | Resizes to current viewport size, recommended after resizing window |
+| Button | Purpose                                     | Behaviour Details                                                   |
+|--------|---------------------------------------------|---------------------------------------------------------------------|
+| `+`    | Zooms in on image                           | -                                                                   |
+| `-`    | Zoom out on image                           | -                                                                   |
+| `Fit`  | Adjusts zoom and view position to fit image | Resizes to current viewport size, recommended after resizing window |
 
 #### 1.2.3 Review Controls
 
-| Button | Purpose | Behaviour Details |
-|---|---|---|
-| `Previous` | Starts review previous image in batch | Does not automatically save unsaved changes |
-| `Next` | Starts review for next image in batch | Does not automatically save unsaved changes |
-| `Confirm` | Saves all changes made to current image | All additions or modifications to image are reverted if not saved |
-| `Create` | Creates a new, rectangular segmentation in the middle of the image to be adjusted| Newly created segmentation is automatically selected and must be confirmed to save creation.
-| `Delete` | Deletes currently selected segmentation | Only functional if a selection is active, does not require a save to confirm deletion |
-| `Finish` | Finishes the review | Closes review window, does not write unsaved changes |
+| Button     | Purpose                                                                           | Behaviour Details                                                                            |
+|------------|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| `Previous` | Starts review previous image in batch                                             | Does not automatically save unsaved changes                                                  |
+| `Next`     | Starts review for next image in batch                                             | Does not automatically save unsaved changes                                                  |
+| `Confirm`  | Saves all changes made to current image                                           | All additions or modifications to image are reverted if not saved                            |
+| `Create`   | Creates a new, rectangular segmentation in the middle of the image to be adjusted | Newly created segmentation is automatically selected and must be confirmed to save creation. |
+| `Delete`   | Deletes currently selected segmentation                                           | Only functional if a selection is active, does not require a save to confirm deletion        |
+| `Finish`   | Finishes the review                                                               | Closes review window, does not write unsaved changes                                         |
 
 ### 1.3 Output
 
@@ -80,11 +80,11 @@ Mouse dragging anywhere allows for the panning of the image.
 
 #### 2.2.2 Scaling Controls
 
-| Button | Purpose | Behaviour Details |
-|---|---|---|
-| `+` | Zooms in on image | - |
-| `-` | Zoom out on image | - |
-| `Fit` | Adjusts zoom and view position to fit image | Resizes to current viewport size, recommended after resizing window |
+| Button | Purpose                                     | Behaviour Details                                                   |
+|--------|---------------------------------------------|---------------------------------------------------------------------|
+| `+`    | Zooms in on image                           | -                                                                   |
+| `-`    | Zoom out on image                           | -                                                                   |
+| `Fit`  | Adjusts zoom and view position to fit image | Resizes to current viewport size, recommended after resizing window |
 
 #### 2.2.3 Input & Formatting
 
@@ -130,12 +130,12 @@ Input must be a possible date and year range.
 
 #### 2.2.4 Review Controls
 
-| Button | Purpose | Behaviour Details |
-|---|---|---|
-| `Previous` | Starts review previous image in batch | Does not automatically save unsaved changes |
-| `Next` | Starts review for next image in batch | Does not automatically save unsaved changes |
-| `Save` | Saves all changes made to fields for the current image | All changes to fields are reverted if not saved; an error popup with a targeted message for all saved fields that are invalid is shown.
-| `Finish` | Finishes the review | Closes review window, does not write unsaved changes |
+| Button     | Purpose                                                | Behaviour Details                                                                                                                       |
+|------------|--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `Previous` | Starts review previous image in batch                  | Does not automatically save unsaved changes                                                                                             |
+| `Next`     | Starts review for next image in batch                  | Does not automatically save unsaved changes                                                                                             |
+| `Save`     | Saves all changes made to fields for the current image | All changes to fields are reverted if not saved; an error popup with a targeted message for all saved fields that are invalid is shown. |
+| `Finish`   | Finishes the review                                    | Closes review window, does not write unsaved changes                                                                                    |
 
 ### 2.3 Output
 
