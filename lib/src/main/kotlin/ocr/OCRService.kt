@@ -43,6 +43,8 @@ class OCRService(private val settings: OpenAIAPIData) {
                 settings.effort.takeIf { efforts.contains(it) }?.let { ReasoningEffort.of(it) }
                     ?: ReasoningEffort.LOW
             )
+            // Usually each image would cost 1500-2200 tokens via Gemini, but set 3500 as max in case of image complexities
+            .maxCompletionTokens(3500)
     }
 
     fun params(imageBase64Url: String): ChatCompletionCreateParams =
