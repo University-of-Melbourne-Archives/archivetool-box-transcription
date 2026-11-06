@@ -35,7 +35,9 @@ class OCRService(private val settings: OpenAIAPIData) {
     }
 
     val baseParams by lazy {
-        // List supported by OpenAI-Java
+        // List supported by OpenAI-Java according to their JavaDoc.
+        // May need a manual update if the list changes,
+        // but the list is more likely to grow than it is to shrink.
         val efforts = setOf("none", "minimal", "low", "medium", "high", "xhigh", "max")
         ChatCompletionCreateParams.builder()
             .model(settings.model)
@@ -43,8 +45,7 @@ class OCRService(private val settings: OpenAIAPIData) {
                 settings.effort.takeIf { efforts.contains(it) }?.let { ReasoningEffort.of(it) }
                     ?: ReasoningEffort.LOW
             )
-            // Usually each image would cost 1500-2200 tokens via Gemini, but set 3500 as max in case of image complexities
-            .maxCompletionTokens(3500)
+            .maxCompletionTokens(settings.maxTokens)
     }
 
     fun params(imageBase64Url: String): ChatCompletionCreateParams =
