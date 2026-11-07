@@ -33,6 +33,7 @@ object Platform: Module {
             findProperty("archivetool.platform")?.toString()?.trim()
         }
 
+        // TODO: There is a newer version of Doodle, but it has breaking changes.
         val doodleDependency: DependencyHandlerScope.() -> Unit = {
             val doodleVersion = "0.11.5"
             val doodlePlatforms = listOf("macos-x64", "macos-arm64", "linux-x64", "linux-arm64", "windows-x64")

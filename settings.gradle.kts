@@ -19,6 +19,7 @@ dependencyResolutionManagement {
 plugins {
     // Use the Foojay Toolchains plugin to automatically download JDKs required by subprojects.
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+    id("io.github.ben-manes.versions") version "0.67.0"
 }
 
 val localProperties: Map<String, String>? by lazy {
